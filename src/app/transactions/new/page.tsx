@@ -412,7 +412,7 @@ export default function NewTransactionPage() {
           {/* Section: INR Order Amount */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-              INR Order Amount (₹ Delivered in India)
+              INR Order Amount
             </label>
             <div className="relative">
               <span className="absolute left-3.5 top-2.5 text-slate-400 font-bold text-sm">₹</span>
