@@ -89,9 +89,9 @@ export default function CustomerDetailPage() {
   const outstanding = customer.outstanding_balance || 0;
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
-      {/* Top Navigation */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 max-w-6xl mx-auto print:space-y-4">
+      {/* Top Navigation - Hidden on Print */}
+      <div className="flex items-center justify-between no-print">
         <Link
           href="/customers"
           className="flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-800"
@@ -116,6 +116,20 @@ export default function CustomerDetailPage() {
             <CreditCard className="w-3.5 h-3.5" />
             <span>Record Payment</span>
           </button>
+        </div>
+      </div>
+
+      {/* Print-Only Professional Header */}
+      <div className="hidden print-only border-b border-slate-300 pb-3 mb-4">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-lg font-bold text-slate-900 tracking-tight">PETTI REMITTANCE (DUBAI ⇄ INDIA)</h1>
+            <p className="text-xs text-slate-600">Official Customer Account Statement</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-mono font-bold text-slate-700">{customer.code}</p>
+            <p className="text-base font-bold text-slate-900">{customer.name}</p>
+          </div>
         </div>
       </div>
 

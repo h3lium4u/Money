@@ -28,3 +28,79 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* ========================================================
+   CLEAN PROFESSIONAL PRINT STYLES
+   Eliminates unwanted pages, hides navigation and buttons,
+   and formats clean statements for printing & PDF saving.
+   ======================================================== */
+@media print {
+  /* Hide unwanted UI elements */
+  aside,
+  header,
+  nav,
+  button,
+  .no-print,
+  input,
+  select {
+    display: none !important;
+  }
+
+  /* Reset layout structure for printing */
+  html, body {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 10pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Expand main container to full page */
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Remove outer flex and scroll restraints */
+  div {
+    overflow: visible !important;
+  }
+
+  /* Clean table formatting */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+  thead {
+    display: table-header-group;
+  }
+  th, td {
+    padding: 6px 8px !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+
+  /* Remove shadows and borders from cards */
+  .shadow-sm, .shadow-md, .shadow-xl {
+    box-shadow: none !important;
+  }
+  .border {
+    border-color: #cbd5e1 !important;
+  }
+
+  /* Display elements marked specifically for print */
+  .print-only {
+    display: block !important;
+  }
+}

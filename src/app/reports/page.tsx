@@ -62,9 +62,23 @@ export default function ReportsPage() {
     `${(val || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })} AED`;
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 max-w-7xl mx-auto print:space-y-4">
+      {/* Print-Only Professional Header */}
+      <div className="hidden print-only border-b border-slate-300 pb-3 mb-4">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-lg font-bold text-slate-900 tracking-tight">PETTI REMITTANCE (DUBAI ⇄ INDIA)</h1>
+            <p className="text-xs text-slate-600">Financial Operations & Period Report</p>
+          </div>
+          <div className="text-right text-xs text-slate-700">
+            <p className="font-bold">Period: {period.toUpperCase()}</p>
+            <p>Printed on: {new Date().toLocaleDateString()}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Top Header - Hidden on Print */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 no-print">
         <div>
           <h2 className="text-xl font-bold text-slate-900 tracking-tight">Reports & Excel Export</h2>
           <p className="text-xs text-slate-500">
@@ -91,8 +105,8 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Date Period Controls with Today & Yesterday */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Date Period Controls with Today & Yesterday - Hidden on Print */}
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 no-print">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-xs font-bold text-slate-700 uppercase tracking-wider mr-2 flex items-center gap-1">
             <Clock className="w-3.5 h-3.5 text-emerald-600" /> Period:
