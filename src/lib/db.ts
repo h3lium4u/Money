@@ -32,7 +32,7 @@ export async function query<T = any>(sql: string, params: any[] = []): Promise<T
   }
 
   if (process.env.NETLIFY || process.env.VERCEL || process.env.NODE_ENV === "production") {
-    throw new Error("DATABASE_URL is not configured in Netlify environment variables. Please add DATABASE_URL to your Netlify Site Configuration.");
+    throw new Error("DATABASE_URL is not configured in environment variables. Please add DATABASE_URL to your Vercel / Netlify Environment Variables.");
   }
 
   // Fallback to SQLite (local development only)
@@ -61,7 +61,7 @@ export async function execute(sql: string, params: any[] = []): Promise<void> {
   }
 
   if (process.env.NETLIFY || process.env.VERCEL || process.env.NODE_ENV === "production") {
-    throw new Error("DATABASE_URL is not configured in Netlify environment variables. Please add DATABASE_URL to your Netlify Site Configuration.");
+    throw new Error("DATABASE_URL is not configured in environment variables. Please add DATABASE_URL to your Vercel / Netlify Environment Variables.");
   }
 
   // Fallback to SQLite (local development only)
