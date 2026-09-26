@@ -1,4 +1,8 @@
-import { Pool, types } from "@neondatabase/serverless";
+import { Pool, neonConfig, types } from "@neondatabase/serverless";
+import ws from "ws";
+
+// Neon requires ws in Node.js environments (AWS Lambda / Netlify functions)
+neonConfig.webSocketConstructor = ws;
 
 // Keep PostgreSQL DATE (OID 1082) as YYYY-MM-DD string to avoid timezone offsets
 types.setTypeParser(1082, (val: string) => val);
@@ -14,6 +18,7 @@ export function getPool(): Pool | null {
   if (!pool) {
     pool = new Pool({
       connectionString: process.env.DATABASE_URL,
+      connectionTimeoutMillis: 5000,
     });
   }
   return pool;
@@ -26,7 +31,11 @@ export async function query<T = any>(sql: string, params: any[] = []): Promise<T
     return res.rows as T[];
   }
 
-  // Fallback to SQLite
+  if (process.env.NETLIFY || process.env.VERCEL || process.env.NODE_ENV === "production") {
+    throw new Error("DATABASE_URL is not configured in Netlify environment variables. Please add DATABASE_URL to your Netlify Site Configuration.");
+  }
+
+  // Fallback to SQLite (local development only)
   const { getSqliteDb } = await import("./sqlite_fallback");
   const sqlite = getSqliteDb();
   let index = 0;
@@ -51,7 +60,11 @@ export async function execute(sql: string, params: any[] = []): Promise<void> {
     return;
   }
 
-  // Fallback to SQLite
+  if (process.env.NETLIFY || process.env.VERCEL || process.env.NODE_ENV === "production") {
+    throw new Error("DATABASE_URL is not configured in Netlify environment variables. Please add DATABASE_URL to your Netlify Site Configuration.");
+  }
+
+  // Fallback to SQLite (local development only)
   const { getSqliteDb } = await import("./sqlite_fallback");
   const sqlite = getSqliteDb();
   const sqliteSql = sql

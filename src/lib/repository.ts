@@ -883,74 +883,79 @@ export async function getDashboardKPIs(filters?: { from?: string; to?: string; t
     payWhere += ` AND payment_date <= $${payParams.length}`;
   }
 
-  // Today specific calculations
+  // Run all independent queries in parallel via Promise.all
   const todayStr = new Date().toISOString().slice(0, 10);
-  const todaySummary = await queryOne(`
-    SELECT 
-      COUNT(*) as count,
-      COALESCE(SUM(inr_amount), 0) as total_inr,
-      COALESCE(SUM(aed_amount), 0) as total_aed,
-      COALESCE(SUM(net_profit_aed), 0) as net_profit
-    FROM transactions
-    WHERE status = 'CONFIRMED' AND transaction_date = $1
-  `, [todayStr]);
+  const [
+    todaySummary,
+    txnSummary,
+    paySummary,
+    custReceivables,
+    distPending,
+    bankPending,
+    dailyTrends,
+  ] = await Promise.all([
+    queryOne(`
+      SELECT 
+        COUNT(*) as count,
+        COALESCE(SUM(inr_amount), 0) as total_inr,
+        COALESCE(SUM(aed_amount), 0) as total_aed,
+        COALESCE(SUM(net_profit_aed), 0) as net_profit
+      FROM transactions
+      WHERE status = 'CONFIRMED' AND transaction_date = $1
+    `, [todayStr]),
 
-  // Range filtered summary
-  const txnSummary = await queryOne(`
-    SELECT 
-      COUNT(*) as count,
-      COALESCE(SUM(inr_amount), 0) as total_inr,
-      COALESCE(SUM(aed_amount), 0) as total_aed,
-      COALESCE(SUM(gross_profit_aed), 0) as gross_profit,
-      COALESCE(SUM(delivery_charge_aed), 0) as delivery_charges,
-      COALESCE(SUM(net_profit_aed), 0) as net_profit
-    FROM transactions
-    ${txnWhere}
-  `, txnParams);
+    queryOne(`
+      SELECT 
+        COUNT(*) as count,
+        COALESCE(SUM(inr_amount), 0) as total_inr,
+        COALESCE(SUM(aed_amount), 0) as total_aed,
+        COALESCE(SUM(gross_profit_aed), 0) as gross_profit,
+        COALESCE(SUM(delivery_charge_aed), 0) as delivery_charges,
+        COALESCE(SUM(net_profit_aed), 0) as net_profit
+      FROM transactions
+      ${txnWhere}
+    `, txnParams),
 
-  const paySummary = await queryOne(`
-    SELECT COALESCE(SUM(amount_aed), 0) as total_collected
-    FROM customer_payments
-    ${payWhere}
-  `, payParams);
+    queryOne(`
+      SELECT COALESCE(SUM(amount_aed), 0) as total_collected
+      FROM customer_payments
+      ${payWhere}
+    `, payParams),
 
-  // Cumulative customer outstanding across entire confirmed ledger
-  const custReceivables = await queryOne(`
-    SELECT 
-      COALESCE((SELECT SUM(aed_amount) FROM transactions WHERE status = 'CONFIRMED'), 0) - 
-      COALESCE((SELECT SUM(amount_aed) FROM customer_payments), 0) as outstanding
-  `);
+    queryOne(`
+      SELECT 
+        COALESCE((SELECT SUM(aed_amount) FROM transactions WHERE status = 'CONFIRMED'), 0) - 
+        COALESCE((SELECT SUM(amount_aed) FROM customer_payments), 0) as outstanding
+    `),
 
-  // India distribution pending (Confirmed orders INR minus allocated splits INR)
-  const distPending = await queryOne(`
-    SELECT 
-      COALESCE((SELECT SUM(inr_amount) FROM transactions WHERE status = 'CONFIRMED'), 0) - 
-      COALESCE((SELECT SUM(inr_amount) FROM distribution_splits), 0) as pending_inr
-  `);
+    queryOne(`
+      SELECT 
+        COALESCE((SELECT SUM(inr_amount) FROM transactions WHERE status = 'CONFIRMED'), 0) - 
+        COALESCE((SELECT SUM(inr_amount) FROM distribution_splits), 0) as pending_inr
+    `),
 
-  // Bank distribution pending
-  const bankPending = await queryOne(`
-    SELECT COALESCE(SUM(current_balance), 0) as bank_pending_inr
-    FROM (
-      SELECT DISTINCT ON (account_id) balance_inr as current_balance
-      FROM bank_distrip_records
-      ORDER BY account_id, record_date DESC, created_at DESC
-    ) latest_balances
-  `);
+    queryOne(`
+      SELECT COALESCE(SUM(current_balance), 0) as bank_pending_inr
+      FROM (
+        SELECT DISTINCT ON (account_id) balance_inr as current_balance
+        FROM bank_distrip_records
+        ORDER BY account_id, record_date DESC, created_at DESC
+      ) latest_balances
+    `),
 
-  // Daily trend data for chart
-  const dailyTrends = await query(`
-    SELECT 
-      transaction_date as date,
-      SUM(inr_amount) as inr_volume,
-      SUM(aed_amount) as aed_volume,
-      SUM(net_profit_aed) as net_profit,
-      COUNT(*) as txn_count
-    FROM transactions
-    ${txnWhere}
-    GROUP BY transaction_date
-    ORDER BY transaction_date ASC
-  `, txnParams);
+    query(`
+      SELECT 
+        transaction_date as date,
+        SUM(inr_amount) as inr_volume,
+        SUM(aed_amount) as aed_volume,
+        SUM(net_profit_aed) as net_profit,
+        COUNT(*) as txn_count
+      FROM transactions
+      ${txnWhere}
+      GROUP BY transaction_date
+      ORDER BY transaction_date ASC
+    `, txnParams),
+  ]);
 
   return {
     kpis: {
