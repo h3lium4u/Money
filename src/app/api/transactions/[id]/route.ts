@@ -1,5 +1,17 @@
 import { NextResponse } from "next/server";
-import { getTransaction, voidTransaction, getAuditLogs } from "@/lib/repository";
+import { getTransaction, voidTransaction, updateTransaction, deleteTransaction, getAuditLogs } from "@/lib/repository";
+import { z } from "zod";
+
+const updateSchema = z.object({
+  transaction_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format").optional(),
+  customer_id: z.string().min(1).optional(),
+  inr_amount: z.number().positive().optional(),
+  customer_rate: z.number().positive().optional(),
+  base_rate: z.number().positive().optional(),
+  delivery_charge_pct: z.number().min(0).max(1).optional(),
+  notes: z.string().optional(),
+  reason: z.string().optional(),
+});
 
 export async function GET(
   request: Request,
@@ -19,18 +31,42 @@ export async function GET(
   }
 }
 
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const validated = updateSchema.parse(body);
+
+    const updated = await updateTransaction(id, validated);
+    return NextResponse.json(updated);
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || "Failed to update transaction" }, { status: 400 });
+  }
+}
+
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const body = await request.json().catch(() => ({}));
-    const reason = body.reason || "Voided by user";
+    const { searchParams } = new URL(request.url);
+    const action = searchParams.get("action"); // 'void' or 'delete'
 
-    const voided = await voidTransaction(id, reason);
-    return NextResponse.json(voided);
+    if (action === "void") {
+      const body = await request.json().catch(() => ({}));
+      const reason = body.reason || "Voided by user";
+      const voided = await voidTransaction(id, reason);
+      return NextResponse.json(voided);
+    } else {
+      // Permanent delete
+      await deleteTransaction(id);
+      return NextResponse.json({ success: true, message: "Transaction permanently deleted" });
+    }
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Failed to void transaction" }, { status: 400 });
+    return NextResponse.json({ error: error.message || "Failed to delete transaction" }, { status: 400 });
   }
 }

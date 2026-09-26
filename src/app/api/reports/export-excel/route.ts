@@ -1,28 +1,52 @@
 import { NextResponse } from "next/server";
 import ExcelJS from "exceljs";
+import { generateNormalizedMasterWorkbook } from "@/lib/reports/normalized-master-generator";
 import {
   listTransactions,
   listCustomers,
   listBankDistripRecords,
   listDistributionSplits,
   getDailySummaryReport,
+  listIndiaDistributors,
+  listAedDistributors,
 } from "@/lib/repository";
+
+// Helpers
+const bold = { font: { bold: true } };
+function headerRow(ws: ExcelJS.Worksheet) {
+  ws.getRow(1).font = { bold: true };
+  ws.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE8F4FD" } };
+}
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const from = searchParams.get("from") || undefined;
     const to = searchParams.get("to") || undefined;
+    const type = searchParams.get("type") || searchParams.get("template");
+
+    // By default, or when type=master/normalized, generate the live 12-sheet relational workbook on-demand
+    if (type !== "legacy") {
+      const buffer = await generateNormalizedMasterWorkbook({ from, to });
+      const filename = `Petti_Remittance_Master_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      return new Response(new Uint8Array(buffer), {
+        headers: {
+          "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "Content-Disposition": `attachment; filename="${filename}"`,
+        },
+      });
+    }
 
     const workbook = new ExcelJS.Workbook();
     workbook.creator = "Petti Remittance Management System";
     workbook.created = new Date();
 
-    // 1. Transactions Sheet (Dubai Customer Transactions)
+    // ─── 1. Transactions Sheet (Dubai Customer Transactions) ───────────────────
     const wsTxn = workbook.addWorksheet("Transactions");
     wsTxn.columns = [
       { header: "Transaction ID", key: "txn_num", width: 20 },
       { header: "Date", key: "date", width: 14 },
+      { header: "Customer ID", key: "cust_id", width: 16 },
       { header: "Customer Name", key: "cust_name", width: 22 },
       { header: "INR Order", key: "inr", width: 16 },
       { header: "Daily Rate", key: "rate", width: 15 },
@@ -32,17 +56,28 @@ export async function GET(request: Request) {
       { header: "Delivery %", key: "deliv_pct", width: 12 },
       { header: "Delivery Cut (AED)", key: "deliv_amt", width: 18 },
       { header: "Net Profit (AED)", key: "net", width: 18 },
+      { header: "India Distributors", key: "dist_names", width: 25 },
+      { header: "Split Breakdown", key: "split_details", width: 34 },
       { header: "Distributed (INR)", key: "dist_inr", width: 18 },
       { header: "Pending INR", key: "rem_inr", width: 16 },
-      { header: "Status", key: "status", width: 14 },
+      { header: "Split Allocation Status", key: "alloc_status", width: 24 },
+      { header: "Txn Status", key: "status", width: 14 },
     ];
-    wsTxn.getRow(1).font = { bold: true };
+    headerRow(wsTxn);
 
     const txns = await listTransactions({ from, to, limit: 5000 });
     txns.forEach((t) => {
-      wsTxn.addRow({
+      const isFullyAllocated = (t.remaining_inr === 0);
+      const allocStatus = isFullyAllocated
+        ? "100% FULLY ALLOCATED"
+        : (t.total_distributed_inr || 0) > 0
+        ? `PARTIAL (Pending ₹${t.remaining_inr?.toLocaleString()})`
+        : "UNALLOCATED";
+
+      const row = wsTxn.addRow({
         txn_num: t.transaction_number,
         date: t.transaction_date,
+        cust_id: t.customer_code || t.customer_id?.slice(0, 8) || "-",
         cust_name: t.customer_name,
         inr: t.inr_amount,
         rate: t.customer_rate,
@@ -52,13 +87,36 @@ export async function GET(request: Request) {
         deliv_pct: t.delivery_charge_pct * 100 + "%",
         deliv_amt: t.delivery_charge_aed,
         net: t.net_profit_aed,
+        dist_names: t.distributor_names || t.distributor_name || "-",
+        split_details: t.distributor_split_details || "-",
         dist_inr: t.total_distributed_inr,
         rem_inr: t.remaining_inr,
+        alloc_status: allocStatus,
         status: t.status,
       });
+
+      // Highlight in GREEN when fully allocated
+      if (isFullyAllocated) {
+        // Green highlight for Pending INR and Allocation Status cells
+        const pendingCell = row.getCell("rem_inr");
+        const statusCell = row.getCell("alloc_status");
+        const distNamesCell = row.getCell("dist_names");
+
+        [pendingCell, statusCell, distNamesCell].forEach((c) => {
+          c.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFD4EDDA" }, // Soft light green
+          };
+          c.font = {
+            color: { argb: "FF155724" }, // Deep green text
+            bold: true,
+          };
+        });
+      }
     });
 
-    // 2. Customer Receivables & Balances
+    // ─── 2. Customer Receivables & Balances ────────────────────────────────────
     const wsCust = workbook.addWorksheet("Customer Receivables");
     wsCust.columns = [
       { header: "Customer Code", key: "code", width: 15 },
@@ -68,7 +126,7 @@ export async function GET(request: Request) {
       { header: "Total AED Paid", key: "total_paid", width: 20 },
       { header: "Outstanding Balance (AED)", key: "balance", width: 25 },
     ];
-    wsCust.getRow(1).font = { bold: true };
+    headerRow(wsCust);
 
     const customers = await listCustomers();
     customers.forEach((c) => {
@@ -82,52 +140,133 @@ export async function GET(request: Request) {
       });
     });
 
-    // 3. India Distribution Splits
-    const wsSplits = workbook.addWorksheet("India Distribution");
-    wsSplits.columns = [
-      { header: "Split Date", key: "date", width: 14 },
-      { header: "Transaction ID", key: "txn_num", width: 20 },
-      { header: "Customer", key: "cust_name", width: 22 },
-      { header: "India Party", key: "party", width: 18 },
-      { header: "INR Amount", key: "inr", width: 18 },
-      { header: "Wholesale Rate", key: "rate", width: 16 },
-      { header: "AED Equivalent", key: "aed_eq", width: 18 },
-      { header: "Status", key: "status", width: 14 },
-      { header: "Notes", key: "notes", width: 25 },
+    // ─── 3. IND Distribution — India-side party splits ─────────────────────────
+    const wsInd = workbook.addWorksheet("IND Distribution");
+    // Header note
+    wsInd.addRow(["GROUP: IND — India-side Distribution Parties (AWAFI, NF2, HAJA, SARABU-IND, BASID)"]);
+    wsInd.getRow(1).font = { bold: true, italic: true, color: { argb: "FF006600" } };
+    wsInd.addRow(["NOTE: SARABU (IND) is a SEPARATE account from SARABU (AED). Different balances."]);
+    wsInd.getRow(2).font = { italic: true, color: { argb: "FF888800" } };
+    wsInd.addRow([]); // spacer
+
+    const indHeaderRow = wsInd.addRow(["Split Date", "Transaction ID", "Customer ID", "Customer Name", "IND Party Code", "IND Party [GROUP]", "INR Amount", "Wholesale Rate", "AED Equivalent", "Paid (INR)", "Balance (INR)", "Status", "Notes"]);
+    indHeaderRow.font = { bold: true };
+    indHeaderRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD4EDDA" } };
+
+    wsInd.columns = [
+      { key: "date", width: 14 },
+      { key: "txn_num", width: 20 },
+      { key: "cust_id", width: 16 },
+      { key: "cust_name", width: 22 },
+      { key: "party_code", width: 16 },
+      { key: "party", width: 22 },
+      { key: "inr", width: 18 },
+      { key: "rate", width: 16 },
+      { key: "aed_eq", width: 18 },
+      { key: "paid_inr", width: 16 },
+      { key: "bal_inr", width: 16 },
+      { key: "status", width: 14 },
+      { key: "notes", width: 25 },
     ];
-    wsSplits.getRow(1).font = { bold: true };
 
     const splits = await listDistributionSplits({ from, to });
+    // Load IND distributors to check group_type
+    const indDists = await listIndiaDistributors();
+    const indDistIds = new Set(indDists.map((d) => d.id));
+
     splits.forEach((s) => {
-      wsSplits.addRow({
+      const isIndGroup = indDistIds.has(s.distributor_id);
+      const row = wsInd.addRow({
         date: s.split_date,
         txn_num: s.transaction_number,
+        cust_id: s.customer_code || s.customer_id?.slice(0, 8) || "-",
         cust_name: s.customer_name,
-        party: s.distributor_code,
+        party_code: s.distributor_code || s.distributor_id,
+        party: `${s.distributor_code || s.distributor_name} [${isIndGroup ? "IND" : "AED"}]`,
         inr: s.inr_amount,
         rate: s.wholesale_rate,
         aed_eq: s.aed_equivalent,
+        paid_inr: s.paid_amount_inr,
+        bal_inr: s.balance_inr,
         status: s.status,
         notes: s.notes,
       });
+
+      if (s.status === "COMPLETED") {
+        row.getCell("status").fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFD4EDDA" },
+        };
+        row.getCell("status").font = { color: { argb: "FF155724" }, bold: true };
+      }
     });
 
-    // 4. Bank Distribution Ledger
+    // IND summary totals
+    wsInd.addRow([]);
+    const indSummaryRow = wsInd.addRow({
+      party: "TOTAL (IND)",
+      inr: splits.filter((s) => indDistIds.has(s.distributor_id)).reduce((sum, s) => sum + s.inr_amount, 0),
+      paid_inr: splits.filter((s) => indDistIds.has(s.distributor_id)).reduce((sum, s) => sum + s.paid_amount_inr, 0),
+      bal_inr: splits.filter((s) => indDistIds.has(s.distributor_id)).reduce((sum, s) => sum + s.balance_inr, 0),
+    });
+    indSummaryRow.font = { bold: true };
+
+    // ─── 4. AED Distribution — AED-side party list ────────────────────────────
+    const wsAed = workbook.addWorksheet("AED Distribution");
+    wsAed.addRow(["GROUP: AED — AED-side Distribution Parties (SALA, SARABU-AED, MK, ISMAIL, NNG)"]);
+    wsAed.getRow(1).font = { bold: true, italic: true, color: { argb: "FF000066" } };
+    wsAed.addRow(["NOTE: SARABU (AED) is a SEPARATE account from SARABU (IND). TOTAL = sum of all AED parties (calculated)."]);
+    wsAed.getRow(2).font = { italic: true, color: { argb: "FF666600" } };
+    wsAed.addRow([]);
+
+    const aedHeaderRow = wsAed.addRow(["Party Name", "Group", "Code", "Partner Type", "Status"]);
+    aedHeaderRow.font = { bold: true };
+    aedHeaderRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFCCE5FF" } };
+
+    wsAed.columns = [
+      { key: "name", width: 20 },
+      { key: "group", width: 10 },
+      { key: "code", width: 14 },
+      { key: "partner_type", width: 20 },
+      { key: "status", width: 14 },
+    ];
+
+    const aedDists = await listAedDistributors();
+    aedDists
+      .filter((d) => d.partner_type !== "BANK_ACCOUNT")
+      .forEach((d) => {
+        wsAed.addRow({
+          name: d.name,
+          group: "AED",
+          code: d.code,
+          partner_type: d.partner_type,
+          status: d.status,
+        });
+      });
+
+    wsAed.addRow([]);
+    const aedTotal = wsAed.addRow({ name: "TOTAL", group: "AED", code: "(Calculated — not a manual entry)" });
+    aedTotal.font = { bold: true };
+
+    // ─── 5. Bank Distribution Ledger ──────────────────────────────────────────
     const wsBank = workbook.addWorksheet("Bank Distribution");
     wsBank.columns = [
       { header: "Date", key: "date", width: 14 },
-      { header: "Account", key: "account", width: 20 },
+      { header: "Account Code", key: "account_code", width: 16 },
+      { header: "Account Name", key: "account", width: 20 },
       { header: "Order (INR)", key: "order", width: 18 },
       { header: "Commission (INR)", key: "com", width: 18 },
       { header: "Paid (INR)", key: "paid", width: 18 },
       { header: "Running Balance (INR)", key: "balance", width: 22 },
     ];
-    wsBank.getRow(1).font = { bold: true };
+    headerRow(wsBank);
 
     const bankRecords = await listBankDistripRecords();
     bankRecords.forEach((b) => {
       wsBank.addRow({
         date: b.record_date,
+        account_code: b.account_code || b.account_id,
         account: b.account_name,
         order: b.order_inr,
         com: b.commission_inr,
@@ -136,7 +275,7 @@ export async function GET(request: Request) {
       });
     });
 
-    // 5. Daily Performance Summary
+    // ─── 6. Daily Performance Summary ─────────────────────────────────────────
     const wsSummary = workbook.addWorksheet("Daily Summary");
     wsSummary.columns = [
       { header: "Date", key: "date", width: 14 },
@@ -145,7 +284,7 @@ export async function GET(request: Request) {
       { header: "Total AED", key: "aed", width: 20 },
       { header: "Net Profit (AED)", key: "net_profit", width: 20 },
     ];
-    wsSummary.getRow(1).font = { bold: true };
+    headerRow(wsSummary);
 
     const dailyRows = await getDailySummaryReport();
     dailyRows.forEach((d) => {

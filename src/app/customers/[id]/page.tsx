@@ -12,6 +12,9 @@ import {
   Calendar,
   CheckCircle2,
   FileSpreadsheet,
+  Edit3,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 
 export default function CustomerDetailPage() {
@@ -30,9 +33,31 @@ export default function CustomerDetailPage() {
   const [payNotes, setPayNotes] = useState("");
   const [isSubmittingPay, setIsSubmittingPay] = useState(false);
 
+  // Delete payment state
+  const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
+  const [isDeletingPayment, setIsDeletingPayment] = useState(false);
+
+  // Edit customer modal state
+  const [showEditCustModal, setShowEditCustModal] = useState(false);
+  const [editCustName, setEditCustName] = useState("");
+  const [editCustCode, setEditCustCode] = useState("");
+  const [editCustPhone, setEditCustPhone] = useState("");
+  const [editCustRate, setEditCustRate] = useState("38.25");
+  const [isSubmittingCustEdit, setIsSubmittingCustEdit] = useState(false);
+  const [custEditError, setCustEditError] = useState<string | null>(null);
+
   useEffect(() => {
     if (id) fetchCustomerLedger();
   }, [id]);
+
+  useEffect(() => {
+    if (data?.customer) {
+      setEditCustName(data.customer.name || "");
+      setEditCustCode(data.customer.code || "");
+      setEditCustPhone(data.customer.phone || "");
+      setEditCustRate(String(data.customer.default_rate || 38.25));
+    }
+  }, [data]);
 
   async function fetchCustomerLedger() {
     setLoading(true);
@@ -77,6 +102,53 @@ export default function CustomerDetailPage() {
     }
   }
 
+  async function handleDeletePayment() {
+    if (!deletePaymentId) return;
+    setIsDeletingPayment(true);
+    try {
+      const res = await fetch(`/api/customers/${id}/payments?paymentId=${deletePaymentId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setDeletePaymentId(null);
+        fetchCustomerLedger();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsDeletingPayment(false);
+    }
+  }
+
+  async function handleUpdateCustomer(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editCustName.trim()) return;
+
+    setIsSubmittingCustEdit(true);
+    setCustEditError(null);
+    try {
+      const res = await fetch(`/api/customers/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editCustName.trim(),
+          code: editCustCode.trim() || undefined,
+          phone: editCustPhone.trim() || undefined,
+          default_rate: editCustRate ? parseFloat(editCustRate) : 38.25,
+        }),
+      });
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || "Failed to update customer");
+
+      setShowEditCustModal(false);
+      fetchCustomerLedger();
+    } catch (err: any) {
+      setCustEditError(err.message || "Failed to update customer");
+    } finally {
+      setIsSubmittingCustEdit(false);
+    }
+  }
+
   if (loading) {
     return <div className="p-8 text-center text-xs text-slate-400">Loading customer account...</div>;
   }
@@ -101,6 +173,14 @@ export default function CustomerDetailPage() {
         </Link>
 
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowEditCustModal(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 shadow-sm"
+          >
+            <Edit3 className="w-3.5 h-3.5 text-slate-500" />
+            <span>Edit Profile</span>
+          </button>
+
           <button
             onClick={() => window.print()}
             className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 shadow-sm"
@@ -189,12 +269,13 @@ export default function CustomerDetailPage() {
                 <th className="py-3 px-4 text-right">Debit (AED Billed)</th>
                 <th className="py-3 px-4 text-right">Credit (AED Paid)</th>
                 <th className="py-3 px-4 text-right">Running Balance (AED)</th>
+                <th className="py-3 px-4 text-center print:hidden">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {entries.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400 text-xs">
+                  <td colSpan={8} className="py-12 text-center text-slate-400 text-xs">
                     No ledger history for this account yet.
                   </td>
                 </tr>
@@ -231,6 +312,19 @@ export default function CustomerDetailPage() {
                       }`}
                     >
                       {e.running_balance_aed.toFixed(2)} AED
+                    </td>
+                    <td className="py-3 px-4 text-center print:hidden">
+                      {e.type === "PAYMENT" && e.id ? (
+                        <button
+                          onClick={() => setDeletePaymentId(e.id)}
+                          title="Delete Payment Receipt"
+                          className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded border border-rose-200"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -335,6 +429,138 @@ export default function CustomerDetailPage() {
                 className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm"
               >
                 {isSubmittingPay ? "Saving..." : "Confirm Payment"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Delete Payment Modal */}
+      {deletePaymentId && (
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-xl space-y-4 border border-rose-200 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-sm font-bold text-rose-700 flex items-center gap-2">
+                <Trash2 className="w-4 h-4 text-rose-600" />
+                <span>Delete Payment Record</span>
+              </h3>
+              <button
+                onClick={() => setDeletePaymentId(null)}
+                className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-xs text-slate-600">
+              Are you sure you want to delete this payment receipt? The customer's balance will be adjusted accordingly.
+            </p>
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setDeletePaymentId(null)}
+                className="px-3.5 py-1.5 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeletePayment}
+                disabled={isDeletingPayment}
+                className="px-3.5 py-1.5 bg-rose-600 text-white text-xs font-bold rounded-lg hover:bg-rose-700 disabled:opacity-50 shadow-sm"
+              >
+                {isDeletingPayment ? "Deleting..." : "Delete Payment"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Customer Profile Modal */}
+      {showEditCustModal && (
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <form
+            onSubmit={handleUpdateCustomer}
+            className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4 border border-slate-200 animate-in fade-in zoom-in duration-150"
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Edit3 className="w-4 h-4 text-emerald-600" />
+                <span>Edit Customer Profile</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowEditCustModal(false)}
+                className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {custEditError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs font-medium flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{custEditError}</span>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Customer Name *</label>
+              <input
+                type="text"
+                required
+                value={editCustName}
+                onChange={(e) => setEditCustName(e.target.value)}
+                className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Code</label>
+                <input
+                  type="text"
+                  value={editCustCode}
+                  onChange={(e) => setEditCustCode(e.target.value)}
+                  className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Default Rate</label>
+                <input
+                  type="number"
+                  step="any"
+                  value={editCustRate}
+                  onChange={(e) => setEditCustRate(e.target.value)}
+                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Phone</label>
+              <input
+                type="text"
+                value={editCustPhone}
+                onChange={(e) => setEditCustPhone(e.target.value)}
+                className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowEditCustModal(false)}
+                className="px-4 py-2 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmittingCustEdit}
+                className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 disabled:opacity-50 shadow-sm"
+              >
+                {isSubmittingCustEdit ? "Saving..." : "Save Changes"}
               </button>
             </div>
           </form>

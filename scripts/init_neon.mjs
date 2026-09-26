@@ -164,11 +164,11 @@ async function main() {
 
   console.log("Seeding Bank and Wholesale Distributors into Neon...");
   const bankDists = [
-    ['MK', 'MK Account'],
-    ['SALA', 'SALA Network'],
-    ['USAIN', 'USAIN Bank'],
-    ['NNG', 'NNG Bank'],
-    ['BLACK GRP', 'Black Group Payout']
+    ['MK', 'MK'],
+    ['SALA', 'SALA'],
+    ['USAIN', 'USAIN'],
+    ['NNG', 'NNG'],
+    ['BLACK GRP', 'BLACK GRP']
   ];
   for (const [code, name] of bankDists) {
     const id = `dist-${code.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
@@ -186,11 +186,11 @@ async function main() {
   }
 
   const wholesaleDists = [
-    ['AWAFI', 'Awafi Trading'],
-    ['NF2', 'NF2 Liquidity'],
-    ['HAJA', 'Haja Exchange'],
-    ['SARABU', 'Sarabu Wholesale'],
-    ['BASID', 'Basid Payouts']
+    ['AWAFI', 'AWAFI'],
+    ['NF2', 'NF2'],
+    ['HAJA', 'HAJA'],
+    ['SARABU', 'SARABU'],
+    ['BASID', 'BASID']
   ];
   for (const [code, name] of wholesaleDists) {
     const id = `dist-${code.toLowerCase().replace(/[^a-z0-9]/g, "")}`;

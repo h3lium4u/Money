@@ -12,6 +12,7 @@ import {
   Wallet,
   FileSpreadsheet,
   Split,
+  Settings,
 } from "lucide-react";
 
 const navigation = [
@@ -20,9 +21,10 @@ const navigation = [
   { name: "All Transfers", href: "/transactions", icon: ArrowLeftRight },
   { name: "Dubai Customers", href: "/customers", icon: Users },
   { name: "Customer Receivables", href: "/receivables", icon: Wallet },
-  { name: "India Distribution", href: "/distributors", icon: Split },
+  { name: "Distribution Partners", href: "/distributors", icon: Split },
   { name: "Bank Distribution", href: "/bank-distrip", icon: Landmark },
   { name: "Reports & Excel", href: "/reports", icon: FileSpreadsheet },
+  { name: "Settings", href: "/settings/system-health", icon: Settings },
 ];
 
 export default function Sidebar() {

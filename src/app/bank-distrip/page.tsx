@@ -9,6 +9,9 @@ import {
   RefreshCw,
   Coins,
   ShieldCheck,
+  Edit3,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 
 export default function BankDistripPage() {
@@ -27,9 +30,88 @@ export default function BankDistripPage() {
   const [recNotes, setRecNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Edit Bank Record Modal State
+  const [editRecord, setEditRecord] = useState<any | null>(null);
+  const [editDate, setEditDate] = useState("");
+  const [editOrder, setEditOrder] = useState("");
+  const [editCom, setEditCom] = useState("");
+  const [editPaid, setEditPaid] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  // Delete Bank Record State
+  const [deleteRecordTarget, setDeleteRecordTarget] = useState<any | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   useEffect(() => {
     fetchBankData();
   }, [selectedAccount]);
+
+  function openEditRecord(r: any) {
+    setEditRecord(r);
+    setEditDate(r.record_date);
+    setEditOrder(String(r.order_inr || 0));
+    setEditCom(String(r.commission_inr || 0));
+    setEditPaid(String(r.paid_inr || 0));
+    setEditNotes(r.notes || "");
+    setEditError(null);
+  }
+
+  async function handleUpdateRecord(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editRecord) return;
+    setEditSubmitting(true);
+    setEditError(null);
+
+    try {
+      const res = await fetch("/api/bank-distrip", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editRecord.id,
+          record_date: editDate,
+          order_inr: parseFloat(editOrder) || 0,
+          commission_inr: parseFloat(editCom) || 0,
+          paid_inr: parseFloat(editPaid) || 0,
+          notes: editNotes || undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update record");
+
+      setEditRecord(null);
+      fetchBankData();
+    } catch (err: any) {
+      setEditError(err.message || "Failed to update record");
+    } finally {
+      setEditSubmitting(false);
+    }
+  }
+
+  async function handleDeleteRecord() {
+    if (!deleteRecordTarget) return;
+    setDeleteSubmitting(true);
+    setDeleteError(null);
+
+    try {
+      const res = await fetch(`/api/bank-distrip?id=${deleteRecordTarget.id}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to delete record");
+
+      setDeleteRecordTarget(null);
+      fetchBankData();
+    } catch (err: any) {
+      setDeleteError(err.message || "Failed to delete record");
+    } finally {
+      setDeleteSubmitting(false);
+    }
+  }
 
   async function fetchBankData() {
     setLoading(true);
@@ -132,12 +214,9 @@ export default function BankDistripPage() {
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className={`text-[11px] font-mono font-bold ${selectedAccount === acct.id ? "text-emerald-400" : "text-emerald-700"}`}>
-                  {acct.account_code}
-                </span>
-                <Landmark className={`w-4 h-4 ${selectedAccount === acct.id ? "text-slate-400" : "text-slate-400"}`} />
+                <h3 className="text-base font-bold tracking-tight">{acct.account_name}</h3>
+                <Landmark className={`w-4 h-4 ${selectedAccount === acct.id ? "text-emerald-400" : "text-slate-400"}`} />
               </div>
-              <h3 className="text-sm font-bold mt-2">{acct.account_name}</h3>
               <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <span className={`text-[10px] uppercase tracking-wider font-semibold ${selectedAccount === acct.id ? "text-slate-400" : "text-slate-500"}`}>
                   Current Balance
@@ -182,18 +261,19 @@ export default function BankDistripPage() {
                 <th className="py-3 px-4 text-right">Commission (INR)</th>
                 <th className="py-3 px-4 text-right">Paid / Funded (INR)</th>
                 <th className="py-3 px-4 text-right">Running Balance (INR)</th>
+                <th className="py-3 px-4 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400 text-xs">
+                  <td colSpan={7} className="py-12 text-center text-slate-400 text-xs">
                     Loading bank distribution records...
                   </td>
                 </tr>
               ) : records.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400 text-xs">
+                  <td colSpan={7} className="py-12 text-center text-slate-400 text-xs">
                     No distribution records found.
                   </td>
                 </tr>
@@ -207,6 +287,27 @@ export default function BankDistripPage() {
                     <td className="py-3 px-4 text-right text-emerald-700 font-medium">{formatINR(r.paid_inr)}</td>
                     <td className="py-3 px-4 text-right font-mono font-bold text-slate-900">
                       {formatINR(r.balance_inr)}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => openEditRecord(r)}
+                          title="Edit Record"
+                          className="p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded border border-slate-200"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setDeleteRecordTarget(r);
+                            setDeleteError(null);
+                          }}
+                          title="Delete Record"
+                          className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded border border-rose-200"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -255,7 +356,7 @@ export default function BankDistripPage() {
                 >
                   {accounts.map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.account_name} ({a.account_code})
+                      {a.account_name}
                     </option>
                   ))}
                 </select>
@@ -334,6 +435,178 @@ export default function BankDistripPage() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Edit Bank Record Modal */}
+      {editRecord && (
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <form
+            onSubmit={handleUpdateRecord}
+            className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4 border border-slate-200 animate-in fade-in zoom-in duration-150"
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Edit3 className="w-4 h-4 text-emerald-600" />
+                <span>Edit Bank Ledger Record</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setEditRecord(null)}
+                className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {editError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs font-medium flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{editError}</span>
+              </div>
+            )}
+
+            <div className="p-2.5 bg-slate-50 rounded border border-slate-200 text-xs flex justify-between">
+              <span className="text-slate-500 font-semibold">Account:</span>
+              <span className="font-bold text-slate-900">{editRecord.account_name}</span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Date</label>
+              <input
+                type="date"
+                required
+                value={editDate}
+                onChange={(e) => setEditDate(e.target.value)}
+                className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Order Amount (INR)
+              </label>
+              <input
+                type="number"
+                step="any"
+                value={editOrder}
+                onChange={(e) => setEditOrder(e.target.value)}
+                className="w-full text-sm font-medium border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Commission (INR)
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={editCom}
+                  onChange={(e) => setEditCom(e.target.value)}
+                  className="w-full text-xs font-medium border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Paid / Funded (INR)
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={editPaid}
+                  onChange={(e) => setEditPaid(e.target.value)}
+                  className="w-full text-xs font-medium border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Notes</label>
+              <input
+                type="text"
+                placeholder="Funding slip / reference"
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setEditRecord(null)}
+                className="px-4 py-2 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={editSubmitting}
+                className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 disabled:opacity-50 shadow-sm"
+              >
+                {editSubmitting ? "Updating..." : "Update Record"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Delete Bank Record Confirmation Modal */}
+      {deleteRecordTarget && (
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-xl space-y-4 border border-rose-200 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-sm font-bold text-rose-700 flex items-center gap-2">
+                <Trash2 className="w-4 h-4 text-rose-600" />
+                <span>Delete Bank Ledger Record</span>
+              </h3>
+              <button
+                onClick={() => setDeleteRecordTarget(null)}
+                className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {deleteError ? (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs font-medium flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{deleteError}</span>
+              </div>
+            ) : (
+              <div className="space-y-2 text-xs text-slate-600">
+                <p>
+                  Are you sure you want to delete this bank ledger entry for{" "}
+                  <strong className="text-slate-900">{deleteRecordTarget.account_name}</strong> on{" "}
+                  <strong className="text-slate-900">{deleteRecordTarget.record_date}</strong>?
+                </p>
+                <p className="text-emerald-700 bg-emerald-50 p-2 rounded border border-emerald-200 text-[11px]">
+                  The account's running balance will be recalculated automatically.
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setDeleteRecordTarget(null)}
+                className="px-3.5 py-1.5 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteRecord}
+                disabled={deleteSubmitting}
+                className="px-3.5 py-1.5 bg-rose-600 text-white text-xs font-bold rounded-lg hover:bg-rose-700 disabled:opacity-50 shadow-sm"
+              >
+                {deleteSubmitting ? "Deleting..." : "Delete Record"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

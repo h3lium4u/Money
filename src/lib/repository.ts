@@ -20,10 +20,13 @@ export interface DistributionSplitRecord {
   id: string;
   transaction_id: string;
   transaction_number?: string;
+  customer_id?: string;
+  customer_code?: string;
   customer_name?: string;
   distributor_id: string;
   distributor_name?: string;
   distributor_code?: string;
+  group_type?: string;
   split_date: string;
   inr_amount: number;
   wholesale_rate?: number | null;
@@ -41,6 +44,7 @@ export interface TransactionRecord {
   transaction_number: string;
   transaction_date: string;
   customer_id: string;
+  customer_code?: string | null;
   customer_name?: string;
   inr_amount: number;
   customer_rate: number;
@@ -53,11 +57,15 @@ export interface TransactionRecord {
   net_profit_aed: number;
   distributor_id?: string | null;
   distributor_name?: string | null;
+  distributor_names?: string | null;
+  distributor_split_details?: string | null;
   status: string;
   notes?: string | null;
-  is_demo?: boolean;
   total_distributed_inr?: number;
   remaining_inr?: number;
+  paid_aed?: number;
+  pending_aed?: number;
+  is_demo?: boolean;
   splits?: DistributionSplitRecord[];
   created_at: string;
 }
@@ -67,6 +75,7 @@ export interface CustomerPaymentRecord {
   payment_number: string;
   payment_date: string;
   customer_id: string;
+  customer_code?: string | null;
   customer_name?: string;
   transaction_id?: string | null;
   amount_aed: number;
@@ -82,6 +91,7 @@ export interface DistributorRecord {
   code: string;
   name: string;
   partner_type: string;
+  group_type: string; // 'IND' | 'AED'
   client_confirmation_note?: string | null;
   default_settlement_currency: string;
   status: string;
@@ -110,6 +120,7 @@ export interface BankDistripRecord {
   id: string;
   record_date: string;
   account_id: string;
+  account_code?: string;
   account_name?: string;
   order_inr: number;
   commission_inr: number;
@@ -154,18 +165,22 @@ function mapCustomerRecord(r: any): Customer {
 
 function mapTransactionRecord(r: any): TransactionRecord {
   const inrAmount = roundTo(Number(r.inr_amount), 2);
+  const aedAmount = roundTo(Number(r.aed_amount), 2);
   const distributedInr = roundTo(Number(r.total_distributed_inr || 0), 2);
   const remainingInr = roundTo(Math.max(0, inrAmount - distributedInr), 2);
+  const paidAed = roundTo(Number(r.paid_aed || 0), 2);
+  const pendingAed = roundTo(Math.max(0, aedAmount - paidAed), 2);
 
   return {
     id: r.id,
     transaction_number: r.transaction_number,
     transaction_date: formatDate(r.transaction_date),
     customer_id: r.customer_id,
+    customer_code: r.customer_code || null,
     customer_name: r.customer_name,
     inr_amount: inrAmount,
     customer_rate: roundTo(Number(r.customer_rate), 4),
-    aed_amount: roundTo(Number(r.aed_amount), 2),
+    aed_amount: aedAmount,
     base_rate: roundTo(Number(r.base_rate), 4),
     cost_aed: roundTo(Number(r.cost_aed), 2),
     gross_profit_aed: roundTo(Number(r.gross_profit_aed), 2),
@@ -174,11 +189,15 @@ function mapTransactionRecord(r: any): TransactionRecord {
     net_profit_aed: roundTo(Number(r.net_profit_aed), 2),
     distributor_id: r.distributor_id || null,
     distributor_name: r.distributor_name || null,
+    distributor_names: r.distributor_names && r.distributor_names !== '-' ? r.distributor_names : (r.distributor_name || null),
+    distributor_split_details: r.distributor_split_details && r.distributor_split_details !== '-' ? r.distributor_split_details : null,
     status: r.status,
     notes: r.notes || null,
     is_demo: Boolean(r.is_demo),
     total_distributed_inr: distributedInr,
     remaining_inr: remainingInr,
+    paid_aed: paidAed,
+    pending_aed: pendingAed,
     created_at: formatDateTime(r.created_at),
   };
 }
@@ -188,10 +207,13 @@ function mapDistributionSplitRecord(r: any): DistributionSplitRecord {
     id: r.id,
     transaction_id: r.transaction_id,
     transaction_number: r.transaction_number,
+    customer_id: r.customer_id,
+    customer_code: r.customer_code,
     customer_name: r.customer_name,
     distributor_id: r.distributor_id,
     distributor_name: r.distributor_name,
     distributor_code: r.distributor_code,
+    group_type: r.group_type || "IND",
     split_date: formatDate(r.split_date),
     inr_amount: roundTo(Number(r.inr_amount || 0), 2),
     wholesale_rate: r.wholesale_rate != null ? Number(r.wholesale_rate) : null,
@@ -210,6 +232,7 @@ function mapBankDistripRecord(r: any): BankDistripRecord {
     id: r.id,
     record_date: formatDate(r.record_date),
     account_id: r.account_id,
+    account_code: r.account_code || r.account_id,
     account_name: r.account_name,
     order_inr: roundTo(Number(r.order_inr || 0), 2),
     commission_inr: roundTo(Number(r.commission_inr || 0), 2),
@@ -280,9 +303,23 @@ export async function listTransactions(filters?: {
   let sql = `
     SELECT 
       t.*,
+      c.code as customer_code,
       c.name as customer_name,
       d.name as distributor_name,
-      COALESCE((SELECT SUM(s.inr_amount) FROM distribution_splits s WHERE s.transaction_id = t.id), 0) as total_distributed_inr
+      COALESCE((
+        SELECT STRING_AGG(DISTINCT d2.name, ', ' ORDER BY d2.name)
+        FROM distribution_splits s2
+        JOIN distributors d2 ON d2.id = s2.distributor_id
+        WHERE s2.transaction_id = t.id
+      ), d.name, '-') as distributor_names,
+      COALESCE((
+        SELECT STRING_AGG(d2.name || ' (₹' || ROUND(s2.inr_amount)::text || ')', ', ')
+        FROM distribution_splits s2
+        JOIN distributors d2 ON d2.id = s2.distributor_id
+        WHERE s2.transaction_id = t.id
+      ), '-') as distributor_split_details,
+      COALESCE((SELECT SUM(s.inr_amount) FROM distribution_splits s WHERE s.transaction_id = t.id), 0) as total_distributed_inr,
+      COALESCE((SELECT SUM(cp.amount_aed) FROM customer_payments cp WHERE cp.transaction_id = t.id), 0) as paid_aed
     FROM transactions t
     JOIN customers c ON c.id = t.customer_id
     LEFT JOIN distributors d ON d.id = t.distributor_id
@@ -322,9 +359,23 @@ export async function getTransaction(id: string): Promise<TransactionRecord | nu
   const r = await queryOne(`
     SELECT 
       t.*,
+      c.code as customer_code,
       c.name as customer_name,
       d.name as distributor_name,
-      COALESCE((SELECT SUM(s.inr_amount) FROM distribution_splits s WHERE s.transaction_id = t.id), 0) as total_distributed_inr
+      COALESCE((
+        SELECT STRING_AGG(DISTINCT d2.name, ', ' ORDER BY d2.name)
+        FROM distribution_splits s2
+        JOIN distributors d2 ON d2.id = s2.distributor_id
+        WHERE s2.transaction_id = t.id
+      ), d.name, '-') as distributor_names,
+      COALESCE((
+        SELECT STRING_AGG(d2.name || ' (₹' || ROUND(s2.inr_amount)::text || ')', ', ')
+        FROM distribution_splits s2
+        JOIN distributors d2 ON d2.id = s2.distributor_id
+        WHERE s2.transaction_id = t.id
+      ), '-') as distributor_split_details,
+      COALESCE((SELECT SUM(s.inr_amount) FROM distribution_splits s WHERE s.transaction_id = t.id), 0) as total_distributed_inr,
+      COALESCE((SELECT SUM(cp.amount_aed) FROM customer_payments cp WHERE cp.transaction_id = t.id), 0) as paid_aed
     FROM transactions t
     JOIN customers c ON c.id = t.customer_id
     LEFT JOIN distributors d ON d.id = t.distributor_id
@@ -452,9 +503,12 @@ export async function listDistributionSplits(filters?: {
     SELECT 
       s.*,
       t.transaction_number,
+      c.id as customer_id,
+      c.code as customer_code,
       c.name as customer_name,
       d.name as distributor_name,
-      d.code as distributor_code
+      d.code as distributor_code,
+      d.group_type
     FROM distribution_splits s
     JOIN transactions t ON t.id = s.transaction_id
     JOIN customers c ON c.id = t.customer_id
@@ -569,9 +623,55 @@ export async function recordCustomerPayment(data: {
   };
 }
 
+export async function listCustomerPayments(filters?: {
+  customerId?: string;
+  from?: string;
+  to?: string;
+}): Promise<any[]> {
+  let sql = `
+    SELECT cp.*, c.code as customer_code, c.name as customer_name, t.transaction_number
+    FROM customer_payments cp
+    JOIN customers c ON c.id = cp.customer_id
+    LEFT JOIN transactions t ON t.id = cp.transaction_id
+    WHERE 1=1
+  `;
+  const params: any[] = [];
+  if (filters?.customerId) {
+    params.push(filters.customerId);
+    sql += ` AND cp.customer_id = $${params.length}`;
+  }
+  if (filters?.from) {
+    params.push(filters.from);
+    sql += ` AND cp.payment_date >= $${params.length}`;
+  }
+  if (filters?.to) {
+    params.push(filters.to);
+    sql += ` AND cp.payment_date <= $${params.length}`;
+  }
+  sql += ` ORDER BY cp.payment_date DESC, cp.created_at DESC`;
+
+  const rows = await query(sql, params);
+  return rows.map((r: any) => ({
+    id: r.id,
+    payment_number: r.payment_number,
+    payment_date: formatDate(r.payment_date),
+    customer_id: r.customer_id,
+    customer_code: r.customer_code || null,
+    customer_name: r.customer_name,
+    transaction_id: r.transaction_id || null,
+    transaction_number: r.transaction_number || null,
+    amount_aed: roundTo(Number(r.amount_aed), 2),
+    payment_method: r.payment_method || "CASH",
+    reference_number: r.reference_number || null,
+    notes: r.notes || null,
+    created_at: formatDateTime(r.created_at),
+  }));
+}
+
 export async function getCustomerLedger(customerId: string): Promise<{
   customer: Customer;
   entries: Array<{
+    id: string;
     date: string;
     type: 'TRANSACTION' | 'PAYMENT';
     reference: string;
@@ -585,7 +685,7 @@ export async function getCustomerLedger(customerId: string): Promise<{
   if (!customer) throw new Error("Customer not found");
 
   const txns = await query(`
-    SELECT transaction_date as date, 'TRANSACTION' as type, transaction_number as reference,
+    SELECT id, transaction_date as date, 'TRANSACTION' as type, transaction_number as reference,
            'Order ' || inr_amount || ' INR @ ' || customer_rate as description,
            aed_amount as debit_aed, 0.0 as credit_aed, created_at
     FROM transactions
@@ -593,7 +693,7 @@ export async function getCustomerLedger(customerId: string): Promise<{
   `, [customerId]);
 
   const pays = await query(`
-    SELECT payment_date as date, 'PAYMENT' as type, payment_number as reference,
+    SELECT id, payment_date as date, 'PAYMENT' as type, payment_number as reference,
            'Payment (' || payment_method || ')' as description,
            0.0 as debit_aed, amount_aed as credit_aed, created_at
     FROM customer_payments
@@ -603,6 +703,7 @@ export async function getCustomerLedger(customerId: string): Promise<{
   // Merge & sort chronologically
   const allEvents = [...txns, ...pays].map(e => ({
     ...e,
+    id: e.id,
     date: formatDate(e.date),
     debit_aed: roundTo(Number(e.debit_aed || 0), 2),
     credit_aed: roundTo(Number(e.credit_aed || 0), 2),
@@ -616,6 +717,7 @@ export async function getCustomerLedger(customerId: string): Promise<{
   const entries = allEvents.map(e => {
     running = roundTo(running + e.debit_aed - e.credit_aed, 2);
     return {
+      id: e.id,
       date: e.date,
       type: e.type as 'TRANSACTION' | 'PAYMENT',
       reference: e.reference,
@@ -630,23 +732,63 @@ export async function getCustomerLedger(customerId: string): Promise<{
 }
 
 // ---------------- DISTRIBUTORS & INDIA PARTIES ----------------
-export async function listDistributors(): Promise<DistributorRecord[]> {
-  const rows = await query(`
+export async function listDistributors(groupType?: "IND" | "AED"): Promise<DistributorRecord[]> {
+  let sql = `
     SELECT d.*,
            COALESCE((SELECT SUM(s.inr_amount) FROM distribution_splits s WHERE s.distributor_id = d.id), 0) as total_splits_inr,
            COALESCE((SELECT SUM(s.paid_amount_inr) FROM distribution_splits s WHERE s.distributor_id = d.id), 0) as total_splits_paid_inr,
            COALESCE((SELECT SUM(s.balance_inr) FROM distribution_splits s WHERE s.distributor_id = d.id), 0) as splits_balance_inr
     FROM distributors d
-    ORDER BY d.name ASC
-  `);
+    WHERE 1=1
+  `;
+  const params: any[] = [];
+  if (groupType) {
+    params.push(groupType);
+    sql += ` AND d.group_type = $${params.length}`;
+  }
+  sql += ` ORDER BY d.group_type ASC, d.name ASC`;
 
+  const rows = await query(sql, params);
   return rows.map(d => ({
     ...d,
+    group_type: d.group_type || "IND",
     total_splits_inr: roundTo(Number(d.total_splits_inr || 0), 2),
     total_splits_paid_inr: roundTo(Number(d.total_splits_paid_inr || 0), 2),
     splits_balance_inr: roundTo(Number(d.splits_balance_inr || 0), 2),
     created_at: formatDateTime(d.created_at),
   }));
+}
+
+/** Shortcut — only IND group (India-side parties for distribution splits) */
+export async function listIndiaDistributors(): Promise<DistributorRecord[]> {
+  return listDistributors("IND");
+}
+
+/** Shortcut — only AED group (AED-side parties) */
+export async function listAedDistributors(): Promise<DistributorRecord[]> {
+  return listDistributors("AED");
+}
+
+export async function createDistributor(data: {
+  name: string;
+  code?: string;
+  group_type: "IND" | "AED";
+  partner_type?: string;
+  default_settlement_currency?: string;
+}): Promise<DistributorRecord> {
+  const id = crypto.randomUUID();
+  const suffix = data.group_type === "IND" ? "-IND" : "-AED";
+  const code = data.code || (data.name.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10) + suffix);
+  const partnerType = data.partner_type || (data.group_type === "IND" ? "INDIA_DISTRIBUTOR" : "AED_DISTRIBUTOR");
+  const currency = data.default_settlement_currency || (data.group_type === "IND" ? "INR" : "AED");
+
+  await execute(`
+    INSERT INTO distributors (id, code, name, partner_type, group_type, default_settlement_currency, status)
+    VALUES ($1, $2, $3, $4, $5, $6, 'ACTIVE')
+  `, [id, code, data.name.trim(), partnerType, data.group_type, currency]);
+
+  const all = await listDistributors();
+  return all.find(d => d.id === id)!;
 }
 
 export async function listBankDistripAccounts(): Promise<BankDistripAccountRecord[]> {
@@ -666,7 +808,7 @@ export async function listBankDistripAccounts(): Promise<BankDistripAccountRecor
 
 export async function listBankDistripRecords(accountId?: string): Promise<BankDistripRecord[]> {
   let sql = `
-    SELECT r.*, a.account_name
+    SELECT r.*, a.account_code, a.account_name
     FROM bank_distrip_records r
     JOIN bank_distrip_accounts a ON a.id = r.account_id
   `;
@@ -863,4 +1005,214 @@ export async function getDailySummaryReport(): Promise<any[]> {
     GROUP BY transaction_date
     ORDER BY transaction_date DESC
   `);
+}
+
+// ---------------- EDIT & DELETE CAPABILITIES ----------------
+
+export async function updateTransaction(id: string, data: {
+  transaction_date?: string;
+  customer_id?: string;
+  inr_amount?: number;
+  customer_rate?: number;
+  base_rate?: number;
+  delivery_charge_pct?: number;
+  notes?: string;
+  reason?: string;
+}): Promise<TransactionRecord> {
+  const existing = await getTransaction(id);
+  if (!existing) throw new Error("Transaction not found");
+
+  const inrAmount = data.inr_amount ?? existing.inr_amount;
+  const customerRate = data.customer_rate ?? existing.customer_rate;
+  const baseRate = data.base_rate ?? existing.base_rate;
+  const deliveryChargePct = data.delivery_charge_pct ?? existing.delivery_charge_pct;
+  const transactionDate = data.transaction_date ?? existing.transaction_date;
+  const customerId = data.customer_id ?? existing.customer_id;
+  const notes = data.notes !== undefined ? data.notes : existing.notes;
+
+  // Validate splits if INR amount changed
+  const currentSplits = await listDistributionSplits({ transaction_id: id });
+  const totalSplitsInr = currentSplits.reduce((sum, s) => sum + s.inr_amount, 0);
+  if (inrAmount < totalSplitsInr) {
+    throw new Error(`New order amount (₹${inrAmount.toLocaleString()}) cannot be less than already allocated splits (₹${totalSplitsInr.toLocaleString()}). Adjust splits first.`);
+  }
+
+  // Authoritative re-calculation
+  const calc = calculateTransaction({
+    inrAmount,
+    customerRate,
+    baseRate,
+    deliveryChargePct,
+  });
+
+  await execute(`
+    UPDATE transactions
+    SET transaction_date = $1, customer_id = $2, inr_amount = $3,
+        customer_rate = $4, aed_amount = $5, base_rate = $6,
+        cost_aed = $7, gross_profit_aed = $8, delivery_charge_pct = $9,
+        delivery_charge_aed = $10, net_profit_aed = $11, notes = $12,
+        updated_at = NOW()
+    WHERE id = $13
+  `, [
+    transactionDate, customerId, calc.inrAmount,
+    calc.customerRate, calc.aedAmount, calc.baseRate,
+    calc.costAed, calc.grossProfitAed, calc.deliveryChargePct,
+    calc.deliveryChargeAed, calc.netProfitAed, notes || null,
+    id
+  ]);
+
+  // Log audit
+  await execute(`
+    INSERT INTO audit_logs (id, entity_name, entity_id, action, old_values, new_values, reason)
+    VALUES ($1, 'TRANSACTION', $2, 'UPDATE', $3, $4, $5)
+  `, [
+    crypto.randomUUID(), id, JSON.stringify(existing), JSON.stringify(calc),
+    data.reason || "User updated transaction"
+  ]);
+
+  return (await getTransaction(id))!;
+}
+
+export async function deleteTransaction(id: string): Promise<void> {
+  const existing = await getTransaction(id);
+  if (!existing) throw new Error("Transaction not found");
+
+  await execute(`DELETE FROM distribution_splits WHERE transaction_id = $1`, [id]);
+  await execute(`UPDATE customer_payments SET transaction_id = NULL WHERE transaction_id = $1`, [id]);
+  await execute(`DELETE FROM audit_logs WHERE entity_id = $1`, [id]);
+  await execute(`DELETE FROM transactions WHERE id = $1`, [id]);
+}
+
+export async function updateCustomer(id: string, data: {
+  name?: string;
+  code?: string;
+  phone?: string;
+  default_rate?: number;
+  status?: string;
+}): Promise<Customer> {
+  const existing = await getCustomer(id);
+  if (!existing) throw new Error("Customer not found");
+
+  const name = data.name !== undefined ? data.name.trim() : existing.name;
+  const code = data.code !== undefined ? data.code.trim() : existing.code;
+  const phone = data.phone !== undefined ? data.phone.trim() : existing.phone;
+  const defaultRate = data.default_rate !== undefined ? data.default_rate : existing.default_rate;
+  const status = data.status !== undefined ? data.status : existing.status;
+
+  await execute(`
+    UPDATE customers
+    SET name = $1, code = $2, phone = $3, default_rate = $4, status = $5, updated_at = NOW()
+    WHERE id = $6
+  `, [name, code, phone || null, defaultRate || 38.25, status, id]);
+
+  return (await getCustomer(id))!;
+}
+
+export async function deleteCustomer(id: string): Promise<void> {
+  const txns = await query(`SELECT id FROM transactions WHERE customer_id = $1`, [id]);
+  if (txns.length > 0) {
+    throw new Error(`Cannot delete customer who has ${txns.length} active transactions. Delete or void their transactions first.`);
+  }
+  await execute(`DELETE FROM customer_payments WHERE customer_id = $1`, [id]);
+  await execute(`DELETE FROM customers WHERE id = $1`, [id]);
+}
+
+export async function deleteCustomerPayment(id: string): Promise<void> {
+  await execute(`DELETE FROM customer_payments WHERE id = $1`, [id]);
+}
+
+export async function updateDistributionSplit(id: string, data: {
+  distributor_id?: string;
+  split_date?: string;
+  inr_amount?: number;
+  wholesale_rate?: number;
+  notes?: string;
+}): Promise<DistributionSplitRecord> {
+  const existingSplit = await queryOne(`SELECT * FROM distribution_splits WHERE id = $1`, [id]);
+  if (!existingSplit) throw new Error("Split not found");
+
+  const txn = await getTransaction(existingSplit.transaction_id);
+  if (!txn) throw new Error("Parent transaction not found");
+
+  const newInr = data.inr_amount !== undefined ? Number(data.inr_amount) : Number(existingSplit.inr_amount);
+  const distId = data.distributor_id || existingSplit.distributor_id;
+  const splitDate = data.split_date || existingSplit.split_date;
+  const wholesaleRate = data.wholesale_rate !== undefined ? data.wholesale_rate : (existingSplit.wholesale_rate || txn.base_rate);
+  const notes = data.notes !== undefined ? data.notes : existingSplit.notes;
+
+  const allSplits = await listDistributionSplits({ transaction_id: txn.id });
+  const otherSplitsTotal = allSplits
+    .filter(s => s.id !== id)
+    .reduce((sum, s) => sum + s.inr_amount, 0);
+
+  if (otherSplitsTotal + newInr > txn.inr_amount) {
+    const maxAllowed = txn.inr_amount - otherSplitsTotal;
+    throw new Error(`New split amount (₹${newInr.toLocaleString()}) exceeds available unallocated order balance (₹${maxAllowed.toLocaleString()}).`);
+  }
+
+  const aedEq = wholesaleRate ? roundTo(newInr / wholesaleRate, 2) : 0;
+  const paidInr = Number(existingSplit.paid_amount_inr || 0);
+  const balanceInr = roundTo(newInr - paidInr, 2);
+
+  await execute(`
+    UPDATE distribution_splits
+    SET distributor_id = $1, split_date = $2, inr_amount = $3,
+        wholesale_rate = $4, aed_equivalent = $5, balance_inr = $6, notes = $7
+    WHERE id = $8
+  `, [
+    distId, splitDate, roundTo(newInr, 2),
+    wholesaleRate, aedEq, balanceInr, notes || null,
+    id
+  ]);
+
+  const updatedRows = await listDistributionSplits({ transaction_id: txn.id });
+  return updatedRows.find(s => s.id === id)!;
+}
+
+export async function deleteBankDistripRecord(id: string): Promise<void> {
+  await execute(`DELETE FROM bank_distrip_records WHERE id = $1`, [id]);
+}
+
+export async function updateBankDistripRecord(id: string, data: {
+  record_date?: string;
+  order_inr?: number;
+  commission_inr?: number;
+  paid_inr?: number;
+  notes?: string;
+}): Promise<BankDistripRecord> {
+  const existing = await queryOne(`SELECT * FROM bank_distrip_records WHERE id = $1`, [id]);
+  if (!existing) throw new Error("Record not found");
+
+  const recordDate = data.record_date || existing.record_date;
+  const orderInr = data.order_inr !== undefined ? Number(data.order_inr) : Number(existing.order_inr);
+  const commissionInr = data.commission_inr !== undefined ? Number(data.commission_inr) : Number(existing.commission_inr);
+  const paidInr = data.paid_inr !== undefined ? Number(data.paid_inr) : Number(existing.paid_inr);
+  const notes = data.notes !== undefined ? data.notes : existing.notes;
+
+  const lastRecord = await queryOne(`
+    SELECT balance_inr 
+    FROM bank_distrip_records 
+    WHERE account_id = $1 AND record_date <= $2 AND id != $3
+    ORDER BY record_date DESC, created_at DESC 
+    LIMIT 1
+  `, [existing.account_id, recordDate, id]);
+
+  const prevBal = lastRecord ? Number(lastRecord.balance_inr) : 0;
+  const newBal = roundTo(prevBal + orderInr + commissionInr - paidInr, 2);
+
+  await execute(`
+    UPDATE bank_distrip_records
+    SET record_date = $1, order_inr = $2, commission_inr = $3,
+        paid_inr = $4, balance_inr = $5, notes = $6
+    WHERE id = $7
+  `, [recordDate, orderInr, commissionInr, paidInr, newBal, notes || null, id]);
+
+  const updated = await queryOne(`
+    SELECT r.*, a.account_name
+    FROM bank_distrip_records r
+    JOIN bank_distrip_accounts a ON a.id = r.account_id
+    WHERE r.id = $1
+  `, [id]);
+
+  return mapBankDistripRecord(updated);
 }

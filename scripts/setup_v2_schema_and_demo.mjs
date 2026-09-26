@@ -61,18 +61,18 @@ async function main() {
   console.log("Ensuring all India Parties and Bank Accounts exist with proper classification...");
   // India Distributors & Reference Parties
   const parties = [
-    { code: 'MK', name: 'MK Account', type: 'HYBRID', note: 'Single unified MK account (confirmed by client: duplicate block merged)' },
-    { code: 'ISMAIL', name: 'ISMAIL Payouts', type: 'INDIA_DISTRIBUTOR', note: 'India-side distribution partner' },
-    { code: 'SARABU', name: 'SARABU Wholesale', type: 'INDIA_DISTRIBUTOR', note: 'India-side distribution partner' },
-    { code: 'SALA', name: 'SALA Network', type: 'HYBRID', note: 'India-side distributor & bank payout network' },
-    { code: 'NNG', name: 'NNG Bank', type: 'HYBRID', note: 'India-side distributor & bank account' },
-    { code: 'USAIN', name: 'USAIN Bank', type: 'BANK_ACCOUNT', note: 'Bank distribution account' },
-    { code: 'BLACK GRP', name: 'Black Group Payout', type: 'BANK_ACCOUNT', note: 'Bank distribution account' },
+    { code: 'MK', name: 'MK', type: 'HYBRID', note: 'Single unified MK account (confirmed by client: duplicate block merged)' },
+    { code: 'ISMAIL', name: 'ISMAIL', type: 'INDIA_DISTRIBUTOR', note: 'India-side distribution partner' },
+    { code: 'SARABU', name: 'SARABU', type: 'INDIA_DISTRIBUTOR', note: 'India-side distribution partner' },
+    { code: 'SALA', name: 'SALA', type: 'HYBRID', note: 'India-side distributor & bank payout network' },
+    { code: 'NNG', name: 'NNG', type: 'HYBRID', note: 'India-side distributor & bank account' },
+    { code: 'USAIN', name: 'USAIN', type: 'BANK_ACCOUNT', note: 'Bank distribution account' },
+    { code: 'BLACK GRP', name: 'BLACK GRP', type: 'BANK_ACCOUNT', note: 'Bank distribution account' },
     // Unconfirmed parties
-    { code: 'AWAFI', name: 'Awafi Trading', type: 'UNCONFIRMED_PARTNER', note: 'REQUIRES CLIENT CONFIRMATION: Role and classification pending client confirmation' },
-    { code: 'NF2', name: 'NF2 Liquidity', type: 'UNCONFIRMED_PARTNER', note: 'REQUIRES CLIENT CONFIRMATION: Role and classification pending client confirmation' },
-    { code: 'HAJA', name: 'Haja Exchange', type: 'UNCONFIRMED_PARTNER', note: 'REQUIRES CLIENT CONFIRMATION: Role and classification pending client confirmation' },
-    { code: 'BASID', name: 'Basid Payouts', type: 'UNCONFIRMED_PARTNER', note: 'REQUIRES CLIENT CONFIRMATION: Role and classification pending client confirmation' }
+    { code: 'AWAFI', name: 'AWAFI', type: 'UNCONFIRMED_PARTNER', note: 'REQUIRES CLIENT CONFIRMATION: Role and classification pending client confirmation' },
+    { code: 'NF2', name: 'NF2', type: 'UNCONFIRMED_PARTNER', note: 'REQUIRES CLIENT CONFIRMATION: Role and classification pending client confirmation' },
+    { code: 'HAJA', name: 'HAJA', type: 'UNCONFIRMED_PARTNER', note: 'REQUIRES CLIENT CONFIRMATION: Role and classification pending client confirmation' },
+    { code: 'BASID', name: 'BASID', type: 'UNCONFIRMED_PARTNER', note: 'REQUIRES CLIENT CONFIRMATION: Role and classification pending client confirmation' }
   ];
 
   for (const p of parties) {

@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { listDistributionSplits, createDistributionSplit, deleteDistributionSplit } from "@/lib/repository";
+import {
+  listDistributionSplits,
+  createDistributionSplit,
+  updateDistributionSplit,
+  deleteDistributionSplit,
+} from "@/lib/repository";
 import { z } from "zod";
 
 const createSplitSchema = z.object({
@@ -7,6 +12,15 @@ const createSplitSchema = z.object({
   distributor_id: z.string().min(1, "Distributor ID is required"),
   split_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"),
   inr_amount: z.number().positive("Distribution amount must be greater than zero"),
+  wholesale_rate: z.number().positive().optional(),
+  notes: z.string().optional(),
+});
+
+const updateSplitSchema = z.object({
+  id: z.string().min(1, "Split ID is required"),
+  distributor_id: z.string().min(1).optional(),
+  split_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format").optional(),
+  inr_amount: z.number().positive().optional(),
   wholesale_rate: z.number().positive().optional(),
   notes: z.string().optional(),
 });
@@ -41,6 +55,18 @@ export async function POST(request: Request) {
     return NextResponse.json(created, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to create distribution split" }, { status: 400 });
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    const validated = updateSplitSchema.parse(body);
+
+    const updated = await updateDistributionSplit(validated.id, validated);
+    return NextResponse.json(updated);
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || "Failed to update distribution split" }, { status: 400 });
   }
 }
 

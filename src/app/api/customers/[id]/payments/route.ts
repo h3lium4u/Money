@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { recordCustomerPayment } from "@/lib/repository";
+import { recordCustomerPayment, deleteCustomerPayment } from "@/lib/repository";
 import { z } from "zod";
 
 const schema = z.object({
@@ -28,5 +28,20 @@ export async function POST(
     return NextResponse.json(payment, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to record payment" }, { status: 400 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const paymentId = searchParams.get("paymentId");
+    if (!paymentId) {
+      return NextResponse.json({ error: "paymentId is required" }, { status: 400 });
+    }
+
+    await deleteCustomerPayment(paymentId);
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || "Failed to delete payment" }, { status: 400 });
   }
 }

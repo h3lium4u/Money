@@ -14,6 +14,7 @@ import {
   Layers,
   UserPlus,
 } from "lucide-react";
+import { numberToIndianWords } from "@/lib/number-to-words";
 
 interface CustomerOption {
   id: string;
@@ -284,6 +285,7 @@ export default function NewTransactionPage() {
   }
 
   const selectedCustomer = customers.find((c) => c.id === customerId);
+  const inrWords = numberToIndianWords(inrAmount);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -411,21 +413,36 @@ export default function NewTransactionPage() {
 
           {/* Section: INR Order Amount */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-              INR Order Amount
-            </label>
+            <div className="flex flex-wrap items-center justify-between gap-1 mb-1">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                INR Order Amount
+              </label>
+              {inrWords && (
+                <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 shadow-2xs">
+                  {inrWords}
+                </span>
+              )}
+            </div>
             <div className="relative">
               <span className="absolute left-3.5 top-2.5 text-slate-400 font-bold text-sm">₹</span>
               <input
                 type="number"
                 step="any"
                 required
-                placeholder="1000000"
+                placeholder="120000"
                 value={inrAmount}
                 onChange={(e) => setInrAmount(e.target.value)}
-                className="w-full text-base font-bold pl-8 pr-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full text-base font-bold pl-8 pr-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-2xs"
               />
             </div>
+            {inrWords && (
+              <div className="mt-1.5 p-2 bg-emerald-50/90 border border-emerald-200/90 rounded-lg flex items-center gap-2 text-xs text-emerald-900 animate-in fade-in duration-100">
+                <span className="font-bold text-[10px] tracking-wider uppercase bg-emerald-200 text-emerald-950 px-1.5 py-0.5 rounded font-mono shrink-0">
+                  In Words:
+                </span>
+                <span className="font-semibold">{inrWords}</span>
+              </div>
+            )}
           </div>
 
           {/* Section: Rates */}
@@ -557,7 +574,7 @@ export default function NewTransactionPage() {
                     >
                       {distributors.map((d) => (
                         <option key={d.id} value={d.id}>
-                          {d.code} • {d.name}
+                          {d.name}
                         </option>
                       ))}
                     </select>

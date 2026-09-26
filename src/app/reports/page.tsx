@@ -96,11 +96,12 @@ export default function ReportsPage() {
           </button>
 
           <a
-            href={`/api/reports/export-excel${fromDate ? `?from=${fromDate}&to=${toDate}` : ""}`}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm"
+            href={`/api/reports/export-excel${fromDate && toDate ? `?from=${fromDate}&to=${toDate}` : ""}`}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition-all"
+            title="Download complete Master Excel Workbook containing all sheets, customer IDs, and financial breakdowns"
           >
-            <ArrowDownToLine className="w-3.5 h-3.5" />
-            <span>Download Clean Excel (.xlsx)</span>
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>Download Master Excel (.xlsx)</span>
           </a>
         </div>
       </div>

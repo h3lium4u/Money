@@ -122,35 +122,25 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Demo Banner */}
-      <div className="bg-gradient-to-r from-emerald-900 to-slate-900 text-white p-4 rounded-xl shadow-sm border border-emerald-700/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-xs">
-            DEMO
-          </div>
-          <div>
-            <h3 className="text-sm font-bold flex items-center gap-2">
-              <span>Prototype Loaded with 5 Realistic Demo Remittances</span>
-              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30 uppercase tracking-wider font-semibold">
-                Live Neon DB
-              </span>
-            </h3>
-            <p className="text-xs text-slate-300">
-              Dubai Customer Accounting and India Distribution are strictly separated. Calculations authoritative on backend.
-            </p>
-          </div>
+      {/* Header and Quick Actions */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Remittance Dashboard</h2>
+          <p className="text-xs text-slate-500">
+            Real-time Dubai ➔ India remittance volume, margins, profit, and receivables tracking.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Link
             href="/transactions/new"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-slate-950 text-xs font-bold rounded-lg hover:bg-emerald-400 transition-colors shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 transition-colors shadow-sm"
           >
             <PlusCircle className="w-3.5 h-3.5" />
             <span>New Transfer</span>
           </Link>
           <Link
             href="/reports"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-slate-200 text-xs font-medium rounded-lg hover:bg-slate-700 transition-colors border border-slate-700"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg hover:bg-slate-50 transition-colors shadow-sm"
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
             <span>Excel Export</span>
@@ -306,7 +296,7 @@ export default function DashboardPage() {
           Secondary Operational Balances (Receivables & India Distribution)
         </h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* 1. Customer Outstanding Balance */}
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
             <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
@@ -324,7 +314,24 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* 2. India Distribution Pending */}
+          {/* 2. Total AED Collected */}
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
+              <span className="flex items-center gap-1.5">
+                <Banknote className="w-3.5 h-3.5 text-emerald-500" />
+                Total AED Collected
+              </span>
+              <span className="text-[10px] text-slate-400 uppercase">Received</span>
+            </div>
+            <div className="text-xl font-bold text-emerald-600">
+              {formatAED(kpis?.totalAedCollected)}
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1">
+              Payments successfully collected from customers
+            </p>
+          </div>
+
+          {/* 3. India Distribution Pending */}
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
             <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
               <span className="flex items-center gap-1.5">
@@ -341,7 +348,7 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* 3. Bank Distribution Pending */}
+          {/* 4. Bank Distribution Pending */}
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
             <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
               <span className="flex items-center gap-1.5">
@@ -358,7 +365,24 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* 4. Delivery Charges Total */}
+          {/* 5. Gross Profit */}
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
+              <span className="flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5 text-indigo-500" />
+                Gross Profit
+              </span>
+              <span className="text-[10px] text-slate-400 uppercase">Profit</span>
+            </div>
+            <div className="text-xl font-bold text-indigo-600">
+              {formatAED(kpis?.grossProfitAed)}
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1">
+              Profit before delivery fee deductions
+            </p>
+          </div>
+
+          {/* 6. Delivery Charges Total */}
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
             <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
               <span className="flex items-center gap-1.5">
@@ -458,17 +482,17 @@ export default function DashboardPage() {
                 recentTxns.map((t) => (
                   <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="px-4 py-3 font-mono font-bold text-slate-900">
-                      <div className="flex items-center gap-1.5">
-                        <span>{t.transaction_number}</span>
-                        {t.is_demo && (
-                          <span className="text-[9px] bg-slate-100 text-slate-600 px-1 py-0.2 rounded border border-slate-200 uppercase font-semibold">
-                            DEMO
-                          </span>
-                        )}
-                      </div>
+                      <span>{t.transaction_number}</span>
                     </td>
                     <td className="px-4 py-3 text-slate-600">{t.transaction_date}</td>
-                    <td className="px-4 py-3 font-bold text-slate-800">{t.customer_name}</td>
+                    <td className="px-4 py-3">
+                      <div className="font-bold text-slate-800">{t.customer_name}</div>
+                      {t.customer_code && (
+                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                          {t.customer_code}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-4 py-3 font-bold text-slate-900">{formatINR(t.inr_amount)}</td>
                     <td className="px-4 py-3 font-bold text-slate-900">{formatAED(t.aed_amount)}</td>
                     <td className="px-4 py-3 font-bold text-emerald-600">{formatAED(t.net_profit_aed)}</td>
