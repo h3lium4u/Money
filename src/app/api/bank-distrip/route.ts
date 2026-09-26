@@ -16,8 +16,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const accountId = searchParams.get("accountId") || undefined;
 
-    const accounts = listBankDistripAccounts();
-    const records = listBankDistripRecords(accountId);
+    const accounts = await listBankDistripAccounts();
+    const records = await listBankDistripRecords(accountId);
 
     return NextResponse.json({ accounts, records });
   } catch (error: any) {
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const validated = createRecordSchema.parse(body);
 
-    const record = createBankDistripRecord(validated);
+    const record = await createBankDistripRecord(validated);
     return NextResponse.json(record, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to create bank distrip record" }, { status: 400 });

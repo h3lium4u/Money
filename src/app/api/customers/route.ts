@@ -11,7 +11,7 @@ const schema = z.object({
 
 export async function GET() {
   try {
-    const customers = listCustomers();
+    const customers = await listCustomers();
     return NextResponse.json(customers);
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to list customers" }, { status: 500 });
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const validated = schema.parse(body);
 
-    const created = createCustomer(validated);
+    const created = await createCustomer(validated);
     return NextResponse.json(created, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to create customer" }, { status: 400 });

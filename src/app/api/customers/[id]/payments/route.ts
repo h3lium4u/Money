@@ -20,7 +20,7 @@ export async function POST(
     const body = await request.json();
     const validated = schema.parse(body);
 
-    const payment = recordCustomerPayment({
+    const payment = await recordCustomerPayment({
       customer_id: id,
       ...validated,
     });

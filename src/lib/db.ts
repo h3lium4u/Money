@@ -1,145 +1,62 @@
-import { DatabaseSync } from "node:sqlite";
-import path from "node:path";
-import fs from "node:fs";
+import { Pool, types } from "@neondatabase/serverless";
 
-// Path for local database storage
-const dbDir = path.resolve(process.cwd(), "data");
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
+// Keep PostgreSQL DATE (OID 1082) as YYYY-MM-DD string to avoid timezone offsets
+types.setTypeParser(1082, (val: string) => val);
+
+let pool: Pool | null = null;
+
+export function isNeonEnabled(): boolean {
+  return Boolean(process.env.DATABASE_URL && process.env.DATABASE_URL.trim().length > 0);
 }
-const dbPath = path.join(dbDir, "remittance.db");
 
-// Singleton instance
-let sqliteDb: DatabaseSync | null = null;
-
-export function getDb(): DatabaseSync {
-  if (!sqliteDb) {
-    sqliteDb = new DatabaseSync(dbPath);
-    initSchema(sqliteDb);
+export function getPool(): Pool | null {
+  if (!isNeonEnabled()) return null;
+  if (!pool) {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+    });
   }
-  return sqliteDb;
+  return pool;
 }
 
-function initSchema(db: DatabaseSync) {
-  db.exec(`
-    PRAGMA foreign_keys = ON;
+export async function query<T = any>(sql: string, params: any[] = []): Promise<T[]> {
+  const p = getPool();
+  if (p) {
+    const res = await p.query(sql, params);
+    return res.rows as T[];
+  }
 
-    CREATE TABLE IF NOT EXISTS customers (
-      id TEXT PRIMARY KEY,
-      code TEXT UNIQUE NOT NULL,
-      name TEXT NOT NULL,
-      phone TEXT,
-      default_rate REAL,
-      status TEXT NOT NULL DEFAULT 'ACTIVE',
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
+  // Fallback to SQLite
+  const { getSqliteDb } = await import("./sqlite_fallback");
+  const sqlite = getSqliteDb();
+  let index = 0;
+  // Replace $1, $2 with ? for SQLite
+  const sqliteSql = sql
+    .replace(/\$\d+/g, () => "?")
+    .replace(/NOW\(\)/gi, "datetime('now')");
+  
+  const stmt = sqlite.prepare(sqliteSql);
+  return stmt.all(...params) as T[];
+}
 
-    CREATE TABLE IF NOT EXISTS distributors (
-      id TEXT PRIMARY KEY,
-      code TEXT UNIQUE NOT NULL,
-      name TEXT NOT NULL,
-      partner_type TEXT NOT NULL, -- 'BANK_DISTRIBUTOR', 'WHOLESALE_PARTNER', 'HYBRID'
-      default_settlement_currency TEXT NOT NULL DEFAULT 'AED',
-      status TEXT NOT NULL DEFAULT 'ACTIVE',
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
+export async function queryOne<T = any>(sql: string, params: any[] = []): Promise<T | null> {
+  const rows = await query<T>(sql, params);
+  return rows.length > 0 ? rows[0] : null;
+}
 
-    CREATE TABLE IF NOT EXISTS transactions (
-      id TEXT PRIMARY KEY,
-      transaction_number TEXT UNIQUE NOT NULL,
-      transaction_date TEXT NOT NULL,
-      customer_id TEXT NOT NULL REFERENCES customers(id),
-      inr_amount REAL NOT NULL,
-      customer_rate REAL NOT NULL,
-      aed_amount REAL NOT NULL,
-      base_rate REAL NOT NULL,
-      cost_aed REAL NOT NULL,
-      gross_profit_aed REAL NOT NULL,
-      delivery_charge_pct REAL NOT NULL DEFAULT 0.20,
-      delivery_charge_aed REAL NOT NULL DEFAULT 0.00,
-      net_profit_aed REAL NOT NULL,
-      distributor_id TEXT REFERENCES distributors(id),
-      status TEXT NOT NULL DEFAULT 'CONFIRMED', -- 'CONFIRMED', 'CANCELLED', 'VOIDED'
-      notes TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
+export async function execute(sql: string, params: any[] = []): Promise<void> {
+  const p = getPool();
+  if (p) {
+    await p.query(sql, params);
+    return;
+  }
 
-    CREATE TABLE IF NOT EXISTS customer_payments (
-      id TEXT PRIMARY KEY,
-      payment_number TEXT UNIQUE NOT NULL,
-      payment_date TEXT NOT NULL,
-      customer_id TEXT NOT NULL REFERENCES customers(id),
-      transaction_id TEXT REFERENCES transactions(id),
-      amount_aed REAL NOT NULL,
-      payment_method TEXT NOT NULL DEFAULT 'CASH',
-      reference_number TEXT,
-      notes TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS wholesale_settlements (
-      id TEXT PRIMARY KEY,
-      settlement_date TEXT NOT NULL,
-      distributor_id TEXT NOT NULL REFERENCES distributors(id),
-      inr_amount REAL NOT NULL DEFAULT 0.00,
-      wholesale_rate REAL NOT NULL,
-      aed_equivalent REAL NOT NULL,
-      paid_amount_aed REAL NOT NULL DEFAULT 0.00,
-      balance_aed REAL NOT NULL,
-      notes TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS bank_distrip_accounts (
-      id TEXT PRIMARY KEY,
-      account_code TEXT UNIQUE NOT NULL,
-      account_name TEXT NOT NULL,
-      bank_name TEXT,
-      account_number TEXT,
-      status TEXT NOT NULL DEFAULT 'ACTIVE',
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS bank_distrip_records (
-      id TEXT PRIMARY KEY,
-      record_date TEXT NOT NULL,
-      account_id TEXT NOT NULL REFERENCES bank_distrip_accounts(id),
-      order_inr REAL NOT NULL DEFAULT 0.00,
-      commission_inr REAL NOT NULL DEFAULT 0.00,
-      paid_inr REAL NOT NULL DEFAULT 0.00,
-      balance_inr REAL NOT NULL,
-      notes TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS expenses (
-      id TEXT PRIMARY KEY,
-      expense_date TEXT NOT NULL,
-      category TEXT NOT NULL,
-      description TEXT,
-      amount_aed REAL NOT NULL,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS audit_logs (
-      id TEXT PRIMARY KEY,
-      entity_name TEXT NOT NULL,
-      entity_id TEXT NOT NULL,
-      action TEXT NOT NULL, -- 'CREATE', 'UPDATE', 'CANCEL', 'VOID'
-      old_values TEXT,
-      new_values TEXT,
-      user_name TEXT DEFAULT 'Admin',
-      reason TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(transaction_date);
-    CREATE INDEX IF NOT EXISTS idx_transactions_customer ON transactions(customer_id);
-    CREATE INDEX IF NOT EXISTS idx_payments_customer ON customer_payments(customer_id);
-    CREATE INDEX IF NOT EXISTS idx_payments_date ON customer_payments(payment_date);
-    CREATE INDEX IF NOT EXISTS idx_distrip_account ON bank_distrip_records(account_id);
-    CREATE INDEX IF NOT EXISTS idx_distrip_date ON bank_distrip_records(record_date);
-  `);
+  // Fallback to SQLite
+  const { getSqliteDb } = await import("./sqlite_fallback");
+  const sqlite = getSqliteDb();
+  const sqliteSql = sql
+    .replace(/\$\d+/g, () => "?")
+    .replace(/NOW\(\)/gi, "datetime('now')");
+  
+  sqlite.prepare(sqliteSql).run(...params);
 }

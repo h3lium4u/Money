@@ -1,4 +1,4 @@
-import { getDb } from "@/lib/db";
+import { query, queryOne, execute } from "@/lib/db";
 import { calculateTransaction, roundTo } from "@/lib/calculations";
 import crypto from "node:crypto";
 
@@ -90,10 +90,81 @@ export interface BankDistripRecord {
   created_at: string;
 }
 
+function formatDate(val: any): string {
+  if (!val) return "";
+  if (typeof val === "string") return val.slice(0, 10);
+  if (val instanceof Date) return val.toISOString().slice(0, 10);
+  return String(val).slice(0, 10);
+}
+
+function formatDateTime(val: any): string {
+  if (!val) return new Date().toISOString();
+  if (typeof val === "string") return val;
+  if (val instanceof Date) return val.toISOString();
+  return String(val);
+}
+
+function mapCustomerRecord(r: any): Customer {
+  const totalInr = roundTo(Number(r.total_inr || 0), 2);
+  const totalAed = roundTo(Number(r.total_aed || 0), 2);
+  const totalPaid = roundTo(Number(r.total_paid || 0), 2);
+  return {
+    id: r.id,
+    code: r.code,
+    name: r.name,
+    phone: r.phone || null,
+    default_rate: r.default_rate != null ? Number(r.default_rate) : null,
+    status: r.status,
+    total_inr: totalInr,
+    total_aed: totalAed,
+    total_paid: totalPaid,
+    outstanding_balance: roundTo(totalAed - totalPaid, 2),
+    created_at: formatDateTime(r.created_at),
+  };
+}
+
+function mapTransactionRecord(r: any): TransactionRecord {
+  return {
+    id: r.id,
+    transaction_number: r.transaction_number,
+    transaction_date: formatDate(r.transaction_date),
+    customer_id: r.customer_id,
+    customer_name: r.customer_name,
+    inr_amount: roundTo(Number(r.inr_amount), 2),
+    customer_rate: roundTo(Number(r.customer_rate), 4),
+    aed_amount: roundTo(Number(r.aed_amount), 2),
+    base_rate: roundTo(Number(r.base_rate), 4),
+    cost_aed: roundTo(Number(r.cost_aed), 2),
+    gross_profit_aed: roundTo(Number(r.gross_profit_aed), 2),
+    delivery_charge_pct: Number(r.delivery_charge_pct),
+    delivery_charge_aed: roundTo(Number(r.delivery_charge_aed), 2),
+    net_profit_aed: roundTo(Number(r.net_profit_aed), 2),
+    distributor_id: r.distributor_id || null,
+    distributor_name: r.distributor_name || null,
+    status: r.status,
+    notes: r.notes || null,
+    created_at: formatDateTime(r.created_at),
+  };
+}
+
+function mapBankDistripRecord(r: any): BankDistripRecord {
+  return {
+    id: r.id,
+    record_date: formatDate(r.record_date),
+    account_id: r.account_id,
+    account_name: r.account_name,
+    order_inr: roundTo(Number(r.order_inr || 0), 2),
+    commission_inr: roundTo(Number(r.commission_inr || 0), 2),
+    paid_inr: roundTo(Number(r.paid_inr || 0), 2),
+    balance_inr: roundTo(Number(r.balance_inr || 0), 2),
+    notes: r.notes || null,
+    created_at: formatDateTime(r.created_at),
+  };
+}
+
 // ---------------- CUSTOMERS ----------------
-export function listCustomers(): Customer[] {
-  const db = getDb();
-  const rows = db.prepare(`
+export async function listCustomers(): Promise<Customer[]> {
+  const rows = await query(`
     SELECT 
       c.*,
       COALESCE((SELECT SUM(t.inr_amount) FROM transactions t WHERE t.customer_id = c.id AND t.status = 'CONFIRMED'), 0) as total_inr,
@@ -101,50 +172,37 @@ export function listCustomers(): Customer[] {
       COALESCE((SELECT SUM(p.amount_aed) FROM customer_payments p WHERE p.customer_id = c.id), 0) as total_paid
     FROM customers c
     ORDER BY c.name ASC
-  `).all() as any[];
+  `);
 
-  return rows.map(r => ({
-    ...r,
-    total_inr: roundTo(r.total_inr, 2),
-    total_aed: roundTo(r.total_aed, 2),
-    total_paid: roundTo(r.total_paid, 2),
-    outstanding_balance: roundTo((r.total_aed || 0) - (r.total_paid || 0), 2)
-  }));
+  return rows.map(mapCustomerRecord);
 }
 
-export function getCustomer(id: string): Customer | null {
-  const db = getDb();
-  const r = db.prepare(`
+export async function getCustomer(id: string): Promise<Customer | null> {
+  const r = await queryOne(`
     SELECT 
       c.*,
       COALESCE((SELECT SUM(t.inr_amount) FROM transactions t WHERE t.customer_id = c.id AND t.status = 'CONFIRMED'), 0) as total_inr,
       COALESCE((SELECT SUM(t.aed_amount) FROM transactions t WHERE t.customer_id = c.id AND t.status = 'CONFIRMED'), 0) as total_aed,
       COALESCE((SELECT SUM(p.amount_aed) FROM customer_payments p WHERE p.customer_id = c.id), 0) as total_paid
     FROM customers c
-    WHERE c.id = ? OR c.code = ?
-  `).get(id, id) as any;
+    WHERE c.id = $1 OR c.code = $2
+  `, [id, id]);
 
   if (!r) return null;
-  return {
-    ...r,
-    total_inr: roundTo(r.total_inr, 2),
-    total_aed: roundTo(r.total_aed, 2),
-    total_paid: roundTo(r.total_paid, 2),
-    outstanding_balance: roundTo((r.total_aed || 0) - (r.total_paid || 0), 2)
-  };
+  return mapCustomerRecord(r);
 }
 
-export function createCustomer(data: { name: string; code?: string; phone?: string; default_rate?: number }): Customer {
-  const db = getDb();
+export async function createCustomer(data: { name: string; code?: string; phone?: string; default_rate?: number }): Promise<Customer> {
   const id = crypto.randomUUID();
   const code = (data.code || data.name.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10)) + "-" + Math.floor(100 + Math.random() * 900);
   
-  db.prepare(`
+  await execute(`
     INSERT INTO customers (id, code, name, phone, default_rate, status)
-    VALUES (?, ?, ?, ?, ?, 'ACTIVE')
-  `).run(id, code, data.name.trim(), data.phone || null, data.default_rate || 38.25);
+    VALUES ($1, $2, $3, $4, $5, 'ACTIVE')
+  `, [id, code, data.name.trim(), data.phone || null, data.default_rate || 38.25]);
 
-  return getCustomer(id)!;
+  const created = await getCustomer(id);
+  return created!;
 }
 
 // ---------------- TRANSACTIONS ----------------
@@ -154,14 +212,13 @@ export function generateTransactionNumber(): string {
   return `TXN-${year}-${randomSuffix}`;
 }
 
-export function listTransactions(filters?: {
+export async function listTransactions(filters?: {
   from?: string;
   to?: string;
   customerId?: string;
   status?: string;
   limit?: number;
-}): TransactionRecord[] {
-  const db = getDb();
+}): Promise<TransactionRecord[]> {
   let sql = `
     SELECT 
       t.*,
@@ -175,35 +232,35 @@ export function listTransactions(filters?: {
   const params: any[] = [];
 
   if (filters?.from) {
-    sql += ` AND t.transaction_date >= ?`;
     params.push(filters.from);
+    sql += ` AND t.transaction_date >= $${params.length}`;
   }
   if (filters?.to) {
-    sql += ` AND t.transaction_date <= ?`;
     params.push(filters.to);
+    sql += ` AND t.transaction_date <= $${params.length}`;
   }
   if (filters?.customerId) {
-    sql += ` AND t.customer_id = ?`;
     params.push(filters.customerId);
+    sql += ` AND t.customer_id = $${params.length}`;
   }
   if (filters?.status) {
-    sql += ` AND t.status = ?`;
     params.push(filters.status);
+    sql += ` AND t.status = $${params.length}`;
   }
 
   sql += ` ORDER BY t.transaction_date DESC, t.created_at DESC`;
 
   if (filters?.limit) {
-    sql += ` LIMIT ?`;
     params.push(filters.limit);
+    sql += ` LIMIT $${params.length}`;
   }
 
-  return db.prepare(sql).all(...params) as any;
+  const rows = await query(sql, params);
+  return rows.map(mapTransactionRecord);
 }
 
-export function getTransaction(id: string): TransactionRecord | null {
-  const db = getDb();
-  return db.prepare(`
+export async function getTransaction(id: string): Promise<TransactionRecord | null> {
+  const r = await queryOne(`
     SELECT 
       t.*,
       c.name as customer_name,
@@ -211,11 +268,14 @@ export function getTransaction(id: string): TransactionRecord | null {
     FROM transactions t
     JOIN customers c ON c.id = t.customer_id
     LEFT JOIN distributors d ON d.id = t.distributor_id
-    WHERE t.id = ? OR t.transaction_number = ?
-  `).get(id, id) as any;
+    WHERE t.id = $1 OR t.transaction_number = $2
+  `, [id, id]);
+
+  if (!r) return null;
+  return mapTransactionRecord(r);
 }
 
-export function createTransaction(data: {
+export async function createTransaction(data: {
   transaction_date: string;
   customer_id: string;
   inr_amount: number;
@@ -224,8 +284,7 @@ export function createTransaction(data: {
   delivery_charge_pct?: number;
   distributor_id?: string | null;
   notes?: string;
-}): TransactionRecord {
-  const db = getDb();
+}): Promise<TransactionRecord> {
   const id = crypto.randomUUID();
   const txnNumber = generateTransactionNumber();
 
@@ -237,55 +296,56 @@ export function createTransaction(data: {
     deliveryChargePct: data.delivery_charge_pct,
   });
 
-  db.prepare(`
+  await execute(`
     INSERT INTO transactions (
       id, transaction_number, transaction_date, customer_id,
       inr_amount, customer_rate, aed_amount, base_rate,
       cost_aed, gross_profit_aed, delivery_charge_pct, delivery_charge_aed,
       net_profit_aed, distributor_id, status, notes
     ) VALUES (
-      ?, ?, ?, ?,
-      ?, ?, ?, ?,
-      ?, ?, ?, ?,
-      ?, ?, 'CONFIRMED', ?
+      $1, $2, $3, $4,
+      $5, $6, $7, $8,
+      $9, $10, $11, $12,
+      $13, $14, 'CONFIRMED', $15
     )
-  `).run(
+  `, [
     id, txnNumber, data.transaction_date, data.customer_id,
     calc.inrAmount, calc.customerRate, calc.aedAmount, calc.baseRate,
     calc.costAed, calc.grossProfitAed, calc.deliveryChargePct, calc.deliveryChargeAed,
     calc.netProfitAed, data.distributor_id || null, data.notes || null
-  );
+  ]);
 
   // Record audit log
-  db.prepare(`
+  await execute(`
     INSERT INTO audit_logs (id, entity_name, entity_id, action, new_values, reason)
-    VALUES (?, 'TRANSACTION', ?, 'CREATE', ?, 'Initial transaction creation')
-  `).run(crypto.randomUUID(), id, JSON.stringify(calc));
+    VALUES ($1, 'TRANSACTION', $2, 'CREATE', $3, 'Initial transaction creation')
+  `, [crypto.randomUUID(), id, JSON.stringify(calc)]);
 
-  return getTransaction(id)!;
+  const created = await getTransaction(id);
+  return created!;
 }
 
-export function voidTransaction(id: string, reason: string): TransactionRecord {
-  const db = getDb();
-  const existing = getTransaction(id);
+export async function voidTransaction(id: string, reason: string): Promise<TransactionRecord> {
+  const existing = await getTransaction(id);
   if (!existing) throw new Error("Transaction not found");
 
-  db.prepare(`
+  await execute(`
     UPDATE transactions 
-    SET status = 'VOIDED', updated_at = datetime('now')
-    WHERE id = ?
-  `).run(id);
+    SET status = 'VOIDED', updated_at = NOW()
+    WHERE id = $1
+  `, [id]);
 
-  db.prepare(`
+  await execute(`
     INSERT INTO audit_logs (id, entity_name, entity_id, action, old_values, reason)
-    VALUES (?, 'TRANSACTION', ?, 'VOID', ?, ?)
-  `).run(crypto.randomUUID(), id, JSON.stringify(existing), reason || "User voided transaction");
+    VALUES ($1, 'TRANSACTION', $2, 'VOID', $3, $4)
+  `, [crypto.randomUUID(), id, JSON.stringify(existing), reason || "User voided transaction"]);
 
-  return getTransaction(id)!;
+  const updated = await getTransaction(id);
+  return updated!;
 }
 
 // ---------------- CUSTOMER PAYMENTS ----------------
-export function recordCustomerPayment(data: {
+export async function recordCustomerPayment(data: {
   customer_id: string;
   payment_date: string;
   amount_aed: number;
@@ -293,63 +353,73 @@ export function recordCustomerPayment(data: {
   reference_number?: string;
   transaction_id?: string;
   notes?: string;
-}): CustomerPaymentRecord {
-  const db = getDb();
+}): Promise<CustomerPaymentRecord> {
   const id = crypto.randomUUID();
   const paymentNumber = `PAY-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
 
-  db.prepare(`
+  await execute(`
     INSERT INTO customer_payments (
       id, payment_number, payment_date, customer_id, transaction_id,
       amount_aed, payment_method, reference_number, notes
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+  `, [
     id, paymentNumber, data.payment_date, data.customer_id, data.transaction_id || null,
     roundTo(data.amount_aed, 2), data.payment_method || 'CASH', data.reference_number || null, data.notes || null
-  );
+  ]);
 
-  db.prepare(`
+  await execute(`
     INSERT INTO audit_logs (id, entity_name, entity_id, action, new_values, reason)
-    VALUES (?, 'PAYMENT', ?, 'CREATE', ?, 'Customer payment received')
-  `).run(crypto.randomUUID(), id, JSON.stringify(data));
+    VALUES ($1, 'PAYMENT', $2, 'CREATE', $3, 'Customer payment received')
+  `, [crypto.randomUUID(), id, JSON.stringify(data)]);
 
-  return db.prepare(`SELECT * FROM customer_payments WHERE id = ?`).get(id) as any;
+  const created = await queryOne(`SELECT * FROM customer_payments WHERE id = $1`, [id]);
+  return {
+    ...created,
+    payment_date: formatDate(created.payment_date),
+    amount_aed: roundTo(Number(created.amount_aed), 2),
+    created_at: formatDateTime(created.created_at),
+  };
 }
 
-export function getCustomerLedger(customerId: string): {
+export async function getCustomerLedger(customerId: string): Promise<{
   customer: Customer;
   entries: Array<{
     date: string;
     type: 'TRANSACTION' | 'PAYMENT';
     reference: string;
     description: string;
-    debit_aed: number; // Charged
-    credit_aed: number; // Paid
+    debit_aed: number;
+    credit_aed: number;
     running_balance_aed: number;
   }>;
-} {
-  const customer = getCustomer(customerId);
+}> {
+  const customer = await getCustomer(customerId);
   if (!customer) throw new Error("Customer not found");
 
-  const db = getDb();
-  const txns = db.prepare(`
+  const txns = await query(`
     SELECT transaction_date as date, 'TRANSACTION' as type, transaction_number as reference,
            'Bank Order ' || inr_amount || ' INR @ ' || customer_rate as description,
            aed_amount as debit_aed, 0.0 as credit_aed, created_at
     FROM transactions
-    WHERE customer_id = ? AND status = 'CONFIRMED'
-  `).all(customerId) as any[];
+    WHERE customer_id = $1 AND status = 'CONFIRMED'
+  `, [customerId]);
 
-  const pays = db.prepare(`
+  const pays = await query(`
     SELECT payment_date as date, 'PAYMENT' as type, payment_number as reference,
            'Payment (' || payment_method || ')' as description,
            0.0 as debit_aed, amount_aed as credit_aed, created_at
     FROM customer_payments
-    WHERE customer_id = ?
-  `).all(customerId) as any[];
+    WHERE customer_id = $1
+  `, [customerId]);
 
   // Merge & sort chronologically
-  const allEvents = [...txns, ...pays].sort((a, b) => {
+  const allEvents = [...txns, ...pays].map(e => ({
+    ...e,
+    date: formatDate(e.date),
+    debit_aed: roundTo(Number(e.debit_aed || 0), 2),
+    credit_aed: roundTo(Number(e.credit_aed || 0), 2),
+    created_at: formatDateTime(e.created_at),
+  })).sort((a, b) => {
     if (a.date !== b.date) return a.date.localeCompare(b.date);
     return a.created_at.localeCompare(b.created_at);
   });
@@ -359,7 +429,7 @@ export function getCustomerLedger(customerId: string): {
     running = roundTo(running + e.debit_aed - e.credit_aed, 2);
     return {
       date: e.date,
-      type: e.type,
+      type: e.type as 'TRANSACTION' | 'PAYMENT',
       reference: e.reference,
       description: e.description,
       debit_aed: e.debit_aed,
@@ -372,35 +442,42 @@ export function getCustomerLedger(customerId: string): {
 }
 
 // ---------------- DISTRIBUTORS & BANK DISTRIP ----------------
-export function listDistributors(): DistributorRecord[] {
-  const db = getDb();
-  return db.prepare(`
+export async function listDistributors(): Promise<DistributorRecord[]> {
+  const rows = await query(`
     SELECT d.*,
            COALESCE((SELECT SUM(s.inr_amount) FROM wholesale_settlements s WHERE s.distributor_id = d.id), 0) as total_inr,
            COALESCE((SELECT SUM(s.aed_equivalent) FROM wholesale_settlements s WHERE s.distributor_id = d.id), 0) as total_aed,
            COALESCE((SELECT SUM(s.paid_amount_aed) FROM wholesale_settlements s WHERE s.distributor_id = d.id), 0) as total_paid
     FROM distributors d
     ORDER BY d.name ASC
-  `).all() as any;
+  `);
+
+  return rows.map(d => ({
+    ...d,
+    total_inr: roundTo(Number(d.total_inr || 0), 2),
+    total_aed: roundTo(Number(d.total_aed || 0), 2),
+    total_paid: roundTo(Number(d.total_paid || 0), 2),
+    outstanding_balance: roundTo(Number(d.total_aed || 0) - Number(d.total_paid || 0), 2),
+    created_at: formatDateTime(d.created_at),
+  }));
 }
 
-export function listBankDistripAccounts(): BankDistripAccountRecord[] {
-  const db = getDb();
-  const rows = db.prepare(`
+export async function listBankDistripAccounts(): Promise<BankDistripAccountRecord[]> {
+  const rows = await query(`
     SELECT b.*,
            (SELECT balance_inr FROM bank_distrip_records r WHERE r.account_id = b.id ORDER BY r.record_date DESC, r.created_at DESC LIMIT 1) as current_balance
     FROM bank_distrip_accounts b
     ORDER BY b.account_name ASC
-  `).all() as any[];
+  `);
 
   return rows.map(r => ({
     ...r,
-    current_balance: roundTo(r.current_balance || 0, 2)
+    current_balance: roundTo(Number(r.current_balance || 0), 2),
+    created_at: formatDateTime(r.created_at),
   }));
 }
 
-export function listBankDistripRecords(accountId?: string): BankDistripRecord[] {
-  const db = getDb();
+export async function listBankDistripRecords(accountId?: string): Promise<BankDistripRecord[]> {
   let sql = `
     SELECT r.*, a.account_name
     FROM bank_distrip_records r
@@ -408,33 +485,33 @@ export function listBankDistripRecords(accountId?: string): BankDistripRecord[] 
   `;
   const params: any[] = [];
   if (accountId) {
-    sql += ` WHERE r.account_id = ?`;
     params.push(accountId);
+    sql += ` WHERE r.account_id = $${params.length}`;
   }
   sql += ` ORDER BY r.record_date DESC, r.created_at DESC`;
 
-  return db.prepare(sql).all(...params) as any;
+  const rows = await query(sql, params);
+  return rows.map(mapBankDistripRecord);
 }
 
-export function createBankDistripRecord(data: {
+export async function createBankDistripRecord(data: {
   record_date: string;
   account_id: string;
   order_inr: number;
   commission_inr?: number;
   paid_inr?: number;
   notes?: string;
-}): BankDistripRecord {
-  const db = getDb();
+}): Promise<BankDistripRecord> {
   const id = crypto.randomUUID();
 
-  // Get previous balance
-  const lastRecord = db.prepare(`
+  // Get previous balance up to this date
+  const lastRecord = await queryOne(`
     SELECT balance_inr 
     FROM bank_distrip_records 
-    WHERE account_id = ? AND record_date <= ?
+    WHERE account_id = $1 AND record_date <= $2
     ORDER BY record_date DESC, created_at DESC 
     LIMIT 1
-  `).get(data.account_id, data.record_date) as any;
+  `, [data.account_id, data.record_date]);
 
   const prevBal = lastRecord ? Number(lastRecord.balance_inr) : 0;
   const order = Number(data.order_inr || 0);
@@ -442,36 +519,42 @@ export function createBankDistripRecord(data: {
   const paid = Number(data.paid_inr || 0);
   const balance = roundTo(prevBal + order + com - paid, 2);
 
-  db.prepare(`
+  await execute(`
     INSERT INTO bank_distrip_records (id, record_date, account_id, order_inr, commission_inr, paid_inr, balance_inr, notes)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id, data.record_date, data.account_id, order, com, paid, balance, data.notes || null);
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+  `, [id, data.record_date, data.account_id, order, com, paid, balance, data.notes || null]);
 
-  return db.prepare(`SELECT * FROM bank_distrip_records WHERE id = ?`).get(id) as any;
+  const created = await queryOne(`
+    SELECT r.*, a.account_name
+    FROM bank_distrip_records r
+    JOIN bank_distrip_accounts a ON a.id = r.account_id
+    WHERE r.id = $1
+  `, [id]);
+
+  return mapBankDistripRecord(created);
 }
 
 // ---------------- DASHBOARD KPIS ----------------
-export function getDashboardKPIs(filters?: { from?: string; to?: string }) {
-  const db = getDb();
+export async function getDashboardKPIs(filters?: { from?: string; to?: string }) {
   let txnWhere = "WHERE status = 'CONFIRMED'";
   let payWhere = "WHERE 1=1";
   const txnParams: any[] = [];
   const payParams: any[] = [];
 
   if (filters?.from) {
-    txnWhere += " AND transaction_date >= ?";
-    payWhere += " AND payment_date >= ?";
     txnParams.push(filters.from);
+    txnWhere += ` AND transaction_date >= $${txnParams.length}`;
     payParams.push(filters.from);
+    payWhere += ` AND payment_date >= $${payParams.length}`;
   }
   if (filters?.to) {
-    txnWhere += " AND transaction_date <= ?";
-    payWhere += " AND payment_date <= ?";
     txnParams.push(filters.to);
+    txnWhere += ` AND transaction_date <= $${txnParams.length}`;
     payParams.push(filters.to);
+    payWhere += ` AND payment_date <= $${payParams.length}`;
   }
 
-  const txnSummary = db.prepare(`
+  const txnSummary = await queryOne(`
     SELECT 
       COUNT(*) as count,
       COALESCE(SUM(inr_amount), 0) as total_inr,
@@ -481,24 +564,22 @@ export function getDashboardKPIs(filters?: { from?: string; to?: string }) {
       COALESCE(SUM(net_profit_aed), 0) as net_profit
     FROM transactions
     ${txnWhere}
-  `).get(...txnParams) as any;
+  `, txnParams);
 
-  const paySummary = db.prepare(`
+  const paySummary = await queryOne(`
     SELECT COALESCE(SUM(amount_aed), 0) as total_collected
     FROM customer_payments
     ${payWhere}
-  `).get(...payParams) as any;
+  `, payParams);
 
-  // Receivables total across all customers (cumulative)
-  const custReceivables = db.prepare(`
+  // Cumulative outstanding across entire confirmed ledger
+  const custReceivables = await queryOne(`
     SELECT 
-      COALESCE(SUM(t.aed_amount), 0) - COALESCE(SUM(p.amount_aed), 0) as outstanding
-    FROM (SELECT SUM(aed_amount) as aed_amount FROM transactions WHERE status = 'CONFIRMED') t
-    LEFT JOIN (SELECT SUM(amount_aed) as amount_aed FROM customer_payments) p ON 1=1
-  `).get() as any;
+      COALESCE((SELECT SUM(aed_amount) FROM transactions WHERE status = 'CONFIRMED'), 0) - 
+      COALESCE((SELECT SUM(amount_aed) FROM customer_payments), 0) as outstanding
+  `);
 
-  // Daily trend data for charts (last 30 days or filtered range)
-  const dailyTrends = db.prepare(`
+  const dailyTrends = await query(`
     SELECT 
       transaction_date as date,
       SUM(inr_amount) as inr_volume,
@@ -509,25 +590,48 @@ export function getDashboardKPIs(filters?: { from?: string; to?: string }) {
     ${txnWhere}
     GROUP BY transaction_date
     ORDER BY transaction_date ASC
-  `).all(...txnParams) as any[];
+  `, txnParams);
 
   return {
     kpis: {
-      totalInrProcessed: roundTo(txnSummary.total_inr, 2),
-      totalAedCharged: roundTo(txnSummary.total_aed, 2),
-      totalAedCollected: roundTo(paySummary.total_collected, 2),
-      grossProfitAed: roundTo(txnSummary.gross_profit, 2),
-      deliveryChargesAed: roundTo(txnSummary.delivery_charges, 2),
-      netProfitAed: roundTo(txnSummary.net_profit, 2),
-      transactionCount: Number(txnSummary.count),
-      outstandingReceivablesAed: roundTo(custReceivables?.outstanding || 0, 2),
+      totalInrProcessed: roundTo(Number(txnSummary?.total_inr || 0), 2),
+      totalAedCharged: roundTo(Number(txnSummary?.total_aed || 0), 2),
+      totalAedCollected: roundTo(Number(paySummary?.total_collected || 0), 2),
+      grossProfitAed: roundTo(Number(txnSummary?.gross_profit || 0), 2),
+      deliveryChargesAed: roundTo(Number(txnSummary?.delivery_charges || 0), 2),
+      netProfitAed: roundTo(Number(txnSummary?.net_profit || 0), 2),
+      transactionCount: Number(txnSummary?.count || 0),
+      outstandingReceivablesAed: roundTo(Number(custReceivables?.outstanding || 0), 2),
     },
     dailyTrends: dailyTrends.map(d => ({
-      date: d.date,
-      inrVolume: roundTo(d.inr_volume, 2),
-      aedVolume: roundTo(d.aed_volume, 2),
-      netProfit: roundTo(d.net_profit, 2),
-      count: Number(d.txn_count),
+      date: formatDate(d.date),
+      inrVolume: roundTo(Number(d.inr_volume || 0), 2),
+      aedVolume: roundTo(Number(d.aed_volume || 0), 2),
+      netProfit: roundTo(Number(d.net_profit || 0), 2),
+      count: Number(d.txn_count || 0),
     }))
   };
+}
+
+export async function getAuditLogs(entityName: string, entityId: string): Promise<any[]> {
+  return await query(`
+    SELECT * FROM audit_logs 
+    WHERE entity_id = $1 AND entity_name = $2
+    ORDER BY created_at DESC
+  `, [entityId, entityName]);
+}
+
+export async function getDailySummaryReport(): Promise<any[]> {
+  return await query(`
+    SELECT 
+      transaction_date as date,
+      COUNT(*) as count,
+      SUM(inr_amount) as total_inr,
+      SUM(aed_amount) as total_aed,
+      SUM(net_profit_aed) as net_profit
+    FROM transactions
+    WHERE status = 'CONFIRMED'
+    GROUP BY transaction_date
+    ORDER BY transaction_date DESC
+  `);
 }

@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     const status = searchParams.get("status") || undefined;
     const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : 100;
 
-    const data = listTransactions({ from, to, customerId, status, limit });
+    const data = await listTransactions({ from, to, customerId, status, limit });
     return NextResponse.json(data);
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to list transactions" }, { status: 500 });
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const validated = createSchema.parse(body);
 
-    const created = createTransaction(validated);
+    const created = await createTransaction(validated);
     return NextResponse.json(created, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to create transaction" }, { status: 400 });

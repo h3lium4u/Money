@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import ExcelJS from "exceljs";
-import { listTransactions, listCustomers, listBankDistripRecords } from "@/lib/repository";
-import { getDb } from "@/lib/db";
+import { listTransactions, listCustomers, listBankDistripRecords, getDailySummaryReport } from "@/lib/repository";
 
 export async function GET(request: Request) {
   try {
@@ -31,7 +30,7 @@ export async function GET(request: Request) {
     ];
     wsTxn.getRow(1).font = { bold: true };
 
-    const txns = listTransactions({ from, to, limit: 5000 });
+    const txns = await listTransactions({ from, to, limit: 5000 });
     txns.forEach((t) => {
       wsTxn.addRow({
         txn_num: t.transaction_number,
@@ -61,7 +60,7 @@ export async function GET(request: Request) {
     ];
     wsCust.getRow(1).font = { bold: true };
 
-    const customers = listCustomers();
+    const customers = await listCustomers();
     customers.forEach((c) => {
       wsCust.addRow({
         code: c.code,
@@ -85,7 +84,7 @@ export async function GET(request: Request) {
     ];
     wsBank.getRow(1).font = { bold: true };
 
-    const bankRecords = listBankDistripRecords();
+    const bankRecords = await listBankDistripRecords();
     bankRecords.forEach((b) => {
       wsBank.addRow({
         date: b.record_date,
@@ -108,27 +107,14 @@ export async function GET(request: Request) {
     ];
     wsSummary.getRow(1).font = { bold: true };
 
-    const db = getDb();
-    const dailyRows = db.prepare(`
-      SELECT 
-        transaction_date as date,
-        COUNT(*) as count,
-        SUM(inr_amount) as total_inr,
-        SUM(aed_amount) as total_aed,
-        SUM(net_profit_aed) as net_profit
-      FROM transactions
-      WHERE status = 'CONFIRMED'
-      GROUP BY transaction_date
-      ORDER BY transaction_date DESC
-    `).all() as any[];
-
+    const dailyRows = await getDailySummaryReport();
     dailyRows.forEach((d) => {
       wsSummary.addRow({
-        date: d.date,
-        count: d.count,
-        inr: d.total_inr,
-        aed: d.total_aed,
-        net_profit: d.net_profit,
+        date: typeof d.date === 'string' ? d.date.slice(0, 10) : new Date(d.date).toISOString().slice(0, 10),
+        count: Number(d.count),
+        inr: Number(d.total_inr),
+        aed: Number(d.total_aed),
+        net_profit: Number(d.net_profit),
       });
     });
 

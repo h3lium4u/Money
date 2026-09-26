@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     const from = searchParams.get("from") || undefined;
     const to = searchParams.get("to") || undefined;
 
-    const data = getDashboardKPIs({ from, to });
+    const data = await getDashboardKPIs({ from, to });
     return NextResponse.json(data);
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to load dashboard KPIs" }, { status: 500 });
