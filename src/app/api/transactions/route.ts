@@ -11,6 +11,11 @@ const createSchema = z.object({
   delivery_charge_pct: z.number().min(0).max(1).optional(),
   distributor_id: z.string().nullable().optional(),
   notes: z.string().optional(),
+  splits: z.array(z.object({
+    distributor_id: z.string().min(1),
+    inr_amount: z.number().positive(),
+    notes: z.string().optional()
+  })).optional(),
 });
 
 export async function GET(request: Request) {

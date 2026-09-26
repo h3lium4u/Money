@@ -16,6 +16,26 @@ export interface Customer {
   created_at: string;
 }
 
+export interface DistributionSplitRecord {
+  id: string;
+  transaction_id: string;
+  transaction_number?: string;
+  customer_name?: string;
+  distributor_id: string;
+  distributor_name?: string;
+  distributor_code?: string;
+  split_date: string;
+  inr_amount: number;
+  wholesale_rate?: number | null;
+  aed_equivalent?: number | null;
+  paid_amount_inr: number;
+  balance_inr: number;
+  status: string;
+  notes?: string | null;
+  is_demo?: boolean;
+  created_at: string;
+}
+
 export interface TransactionRecord {
   id: string;
   transaction_number: string;
@@ -35,6 +55,10 @@ export interface TransactionRecord {
   distributor_name?: string | null;
   status: string;
   notes?: string | null;
+  is_demo?: boolean;
+  total_distributed_inr?: number;
+  remaining_inr?: number;
+  splits?: DistributionSplitRecord[];
   created_at: string;
 }
 
@@ -49,6 +73,7 @@ export interface CustomerPaymentRecord {
   payment_method: string;
   reference_number?: string | null;
   notes?: string | null;
+  is_demo?: boolean;
   created_at: string;
 }
 
@@ -57,12 +82,16 @@ export interface DistributorRecord {
   code: string;
   name: string;
   partner_type: string;
+  client_confirmation_note?: string | null;
   default_settlement_currency: string;
   status: string;
   total_inr?: number;
   total_aed?: number;
   total_paid?: number;
   outstanding_balance?: number;
+  total_splits_inr?: number;
+  total_splits_paid_inr?: number;
+  splits_balance_inr?: number;
   created_at: string;
 }
 
@@ -124,13 +153,17 @@ function mapCustomerRecord(r: any): Customer {
 }
 
 function mapTransactionRecord(r: any): TransactionRecord {
+  const inrAmount = roundTo(Number(r.inr_amount), 2);
+  const distributedInr = roundTo(Number(r.total_distributed_inr || 0), 2);
+  const remainingInr = roundTo(Math.max(0, inrAmount - distributedInr), 2);
+
   return {
     id: r.id,
     transaction_number: r.transaction_number,
     transaction_date: formatDate(r.transaction_date),
     customer_id: r.customer_id,
     customer_name: r.customer_name,
-    inr_amount: roundTo(Number(r.inr_amount), 2),
+    inr_amount: inrAmount,
     customer_rate: roundTo(Number(r.customer_rate), 4),
     aed_amount: roundTo(Number(r.aed_amount), 2),
     base_rate: roundTo(Number(r.base_rate), 4),
@@ -143,6 +176,31 @@ function mapTransactionRecord(r: any): TransactionRecord {
     distributor_name: r.distributor_name || null,
     status: r.status,
     notes: r.notes || null,
+    is_demo: Boolean(r.is_demo),
+    total_distributed_inr: distributedInr,
+    remaining_inr: remainingInr,
+    created_at: formatDateTime(r.created_at),
+  };
+}
+
+function mapDistributionSplitRecord(r: any): DistributionSplitRecord {
+  return {
+    id: r.id,
+    transaction_id: r.transaction_id,
+    transaction_number: r.transaction_number,
+    customer_name: r.customer_name,
+    distributor_id: r.distributor_id,
+    distributor_name: r.distributor_name,
+    distributor_code: r.distributor_code,
+    split_date: formatDate(r.split_date),
+    inr_amount: roundTo(Number(r.inr_amount || 0), 2),
+    wholesale_rate: r.wholesale_rate != null ? Number(r.wholesale_rate) : null,
+    aed_equivalent: r.aed_equivalent != null ? roundTo(Number(r.aed_equivalent), 2) : null,
+    paid_amount_inr: roundTo(Number(r.paid_amount_inr || 0), 2),
+    balance_inr: roundTo(Number(r.balance_inr || 0), 2),
+    status: r.status || "ALLOCATED",
+    notes: r.notes || null,
+    is_demo: Boolean(r.is_demo),
     created_at: formatDateTime(r.created_at),
   };
 }
@@ -223,7 +281,8 @@ export async function listTransactions(filters?: {
     SELECT 
       t.*,
       c.name as customer_name,
-      d.name as distributor_name
+      d.name as distributor_name,
+      COALESCE((SELECT SUM(s.inr_amount) FROM distribution_splits s WHERE s.transaction_id = t.id), 0) as total_distributed_inr
     FROM transactions t
     JOIN customers c ON c.id = t.customer_id
     LEFT JOIN distributors d ON d.id = t.distributor_id
@@ -264,7 +323,8 @@ export async function getTransaction(id: string): Promise<TransactionRecord | nu
     SELECT 
       t.*,
       c.name as customer_name,
-      d.name as distributor_name
+      d.name as distributor_name,
+      COALESCE((SELECT SUM(s.inr_amount) FROM distribution_splits s WHERE s.transaction_id = t.id), 0) as total_distributed_inr
     FROM transactions t
     JOIN customers c ON c.id = t.customer_id
     LEFT JOIN distributors d ON d.id = t.distributor_id
@@ -272,7 +332,13 @@ export async function getTransaction(id: string): Promise<TransactionRecord | nu
   `, [id, id]);
 
   if (!r) return null;
-  return mapTransactionRecord(r);
+  const mapped = mapTransactionRecord(r);
+
+  // Fetch splits for this transaction
+  const splits = await listDistributionSplits({ transaction_id: mapped.id });
+  mapped.splits = splits;
+
+  return mapped;
 }
 
 export async function createTransaction(data: {
@@ -284,6 +350,11 @@ export async function createTransaction(data: {
   delivery_charge_pct?: number;
   distributor_id?: string | null;
   notes?: string;
+  splits?: Array<{
+    distributor_id: string;
+    inr_amount: number;
+    notes?: string;
+  }>;
 }): Promise<TransactionRecord> {
   const id = crypto.randomUUID();
   const txnNumber = generateTransactionNumber();
@@ -301,12 +372,12 @@ export async function createTransaction(data: {
       id, transaction_number, transaction_date, customer_id,
       inr_amount, customer_rate, aed_amount, base_rate,
       cost_aed, gross_profit_aed, delivery_charge_pct, delivery_charge_aed,
-      net_profit_aed, distributor_id, status, notes
+      net_profit_aed, distributor_id, status, notes, is_demo
     ) VALUES (
       $1, $2, $3, $4,
       $5, $6, $7, $8,
       $9, $10, $11, $12,
-      $13, $14, 'CONFIRMED', $15
+      $13, $14, 'CONFIRMED', $15, false
     )
   `, [
     id, txnNumber, data.transaction_date, data.customer_id,
@@ -314,6 +385,32 @@ export async function createTransaction(data: {
     calc.costAed, calc.grossProfitAed, calc.deliveryChargePct, calc.deliveryChargeAed,
     calc.netProfitAed, data.distributor_id || null, data.notes || null
   ]);
+
+  // Insert initial splits if provided
+  if (data.splits && data.splits.length > 0) {
+    let totalSplitInr = 0;
+    for (const s of data.splits) {
+      totalSplitInr += Number(s.inr_amount);
+      if (totalSplitInr > calc.inrAmount) {
+        throw new Error(`Total distribution (₹${totalSplitInr.toLocaleString()}) cannot exceed customer order (₹${calc.inrAmount.toLocaleString()})`);
+      }
+      const splitId = crypto.randomUUID();
+      await execute(`
+        INSERT INTO distribution_splits (
+          id, transaction_id, distributor_id, split_date,
+          inr_amount, wholesale_rate, aed_equivalent, paid_amount_inr,
+          balance_inr, status, notes
+        ) VALUES (
+          $1, $2, $3, $4,
+          $5, $6, $7, 0.00,
+          $5, 'ALLOCATED', $8
+        )
+      `, [
+        splitId, id, s.distributor_id, data.transaction_date,
+        s.inr_amount, calc.baseRate, roundTo(s.inr_amount / calc.baseRate, 2), s.notes || null
+      ]);
+    }
+  }
 
   // Record audit log
   await execute(`
@@ -344,6 +441,97 @@ export async function voidTransaction(id: string, reason: string): Promise<Trans
   return updated!;
 }
 
+// ---------------- INDIA DISTRIBUTION SPLITS ----------------
+export async function listDistributionSplits(filters?: {
+  transaction_id?: string;
+  distributor_id?: string;
+  from?: string;
+  to?: string;
+}): Promise<DistributionSplitRecord[]> {
+  let sql = `
+    SELECT 
+      s.*,
+      t.transaction_number,
+      c.name as customer_name,
+      d.name as distributor_name,
+      d.code as distributor_code
+    FROM distribution_splits s
+    JOIN transactions t ON t.id = s.transaction_id
+    JOIN customers c ON c.id = t.customer_id
+    JOIN distributors d ON d.id = s.distributor_id
+    WHERE 1=1
+  `;
+  const params: any[] = [];
+
+  if (filters?.transaction_id) {
+    params.push(filters.transaction_id);
+    sql += ` AND s.transaction_id = $${params.length}`;
+  }
+  if (filters?.distributor_id) {
+    params.push(filters.distributor_id);
+    sql += ` AND s.distributor_id = $${params.length}`;
+  }
+  if (filters?.from) {
+    params.push(filters.from);
+    sql += ` AND s.split_date >= $${params.length}`;
+  }
+  if (filters?.to) {
+    params.push(filters.to);
+    sql += ` AND s.split_date <= $${params.length}`;
+  }
+
+  sql += ` ORDER BY s.split_date DESC, s.created_at DESC`;
+
+  const rows = await query(sql, params);
+  return rows.map(mapDistributionSplitRecord);
+}
+
+export async function createDistributionSplit(data: {
+  transaction_id: string;
+  distributor_id: string;
+  split_date: string;
+  inr_amount: number;
+  wholesale_rate?: number;
+  notes?: string;
+}): Promise<DistributionSplitRecord> {
+  const txn = await getTransaction(data.transaction_id);
+  if (!txn) throw new Error("Transaction not found");
+
+  const currentDistributed = txn.total_distributed_inr || 0;
+  const newTotal = currentDistributed + Number(data.inr_amount);
+
+  if (newTotal > txn.inr_amount) {
+    const maxAllowed = txn.inr_amount - currentDistributed;
+    throw new Error(`Split amount (₹${data.inr_amount.toLocaleString()}) exceeds unallocated order balance (₹${maxAllowed.toLocaleString()}).`);
+  }
+
+  const id = crypto.randomUUID();
+  const wholesaleRate = data.wholesale_rate || txn.base_rate;
+  const aedEq = wholesaleRate ? roundTo(data.inr_amount / wholesaleRate, 2) : 0;
+
+  await execute(`
+    INSERT INTO distribution_splits (
+      id, transaction_id, distributor_id, split_date,
+      inr_amount, wholesale_rate, aed_equivalent, paid_amount_inr,
+      balance_inr, status, notes
+    ) VALUES (
+      $1, $2, $3, $4,
+      $5, $6, $7, 0.00,
+      $5, 'ALLOCATED', $8
+    )
+  `, [
+    id, data.transaction_id, data.distributor_id, data.split_date,
+    roundTo(data.inr_amount, 2), wholesaleRate, aedEq, data.notes || null
+  ]);
+
+  const rows = await listDistributionSplits({ transaction_id: data.transaction_id });
+  return rows.find(r => r.id === id)!;
+}
+
+export async function deleteDistributionSplit(id: string): Promise<void> {
+  await execute(`DELETE FROM distribution_splits WHERE id = $1`, [id]);
+}
+
 // ---------------- CUSTOMER PAYMENTS ----------------
 export async function recordCustomerPayment(data: {
   customer_id: string;
@@ -360,8 +548,8 @@ export async function recordCustomerPayment(data: {
   await execute(`
     INSERT INTO customer_payments (
       id, payment_number, payment_date, customer_id, transaction_id,
-      amount_aed, payment_method, reference_number, notes
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      amount_aed, payment_method, reference_number, notes, is_demo
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, false)
   `, [
     id, paymentNumber, data.payment_date, data.customer_id, data.transaction_id || null,
     roundTo(data.amount_aed, 2), data.payment_method || 'CASH', data.reference_number || null, data.notes || null
@@ -398,7 +586,7 @@ export async function getCustomerLedger(customerId: string): Promise<{
 
   const txns = await query(`
     SELECT transaction_date as date, 'TRANSACTION' as type, transaction_number as reference,
-           'Bank Order ' || inr_amount || ' INR @ ' || customer_rate as description,
+           'Order ' || inr_amount || ' INR @ ' || customer_rate as description,
            aed_amount as debit_aed, 0.0 as credit_aed, created_at
     FROM transactions
     WHERE customer_id = $1 AND status = 'CONFIRMED'
@@ -441,23 +629,22 @@ export async function getCustomerLedger(customerId: string): Promise<{
   return { customer, entries };
 }
 
-// ---------------- DISTRIBUTORS & BANK DISTRIP ----------------
+// ---------------- DISTRIBUTORS & INDIA PARTIES ----------------
 export async function listDistributors(): Promise<DistributorRecord[]> {
   const rows = await query(`
     SELECT d.*,
-           COALESCE((SELECT SUM(s.inr_amount) FROM wholesale_settlements s WHERE s.distributor_id = d.id), 0) as total_inr,
-           COALESCE((SELECT SUM(s.aed_equivalent) FROM wholesale_settlements s WHERE s.distributor_id = d.id), 0) as total_aed,
-           COALESCE((SELECT SUM(s.paid_amount_aed) FROM wholesale_settlements s WHERE s.distributor_id = d.id), 0) as total_paid
+           COALESCE((SELECT SUM(s.inr_amount) FROM distribution_splits s WHERE s.distributor_id = d.id), 0) as total_splits_inr,
+           COALESCE((SELECT SUM(s.paid_amount_inr) FROM distribution_splits s WHERE s.distributor_id = d.id), 0) as total_splits_paid_inr,
+           COALESCE((SELECT SUM(s.balance_inr) FROM distribution_splits s WHERE s.distributor_id = d.id), 0) as splits_balance_inr
     FROM distributors d
     ORDER BY d.name ASC
   `);
 
   return rows.map(d => ({
     ...d,
-    total_inr: roundTo(Number(d.total_inr || 0), 2),
-    total_aed: roundTo(Number(d.total_aed || 0), 2),
-    total_paid: roundTo(Number(d.total_paid || 0), 2),
-    outstanding_balance: roundTo(Number(d.total_aed || 0) - Number(d.total_paid || 0), 2),
+    total_splits_inr: roundTo(Number(d.total_splits_inr || 0), 2),
+    total_splits_paid_inr: roundTo(Number(d.total_splits_paid_inr || 0), 2),
+    splits_balance_inr: roundTo(Number(d.splits_balance_inr || 0), 2),
     created_at: formatDateTime(d.created_at),
   }));
 }
@@ -535,7 +722,7 @@ export async function createBankDistripRecord(data: {
 }
 
 // ---------------- DASHBOARD KPIS ----------------
-export async function getDashboardKPIs(filters?: { from?: string; to?: string }) {
+export async function getDashboardKPIs(filters?: { from?: string; to?: string; timeframe?: string }) {
   let txnWhere = "WHERE status = 'CONFIRMED'";
   let payWhere = "WHERE 1=1";
   const txnParams: any[] = [];
@@ -554,6 +741,19 @@ export async function getDashboardKPIs(filters?: { from?: string; to?: string })
     payWhere += ` AND payment_date <= $${payParams.length}`;
   }
 
+  // Today specific calculations
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todaySummary = await queryOne(`
+    SELECT 
+      COUNT(*) as count,
+      COALESCE(SUM(inr_amount), 0) as total_inr,
+      COALESCE(SUM(aed_amount), 0) as total_aed,
+      COALESCE(SUM(net_profit_aed), 0) as net_profit
+    FROM transactions
+    WHERE status = 'CONFIRMED' AND transaction_date = $1
+  `, [todayStr]);
+
+  // Range filtered summary
   const txnSummary = await queryOne(`
     SELECT 
       COUNT(*) as count,
@@ -572,13 +772,31 @@ export async function getDashboardKPIs(filters?: { from?: string; to?: string })
     ${payWhere}
   `, payParams);
 
-  // Cumulative outstanding across entire confirmed ledger
+  // Cumulative customer outstanding across entire confirmed ledger
   const custReceivables = await queryOne(`
     SELECT 
       COALESCE((SELECT SUM(aed_amount) FROM transactions WHERE status = 'CONFIRMED'), 0) - 
       COALESCE((SELECT SUM(amount_aed) FROM customer_payments), 0) as outstanding
   `);
 
+  // India distribution pending (Confirmed orders INR minus allocated splits INR)
+  const distPending = await queryOne(`
+    SELECT 
+      COALESCE((SELECT SUM(inr_amount) FROM transactions WHERE status = 'CONFIRMED'), 0) - 
+      COALESCE((SELECT SUM(inr_amount) FROM distribution_splits), 0) as pending_inr
+  `);
+
+  // Bank distribution pending
+  const bankPending = await queryOne(`
+    SELECT COALESCE(SUM(current_balance), 0) as bank_pending_inr
+    FROM (
+      SELECT DISTINCT ON (account_id) balance_inr as current_balance
+      FROM bank_distrip_records
+      ORDER BY account_id, record_date DESC, created_at DESC
+    ) latest_balances
+  `);
+
+  // Daily trend data for chart
   const dailyTrends = await query(`
     SELECT 
       transaction_date as date,
@@ -594,6 +812,13 @@ export async function getDashboardKPIs(filters?: { from?: string; to?: string })
 
   return {
     kpis: {
+      // Primary Cards
+      todayInr: roundTo(Number(todaySummary?.total_inr || 0), 2),
+      todayAed: roundTo(Number(todaySummary?.total_aed || 0), 2),
+      todayTxnCount: Number(todaySummary?.count || 0),
+      todayProfit: roundTo(Number(todaySummary?.net_profit || 0), 2),
+
+      // Filtered Range Cards
       totalInrProcessed: roundTo(Number(txnSummary?.total_inr || 0), 2),
       totalAedCharged: roundTo(Number(txnSummary?.total_aed || 0), 2),
       totalAedCollected: roundTo(Number(paySummary?.total_collected || 0), 2),
@@ -601,7 +826,11 @@ export async function getDashboardKPIs(filters?: { from?: string; to?: string })
       deliveryChargesAed: roundTo(Number(txnSummary?.delivery_charges || 0), 2),
       netProfitAed: roundTo(Number(txnSummary?.net_profit || 0), 2),
       transactionCount: Number(txnSummary?.count || 0),
+
+      // Secondary Global Cards
       outstandingReceivablesAed: roundTo(Number(custReceivables?.outstanding || 0), 2),
+      indiaDistributionPendingInr: roundTo(Math.max(0, Number(distPending?.pending_inr || 0)), 2),
+      bankDistributionPendingInr: roundTo(Number(bankPending?.bank_pending_inr || 0), 2),
     },
     dailyTrends: dailyTrends.map(d => ({
       date: formatDate(d.date),

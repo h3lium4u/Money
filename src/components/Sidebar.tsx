@@ -11,16 +11,17 @@ import {
   Landmark,
   Wallet,
   FileSpreadsheet,
+  Split,
 } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "New Transfer", href: "/transactions/new", icon: PlusCircle, highlight: true },
+  { name: "New Remittance", href: "/transactions/new", icon: PlusCircle, highlight: true },
   { name: "All Transfers", href: "/transactions", icon: ArrowLeftRight },
-  { name: "Customers", href: "/customers", icon: Users },
-  { name: "Customer Due & Cash", href: "/receivables", icon: Wallet },
-  { name: "Bank Payouts", href: "/bank-distrip", icon: Landmark },
-  { name: "India Partners", href: "/distributors", icon: Building2 },
+  { name: "Dubai Customers", href: "/customers", icon: Users },
+  { name: "Customer Receivables", href: "/receivables", icon: Wallet },
+  { name: "India Distribution", href: "/distributors", icon: Split },
+  { name: "Bank Distribution", href: "/bank-distrip", icon: Landmark },
   { name: "Reports & Excel", href: "/reports", icon: FileSpreadsheet },
 ];
 

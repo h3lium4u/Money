@@ -7,11 +7,17 @@ import {
   PlusCircle,
   FileSpreadsheet,
   Clock,
+  Split,
+  AlertCircle,
+  ShieldCheck,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
+  const [distributors, setDistributors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Quick preset filter
@@ -27,8 +33,16 @@ export default function TransactionsPage() {
   const [voidReason, setVoidReason] = useState("");
   const [isVoiding, setIsVoiding] = useState(false);
 
+  // Split modal state
+  const [splittingTxn, setSplittingTxn] = useState<any | null>(null);
+  const [splitDistId, setSplitDistId] = useState("");
+  const [splitAmount, setSplitAmount] = useState("");
+  const [splitNotes, setSplitNotes] = useState("");
+  const [splitLoading, setSplitLoading] = useState(false);
+  const [splitError, setSplitError] = useState<string | null>(null);
+
   useEffect(() => {
-    fetchCustomers();
+    fetchMetadata();
   }, []);
 
   useEffect(() => {
@@ -38,11 +52,22 @@ export default function TransactionsPage() {
   const todayStr = "2026-09-26";
   const yesterdayStr = "2026-09-25";
 
-  async function fetchCustomers() {
+  async function fetchMetadata() {
     try {
-      const res = await fetch("/api/customers");
-      const data = await res.json();
-      setCustomers(data);
+      const [cRes, dRes] = await Promise.all([
+        fetch("/api/customers"),
+        fetch("/api/distributors"),
+      ]);
+      const cData = await cRes.json();
+      const dData = await dRes.json();
+      setCustomers(cData || []);
+      const activeDists = (dData || []).filter((d: any) =>
+        ["INDIA_DISTRIBUTOR", "HYBRID", "BANK_ACCOUNT"].includes(d.partner_type)
+      );
+      setDistributors(activeDists);
+      if (activeDists.length > 0) {
+        setSplitDistId(activeDists[0].id);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -104,6 +129,45 @@ export default function TransactionsPage() {
     }
   }
 
+  async function handleAddSplit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!splittingTxn) return;
+    setSplitLoading(true);
+    setSplitError(null);
+
+    try {
+      const res = await fetch("/api/distribution-splits", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transaction_id: splittingTxn.id,
+          distributor_id: splitDistId,
+          split_date: splittingTxn.transaction_date || todayStr,
+          inr_amount: parseFloat(splitAmount),
+          notes: splitNotes || undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      setSplittingTxn(null);
+      setSplitAmount("");
+      setSplitNotes("");
+      fetchTransactions();
+    } catch (err: any) {
+      setSplitError(err.message || "Failed to add split");
+    } finally {
+      setSplitLoading(false);
+    }
+  }
+
+  const formatINR = (val?: number) =>
+    `₹ ${(val || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const formatAED = (val?: number) =>
+    `${(val || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED`;
+
   const filtered = transactions.filter((t) => {
     if (!search) return true;
     const q = search.toLowerCase();
@@ -118,49 +182,51 @@ export default function TransactionsPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">All Transfers</h2>
-          <p className="text-xs text-slate-500">History of all customer money transfers.</p>
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Remittance Transfers</h2>
+          <p className="text-xs text-slate-500">
+            View all Dubai ➔ India transfers with authoritative AED calculations and India distribution status.
+          </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <a
-            href="/api/reports/export-excel"
-            className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 shadow-sm"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Excel Export</span>
-          </a>
-
+        <div className="flex items-center gap-2">
           <Link
             href="/transactions/new"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm"
           >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>+ New Transfer</span>
+            <PlusCircle className="w-4 h-4" />
+            <span>New Transfer</span>
+          </Link>
+          <Link
+            href="/distributors"
+            className="inline-flex items-center gap-2 px-3.5 py-2 bg-white text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg hover:bg-slate-50 shadow-sm"
+          >
+            <Split className="w-4 h-4 text-emerald-600" />
+            <span>India Distribution</span>
           </Link>
         </div>
       </div>
 
-      {/* Filter Bar with Today explicitly featured */}
+      {/* Filter Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+        {/* Quick Time Presets */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-xs font-bold text-slate-700 uppercase tracking-wider mr-2 flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5 text-emerald-600" /> Time:
+            <Clock className="w-3.5 h-3.5 text-emerald-600" /> Quick Date:
           </span>
           {[
-            { id: "all", label: "All Transfers" },
+            { id: "all", label: "All Time" },
             { id: "today", label: "Today" },
             { id: "yesterday", label: "Yesterday" },
             { id: "week", label: "This Week" },
             { id: "month", label: "This Month" },
-            { id: "custom", label: "Custom Dates" },
+            { id: "custom", label: "Custom Range" },
           ].map((item) => (
             <button
               key={item.id}
               onClick={() => setTimeFilter(item.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 timeFilter === item.id
-                  ? "bg-emerald-600 text-white shadow-sm"
+                  ? "bg-slate-900 text-white shadow-sm"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
@@ -169,41 +235,45 @@ export default function TransactionsPage() {
           ))}
         </div>
 
-        {/* Dropdowns & Search */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1 border-t border-slate-100">
+        {/* Search & Dropdown Filters */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-2 border-t border-slate-100">
           <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
-              placeholder="Search transfer # or customer..."
+              placeholder="Search by ID or customer..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full text-xs pl-8 pr-3 py-2 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-slate-800"
             />
           </div>
 
-          <select
-            value={selectedCustomer}
-            onChange={(e) => setSelectedCustomer(e.target.value)}
-            className="text-xs font-bold border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          >
-            <option value="">-- All Customers --</option>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <div>
+            <select
+              value={selectedCustomer}
+              onChange={(e) => setSelectedCustomer(e.target.value)}
+              className="w-full text-xs font-medium border border-slate-300 rounded-lg p-2 text-slate-800"
+            >
+              <option value="">All Customers</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-xs font-bold border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          >
-            <option value="">-- All Statuses --</option>
-            <option value="CONFIRMED">Active (Confirmed)</option>
-            <option value="VOIDED">Voided (Canceled)</option>
-          </select>
+          <div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full text-xs font-medium border border-slate-300 rounded-lg p-2 text-slate-800"
+            >
+              <option value="">All Statuses</option>
+              <option value="CONFIRMED">CONFIRMED</option>
+              <option value="VOIDED">VOIDED</option>
+            </select>
+          </div>
 
           {timeFilter === "custom" && (
             <div className="flex items-center gap-1.5">
@@ -211,89 +281,125 @@ export default function TransactionsPage() {
                 type="date"
                 value={fromDate}
                 onChange={(e) => setFromDate(e.target.value)}
-                className="w-1/2 text-xs border border-slate-300 rounded-lg p-1.5"
+                className="w-full text-xs border border-slate-300 rounded-lg p-1.5 text-slate-700"
               />
+              <span className="text-slate-400 text-xs">➔</span>
               <input
                 type="date"
                 value={toDate}
                 onChange={(e) => setToDate(e.target.value)}
-                className="w-1/2 text-xs border border-slate-300 rounded-lg p-1.5"
+                className="w-full text-xs border border-slate-300 rounded-lg p-1.5 text-slate-700"
               />
             </div>
           )}
         </div>
       </div>
 
-      {/* Transfers Table */}
+      {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+            <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200 text-[10px]">
               <tr>
-                <th className="py-3 px-4">Transfer #</th>
-                <th className="py-3 px-4">Date</th>
-                <th className="py-3 px-4">Customer</th>
-                <th className="py-3 px-4 text-right">INR Amount</th>
-                <th className="py-3 px-4 text-right">Rate</th>
-                <th className="py-3 px-4 text-right">Customer Pays (AED)</th>
-                <th className="py-3 px-4 text-right">Net Profit</th>
-                <th className="py-3 px-4 text-center">Status</th>
-                <th className="py-3 px-4 text-center">Actions</th>
+                <th className="px-4 py-3">Txn ID</th>
+                <th className="px-4 py-3">Date</th>
+                <th className="px-4 py-3">Customer</th>
+                <th className="px-4 py-3">INR Order</th>
+                <th className="px-4 py-3">Customer Rate</th>
+                <th className="px-4 py-3">AED Charged</th>
+                <th className="px-4 py-3">Net Profit</th>
+                <th className="px-4 py-3">India Distribution</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 font-medium">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-xs text-slate-400">
+                  <td colSpan={10} className="px-4 py-8 text-center text-slate-400">
                     Loading transfers...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-xs text-slate-400">
-                    No transfers found matching filter.
+                  <td colSpan={10} className="px-4 py-8 text-center text-slate-400">
+                    No remittance transactions found matching the filter.
                   </td>
                 </tr>
               ) : (
                 filtered.map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-3 px-4 font-mono font-medium text-slate-900">{t.transaction_number}</td>
-                    <td className="py-3 px-4 text-slate-600 font-medium">{t.transaction_date}</td>
-                    <td className="py-3 px-4 font-bold text-slate-900">
-                      <Link href={`/customers/${t.customer_id}`} className="hover:underline text-emerald-800">
+                  <tr
+                    key={t.id}
+                    className={`hover:bg-slate-50/80 transition-colors ${
+                      t.status === "VOIDED" ? "opacity-60 bg-slate-50/40" : ""
+                    }`}
+                  >
+                    <td className="px-4 py-3 font-mono font-bold text-slate-900">
+                      <div className="flex items-center gap-1.5">
+                        <span>{t.transaction_number}</span>
+                        {t.is_demo && (
+                          <span className="text-[9px] bg-slate-100 text-slate-600 px-1 py-0.2 rounded border border-slate-200 uppercase font-semibold">
+                            DEMO
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">{t.transaction_date}</td>
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/customers/${t.customer_id}`}
+                        className="font-bold text-slate-800 hover:text-emerald-600 hover:underline"
+                      >
                         {t.customer_name}
                       </Link>
                     </td>
-                    <td className="py-3 px-4 text-right font-semibold text-slate-900">
-                      ₹ {t.inr_amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    <td className="px-4 py-3 font-bold text-slate-900">{formatINR(t.inr_amount)}</td>
+                    <td className="px-4 py-3 font-mono text-slate-600">{t.customer_rate.toFixed(4)}</td>
+                    <td className="px-4 py-3 font-bold text-slate-900">{formatAED(t.aed_amount)}</td>
+                    <td className="px-4 py-3 font-bold text-emerald-600">
+                      {formatAED(t.net_profit_aed)}
                     </td>
-                    <td className="py-3 px-4 text-right font-mono text-slate-700">{t.customer_rate}</td>
-                    <td className="py-3 px-4 text-right font-bold text-slate-900">
-                      {t.aed_amount.toFixed(2)} AED
+                    <td className="px-4 py-3">
+                      {t.remaining_inr === 0 ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">
+                          <ShieldCheck className="w-3 h-3" />
+                          <span>100% Split ({formatINR(t.total_distributed_inr)})</span>
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-50 text-amber-800 px-2 py-0.5 rounded border border-amber-200">
+                            <AlertCircle className="w-3 h-3" />
+                            <span>Pending {formatINR(t.remaining_inr)}</span>
+                          </span>
+                          <button
+                            onClick={() => {
+                              setSplittingTxn(t);
+                              setSplitAmount(String(t.remaining_inr));
+                              setSplitError(null);
+                            }}
+                            className="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200"
+                          >
+                            + Split
+                          </button>
+                        </div>
+                      )}
                     </td>
-                    <td
-                      className={`py-3 px-4 text-right font-bold ${
-                        t.net_profit_aed >= 0 ? "text-emerald-600" : "text-rose-600"
-                      }`}
-                    >
-                      {t.net_profit_aed.toFixed(2)} AED
-                    </td>
-                    <td className="py-3 px-4 text-center">
+                    <td className="px-4 py-3">
                       <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
                           t.status === "CONFIRMED"
-                            ? "bg-emerald-100 text-emerald-800"
-                            : "bg-slate-200 text-slate-600"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-rose-50 text-rose-700 border border-rose-200"
                         }`}
                       >
                         {t.status}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-center">
+                    <td className="px-4 py-3 text-right">
                       {t.status === "CONFIRMED" && (
                         <button
                           onClick={() => setVoidingTxn(t)}
-                          className="px-2 py-1 text-[11px] font-bold text-rose-600 hover:bg-rose-50 rounded"
+                          className="text-xs text-rose-600 hover:text-rose-800 font-semibold px-2 py-1 rounded hover:bg-rose-50"
                         >
                           Void
                         </button>
@@ -307,40 +413,148 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      {/* Void Dialog Modal */}
-      {voidingTxn && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
-            <h3 className="text-base font-bold text-slate-900">Void Transfer</h3>
-            <p className="text-xs text-slate-600">
-              Are you sure you want to void <span className="font-mono font-bold text-slate-900">{voidingTxn.transaction_number}</span>?
-              This will cancel the order and subtract it from customer balance.
-            </p>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Reason for cancellation
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Customer canceled / typing mistake"
-                value={voidReason}
-                onChange={(e) => setVoidReason(e.target.value)}
-                className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500"
-              />
+      {/* QUICK SPLIT MODAL */}
+      {splittingTxn && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Split className="w-5 h-5 text-emerald-600" />
+                <span>Split Order to India Party</span>
+              </h3>
+              <button
+                onClick={() => setSplittingTxn(null)}
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
+              >
+                ✕
+              </button>
             </div>
 
-            <div className="flex justify-end gap-3 pt-2">
+            {splitError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs font-medium flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{splitError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleAddSplit} className="space-y-4">
+              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Transaction:</span>
+                  <span className="font-mono font-bold text-slate-900">{splittingTxn.transaction_number}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Customer:</span>
+                  <span className="font-bold text-slate-900">{splittingTxn.customer_name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Total Order:</span>
+                  <span className="font-bold text-slate-900">{formatINR(splittingTxn.inr_amount)}</span>
+                </div>
+                <div className="flex justify-between text-amber-700 font-bold pt-1 border-t border-slate-200">
+                  <span>Remaining to Allocate:</span>
+                  <span>{formatINR(splittingTxn.remaining_inr)}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  India Party / Distributor
+                </label>
+                <select
+                  value={splitDistId}
+                  onChange={(e) => setSplitDistId(e.target.value)}
+                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900"
+                >
+                  {distributors.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.code} • {d.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  INR Amount to Allocate
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  required
+                  value={splitAmount}
+                  onChange={(e) => setSplitAmount(e.target.value)}
+                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Notes / Reference
+                </label>
+                <input
+                  type="text"
+                  placeholder="Payout note..."
+                  value={splitNotes}
+                  onChange={(e) => setSplitNotes(e.target.value)}
+                  className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setSplittingTxn(null)}
+                  className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={splitLoading}
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 shadow-sm"
+                >
+                  {splitLoading ? "Saving Split..." : "Confirm Split"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* VOID CONFIRMATION MODAL */}
+      {voidingTxn && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200">
+            <h3 className="text-base font-bold text-slate-900">Void Transaction Confirmation</h3>
+            <p className="text-xs text-slate-500">
+              Are you sure you want to void transfer <strong>{voidingTxn.transaction_number}</strong>? This action updates the status to VOIDED, reverses the customer’s receivable balance, and records an audit log.
+            </p>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Reason for voiding (Required for audit log)
+              </label>
+              <textarea
+                rows={2}
+                placeholder="e.g. Order cancelled by customer or duplicate entry..."
+                value={voidReason}
+                onChange={(e) => setVoidReason(e.target.value)}
+                className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900"
+              />
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-2">
               <button
+                type="button"
                 onClick={() => setVoidingTxn(null)}
-                className="px-4 py-2 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-50"
+                className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50"
               >
-                Keep Transfer
+                Cancel
               </button>
               <button
+                type="button"
                 onClick={handleConfirmVoid}
                 disabled={isVoiding}
-                className="px-4 py-2 bg-rose-600 text-white text-xs font-bold rounded-lg hover:bg-rose-700"
+                className="px-4 py-2 bg-rose-600 text-white rounded-lg text-xs font-bold hover:bg-rose-700 disabled:opacity-50"
               >
                 {isVoiding ? "Voiding..." : "Confirm Void"}
               </button>

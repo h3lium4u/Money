@@ -8,6 +8,10 @@ import {
   AlertTriangle,
   Coins,
   RefreshCw,
+  PlusCircle,
+  Trash2,
+  Split,
+  Layers,
 } from "lucide-react";
 
 interface CustomerOption {
@@ -18,21 +22,31 @@ interface CustomerOption {
   outstanding_balance?: number;
 }
 
+interface DistributorOption {
+  id: string;
+  code: string;
+  name: string;
+  partner_type: string;
+}
+
 interface CalculationPreview {
   inrAmount: number;
   customerRate: number;
-  customerRateInrPerAed: number;
   aedAmount: number;
   baseRate: number;
-  baseRateAedPer1000: number;
-  baseRateInrPerAed: number;
   costAed: number;
   grossProfitAed: number;
   deliveryChargePct: number;
   deliveryChargeAed: number;
   netProfitAed: number;
-  marginPct: number;
   warning?: string | null;
+}
+
+interface SplitItem {
+  id: string;
+  distributor_id: string;
+  inr_amount: string;
+  notes?: string;
 }
 
 export default function NewTransactionPage() {
@@ -41,16 +55,18 @@ export default function NewTransactionPage() {
   // Inputs
   const [date, setDate] = useState("2026-09-26");
   const [customerId, setCustomerId] = useState("");
-  const [inrAmount, setInrAmount] = useState<string>("100000");
+  const [inrAmount, setInrAmount] = useState<string>("1000000");
   const [customerRate, setCustomerRate] = useState<string>("38.25");
-  const [baseRate, setBaseRate] = useState<string>("26.82");
+  const [baseRate, setBaseRate] = useState<string>("26.20");
   const [deliveryPct, setDeliveryPct] = useState<string>("20");
-  const [distributorId, setDistributorId] = useState("");
   const [notes, setNotes] = useState("");
+
+  // Distribution Splits (Optional at order entry)
+  const [splits, setSplits] = useState<SplitItem[]>([]);
 
   // Options
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
-  const [distributors, setDistributors] = useState<any[]>([]);
+  const [distributors, setDistributors] = useState<DistributorOption[]>([]);
 
   // Calculation state
   const [preview, setPreview] = useState<CalculationPreview | null>(null);
@@ -70,7 +86,10 @@ export default function NewTransactionPage() {
         const cJson = await cRes.json();
         const dJson = await dRes.json();
         setCustomers(cJson);
-        setDistributors(dJson);
+        const filteredDists = (dJson || []).filter((d: any) =>
+          ["INDIA_DISTRIBUTOR", "HYBRID", "BANK_ACCOUNT"].includes(d.partner_type)
+        );
+        setDistributors(filteredDists);
         if (cJson.length > 0) {
           setCustomerId(cJson[0].id);
           if (cJson[0].default_rate) {
@@ -127,10 +146,36 @@ export default function NewTransactionPage() {
       } finally {
         setCalculating(false);
       }
-    }, 200);
+    }, 150);
 
     return () => clearTimeout(timer);
   }, [inrAmount, customerRate, baseRate, deliveryPct]);
+
+  // Splits Calculation
+  const totalOrderInr = parseFloat(inrAmount) || 0;
+  const totalAllocatedInr = splits.reduce((sum, s) => sum + (parseFloat(s.inr_amount) || 0), 0);
+  const remainingInr = Math.max(0, totalOrderInr - totalAllocatedInr);
+
+  function addSplit() {
+    if (distributors.length === 0) return;
+    setSplits([
+      ...splits,
+      {
+        id: Math.random().toString(),
+        distributor_id: distributors[0].id,
+        inr_amount: remainingInr > 0 ? String(remainingInr) : "",
+        notes: "",
+      },
+    ]);
+  }
+
+  function updateSplit(id: string, field: keyof SplitItem, value: string) {
+    setSplits(splits.map((s) => (s.id === id ? { ...s, [field]: value } : s)));
+  }
+
+  function removeSplit(id: string) {
+    setSplits(splits.filter((s) => s.id !== id));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -139,9 +184,22 @@ export default function NewTransactionPage() {
       return;
     }
 
+    if (totalAllocatedInr > totalOrderInr) {
+      setError(`Total distributed (₹${totalAllocatedInr.toLocaleString()}) cannot exceed customer order (₹${totalOrderInr.toLocaleString()})`);
+      return;
+    }
+
     setSaving(true);
     setError(null);
     try {
+      const payloadSplits = splits
+        .filter((s) => parseFloat(s.inr_amount) > 0)
+        .map((s) => ({
+          distributor_id: s.distributor_id,
+          inr_amount: parseFloat(s.inr_amount),
+          notes: s.notes || undefined,
+        }));
+
       const res = await fetch("/api/transactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -152,8 +210,8 @@ export default function NewTransactionPage() {
           customer_rate: parseFloat(customerRate),
           base_rate: parseFloat(baseRate),
           delivery_charge_pct: parseFloat(deliveryPct) / 100,
-          distributor_id: distributorId || null,
           notes: notes || undefined,
+          splits: payloadSplits.length > 0 ? payloadSplits : undefined,
         }),
       });
 
@@ -161,6 +219,7 @@ export default function NewTransactionPage() {
       if (!res.ok) throw new Error(data.error);
 
       setSuccessTxn(data);
+      setSplits([]);
     } catch (err: any) {
       setError(err.message || "Failed to save transfer");
     } finally {
@@ -174,9 +233,9 @@ export default function NewTransactionPage() {
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold text-slate-900 tracking-tight">New Money Transfer</h2>
+        <h2 className="text-xl font-bold text-slate-900 tracking-tight">New Money Transfer (Dubai ➔ India)</h2>
         <p className="text-xs text-slate-500">
-          Enter order details below. AED totals and net profit calculate automatically.
+          Enter only basic transfer parameters. AED amounts, gross margin, delivery cut, and net profit are calculated by the backend.
         </p>
       </div>
 
@@ -192,7 +251,8 @@ export default function NewTransactionPage() {
               <h3 className="text-base font-mono font-bold text-slate-900">{successTxn.transaction_number}</h3>
               <p className="text-xs text-slate-600">
                 ₹ {successTxn.inr_amount.toLocaleString()} for {selectedCustomer?.name} •{" "}
-                <span className="font-bold text-slate-900">{successTxn.aed_amount.toFixed(2)} AED</span>
+                <span className="font-bold text-slate-900">{successTxn.aed_amount.toFixed(2)} AED</span> •{" "}
+                <span className="font-bold text-emerald-700">Profit: {successTxn.net_profit_aed.toFixed(2)} AED</span>
               </p>
             </div>
           </div>
@@ -208,19 +268,25 @@ export default function NewTransactionPage() {
               + Another Transfer
             </button>
             <button
+              onClick={() => router.push(`/distributors`)}
+              className="px-3.5 py-1.5 bg-white text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg hover:bg-slate-50"
+            >
+              View India Splits
+            </button>
+            <button
               onClick={() => router.push(`/customers/${customerId}`)}
               className="px-3.5 py-1.5 bg-white text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg hover:bg-slate-50"
             >
-              View Customer Ledger
+              Customer Statement
             </button>
           </div>
         </div>
       )}
 
-      {/* Two Columns: Form & Summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* Main Grid: Entry Form & Authoritative Calculation Summary */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Form Column */}
-        <form onSubmit={handleSubmit} className="lg:col-span-7 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+        <form onSubmit={handleSubmit} className="lg:col-span-7 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-5">
           {error && (
             <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs font-medium flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
@@ -228,7 +294,7 @@ export default function NewTransactionPage() {
             </div>
           )}
 
-          {/* Date & Customer */}
+          {/* Section: Customer & Date */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
@@ -245,9 +311,9 @@ export default function NewTransactionPage() {
 
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
-                <span>Customer</span>
+                <span>Dubai Customer</span>
                 {selectedCustomer && (
-                  <span className="text-[10px] text-slate-400 font-normal">
+                  <span className="text-[10px] text-slate-500 font-semibold">
                     Due: {(selectedCustomer.outstanding_balance || 0).toFixed(2)} AED
                   </span>
                 )}
@@ -266,10 +332,10 @@ export default function NewTransactionPage() {
             </div>
           </div>
 
-          {/* INR Amount */}
+          {/* Section: INR Order Amount */}
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-              INR Amount (Money to Send)
+              INR Order Amount (₹ Delivered in India)
             </label>
             <div className="relative">
               <span className="absolute left-3.5 top-2.5 text-slate-400 font-bold text-sm">₹</span>
@@ -277,7 +343,7 @@ export default function NewTransactionPage() {
                 type="number"
                 step="any"
                 required
-                placeholder="100000"
+                placeholder="1000000"
                 value={inrAmount}
                 onChange={(e) => setInrAmount(e.target.value)}
                 className="w-full text-base font-bold pl-8 pr-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -285,12 +351,12 @@ export default function NewTransactionPage() {
             </div>
           </div>
 
-          {/* Rates */}
+          {/* Section: Rates */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
-                <span>Customer Rate</span>
-                <span className="text-[10px] text-emerald-600 font-bold">AED / 1000 INR</span>
+                <span>Daily Rate (Customer)</span>
+                <span className="text-[10px] text-emerald-700 font-bold">AED / 1000 INR</span>
               </label>
               <input
                 type="number"
@@ -299,158 +365,223 @@ export default function NewTransactionPage() {
                 placeholder="38.25"
                 value={customerRate}
                 onChange={(e) => setCustomerRate(e.target.value)}
-                className="w-full text-sm font-bold border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
-              <p className="text-[10px] text-slate-400 mt-1">
-                = {preview ? `${preview.customerRateInrPerAed} INR per AED` : "..."}
-              </p>
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
-                <span>Cost Rate</span>
-                <span className="text-[10px] text-slate-500 font-medium">INR per AED</span>
+                <span>My Rate (Base Cost)</span>
+                <span className="text-[10px] text-blue-700 font-bold">INR / 1 AED</span>
               </label>
               <input
                 type="number"
                 step="any"
                 required
-                placeholder="26.82"
+                placeholder="26.20"
                 value={baseRate}
                 onChange={(e) => setBaseRate(e.target.value)}
-                className="w-full text-sm font-bold border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
-              <p className="text-[10px] text-slate-400 mt-1">
-                = {preview ? `${preview.baseRateAedPer1000} AED per 1000` : "..."}
-              </p>
             </div>
           </div>
 
-          {/* Delivery Fee & Partner */}
+          {/* Section: Delivery Cut & Notes */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Delivery Fee (%)
+                Delivery Charge Cut (%)
               </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="any"
-                  value={deliveryPct}
-                  onChange={(e) => setDeliveryPct(e.target.value)}
-                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-                <span className="absolute right-3 top-2 text-slate-400 text-xs font-bold">%</span>
-              </div>
+              <input
+                type="number"
+                step="any"
+                placeholder="20"
+                value={deliveryPct}
+                onChange={(e) => setDeliveryPct(e.target.value)}
+                className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Bank / Partner (Optional)
+                Transfer Notes
               </label>
-              <select
-                value={distributorId}
-                onChange={(e) => setDistributorId(e.target.value)}
+              <input
+                type="text"
+                placeholder="Reference or instructions..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
                 className="w-full text-xs font-medium border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              >
-                <option value="">-- Direct / None --</option>
-                {distributors.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name} ({d.code})
-                  </option>
-                ))}
-              </select>
+              />
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-              Notes (Optional)
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. Beneficiary IFSC / reference"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            />
+          {/* SEPARATE SECTION: India Distribution Splits (Decoupled & Optional) */}
+          <div className="pt-4 border-t border-slate-200 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Split className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>India Distribution Split (Optional)</span>
+                </h4>
+                <p className="text-[11px] text-slate-400">
+                  Split this order among India parties (MK, ISMAIL, SARABU, etc.) now or allocate later.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={addSplit}
+                className="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200 flex items-center gap-1"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>+ Split Order</span>
+              </button>
+            </div>
+
+            {/* Allocation Status Indicator */}
+            {splits.length > 0 && (
+              <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 text-xs flex items-center justify-between">
+                <span>
+                  Allocated: <strong>₹{totalAllocatedInr.toLocaleString()}</strong> / ₹{totalOrderInr.toLocaleString()}
+                </span>
+                <span>
+                  Remaining to Distribute:{" "}
+                  <strong className={remainingInr === 0 ? "text-emerald-600" : "text-amber-600"}>
+                    ₹{remainingInr.toLocaleString()}
+                  </strong>
+                </span>
+              </div>
+            )}
+
+            {/* Split Rows */}
+            {splits.map((s, idx) => (
+              <div key={s.id} className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+                  <span>Split #{idx + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeSplit(s.id)}
+                    className="text-rose-600 hover:text-rose-700 flex items-center gap-1"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>Remove</span>
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] uppercase font-bold text-slate-600 mb-0.5">
+                      India Party
+                    </label>
+                    <select
+                      value={s.distributor_id}
+                      onChange={(e) => updateSplit(s.id, "distributor_id", e.target.value)}
+                      className="w-full text-xs font-bold border border-slate-300 rounded p-1.5 text-slate-900"
+                    >
+                      {distributors.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.code} • {d.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase font-bold text-slate-600 mb-0.5">
+                      INR Amount
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="Amount"
+                      value={s.inr_amount}
+                      onChange={(e) => updateSplit(s.id, "inr_amount", e.target.value)}
+                      className="w-full text-xs font-bold border border-slate-300 rounded p-1.5 text-slate-900"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
 
+          {/* Submit Button */}
           <button
             type="submit"
-            disabled={saving || !preview}
-            className={`w-full py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm ${
-              saving || !preview
-                ? "bg-slate-200 text-slate-400 cursor-not-allowed"
-                : "bg-emerald-600 text-white hover:bg-emerald-700"
-            }`}
+            disabled={saving || calculating}
+            className="w-full py-3 bg-slate-900 text-white rounded-lg text-sm font-bold hover:bg-slate-800 disabled:opacity-50 transition-all shadow-sm"
           >
-            {saving ? "Saving..." : "Save Transfer"}
+            {saving ? "Saving to Neon Database..." : "Confirm & Save Transfer"}
           </button>
         </form>
 
-        {/* Live Summary Column */}
-        <div className="lg:col-span-5">
-          <div className="bg-slate-900 text-white rounded-xl p-6 shadow-sm border border-slate-800 space-y-4">
+        {/* Right Column: Authoritative Server Calculations Preview */}
+        <div className="lg:col-span-5 space-y-4">
+          <div className="bg-slate-900 text-slate-100 p-6 rounded-xl shadow-sm border border-slate-800 space-y-5">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <Calculator className="w-4 h-4 text-emerald-400" />
-                <h4 className="font-bold text-sm text-slate-200">Summary & Profit</h4>
-              </div>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">
-                Auto-Calculated
+              <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Calculator className="w-3.5 h-3.5" />
+                Backend Calculation Preview
               </span>
+              {calculating && <RefreshCw className="w-3.5 h-3.5 text-slate-400 animate-spin" />}
             </div>
 
-            {calculating ? (
-              <div className="py-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-                <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" />
-                <span>Calculating...</span>
-              </div>
-            ) : preview ? (
-              <div className="space-y-3 text-xs">
-                <div className="flex justify-between py-1 border-b border-slate-800">
-                  <span className="text-slate-400">Customer</span>
-                  <span className="font-bold text-slate-200">{selectedCustomer?.name || "..."}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-800">
-                  <span className="text-slate-400">INR Amount</span>
-                  <span className="font-bold text-slate-200">₹ {preview.inrAmount.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-800">
-                  <span className="text-slate-400">Customer Rate</span>
-                  <span className="font-mono text-slate-200">{preview.customerRate} AED/1000</span>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-800 text-sm">
-                  <span className="font-bold text-emerald-400">Customer Pays (AED)</span>
-                  <span className="font-bold text-emerald-400">{preview.aedAmount.toFixed(2)} AED</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-800 text-slate-400">
-                  <span>Our Cost (AED)</span>
-                  <span>{preview.costAed.toFixed(2)} AED</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-800 text-slate-400">
-                  <span>Gross Profit</span>
-                  <span className={preview.grossProfitAed >= 0 ? "text-emerald-400 font-semibold" : "text-rose-400 font-semibold"}>
-                    {preview.grossProfitAed.toFixed(2)} AED
+            {preview ? (
+              <div className="space-y-4">
+                {/* AED Charged */}
+                <div>
+                  <span className="text-[11px] text-slate-400 uppercase font-semibold">AED Amount Charged to Customer</span>
+                  <div className="text-3xl font-mono font-bold text-white mt-1">
+                    {preview.aedAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })} AED
+                  </div>
+                  <span className="text-[10px] text-emerald-400 font-mono">
+                    = (₹{preview.inrAmount.toLocaleString()} / 1000) × {preview.customerRate.toFixed(4)}
                   </span>
                 </div>
-                <div className="flex justify-between py-1 border-b border-slate-800 text-slate-400">
-                  <span>Delivery Fee ({preview.deliveryChargePct * 100}%)</span>
-                  <span>- {preview.deliveryChargeAed.toFixed(2)} AED</span>
-                </div>
-                <div className="flex justify-between py-2 text-base font-bold">
-                  <span className="text-white">Your Net Profit</span>
-                  <span className={preview.netProfitAed >= 0 ? "text-emerald-400" : "text-rose-400"}>
-                    {preview.netProfitAed.toFixed(2)} AED
-                  </span>
+
+                <div className="pt-3 border-t border-slate-800 space-y-2 text-xs">
+                  <div className="flex justify-between text-slate-300">
+                    <span className="text-slate-400">Wholesale Cost (AED):</span>
+                    <span className="font-mono font-bold">
+                      {preview.costAed.toFixed(2)} AED
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between text-slate-300">
+                    <span className="text-slate-400">Gross Margin:</span>
+                    <span className="font-mono font-bold text-emerald-400">
+                      +{preview.grossProfitAed.toFixed(2)} AED
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between text-slate-300">
+                    <span className="text-slate-400">Delivery Fee (20%):</span>
+                    <span className="font-mono font-bold text-slate-400">
+                      -{preview.deliveryChargeAed.toFixed(2)} AED
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between text-slate-100 pt-2 border-t border-slate-800 text-sm">
+                    <span className="font-bold text-emerald-400">Net Business Profit:</span>
+                    <span className="font-mono font-bold text-emerald-400 text-base">
+                      {preview.netProfitAed.toFixed(2)} AED
+                    </span>
+                  </div>
                 </div>
               </div>
             ) : (
-              <div className="py-8 text-center text-xs text-slate-500">
-                Type an INR amount to preview calculations.
+              <div className="py-12 text-center text-slate-500 text-xs">
+                Enter transfer amounts and rates to view authoritative calculations.
               </div>
             )}
+          </div>
+
+          {/* Architecture Reminder Card */}
+          <div className="p-4 bg-white rounded-xl border border-slate-200 text-xs text-slate-600 space-y-2 shadow-sm">
+            <span className="font-bold text-slate-900 block">Core Architecture Principles</span>
+            <ul className="list-disc pl-4 space-y-1 text-slate-500 text-[11px]">
+              <li><strong>Zero Frontend Trust</strong>: All values are verified and re-computed on the server.</li>
+              <li><strong>Decoupled Accounting</strong>: Customer payments (Receivables) and India distributions (Wholesale/Splits) are managed independently.</li>
+              <li><strong>Audited</strong>: Every transaction creation and void is recorded in the audit trail.</li>
+            </ul>
           </div>
         </div>
       </div>

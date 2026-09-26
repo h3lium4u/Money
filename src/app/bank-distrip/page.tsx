@@ -106,6 +106,17 @@ export default function BankDistripPage() {
         </button>
       </div>
 
+      {/* MK Account Unification Notice */}
+      <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 flex items-start gap-3">
+        <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+        <div>
+          <p className="font-bold text-emerald-950">Single Unified MK Account</p>
+          <p className="text-emerald-800 text-[11px] leading-relaxed mt-0.5">
+            As confirmed by the client, both historical MK blocks represent the exact same bank account (the second block was created due to a delayed entry). All MK orders, commissions, and payouts are unified into this single ledger.
+          </p>
+        </div>
+      </div>
+
       {/* Account Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {accounts.map((acct) => {

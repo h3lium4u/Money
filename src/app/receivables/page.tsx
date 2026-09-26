@@ -99,15 +99,15 @@ export default function ReceivablesPage() {
         </button>
       </div>
 
-      {/* Two Ledger Clarification Box */}
-      <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 space-y-1">
-        <div className="flex items-center gap-2 font-bold text-blue-950">
-          <HelpCircle className="w-4 h-4 text-blue-600" />
-          <span>Two Parallel Accounting Streams</span>
+      {/* Client Confirmation Notice Box */}
+      <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 space-y-1">
+        <div className="flex items-center gap-2 font-bold text-amber-950">
+          <HelpCircle className="w-4 h-4 text-amber-600" />
+          <span>Customer Receivables & Balance (REQUIRES CLIENT CONFIRMATION)</span>
         </div>
-        <p className="text-blue-800 leading-relaxed text-[11px]">
-          1. <strong>Customer Receivables:</strong> Outstanding AED owed by customers from remittance orders placed.<br />
-          2. <strong>Dubai Cash on Hand (HAND):</strong> Physical cash collected (<code>RECVD</code>) minus cash disbursed (<code>PAID</code>) in Dubai.
+        <p className="text-amber-800 leading-relaxed text-[11px]">
+          The exact business meaning and ledger direction of <code>RECVD</code> vs <code>PAID</code> in customer receivables is currently under client review.
+          Currently, confirmed remittance orders debit the customer account in AED, and cash/transfer payments credit the account in AED to establish the outstanding balance.
         </p>
       </div>
 

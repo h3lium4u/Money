@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import ExcelJS from "exceljs";
-import { listTransactions, listCustomers, listBankDistripRecords, getDailySummaryReport } from "@/lib/repository";
+import {
+  listTransactions,
+  listCustomers,
+  listBankDistripRecords,
+  listDistributionSplits,
+  getDailySummaryReport,
+} from "@/lib/repository";
 
 export async function GET(request: Request) {
   try {
@@ -12,20 +18,22 @@ export async function GET(request: Request) {
     workbook.creator = "Petti Remittance Management System";
     workbook.created = new Date();
 
-    // 1. Transactions Sheet
+    // 1. Transactions Sheet (Dubai Customer Transactions)
     const wsTxn = workbook.addWorksheet("Transactions");
     wsTxn.columns = [
       { header: "Transaction ID", key: "txn_num", width: 20 },
       { header: "Date", key: "date", width: 14 },
       { header: "Customer Name", key: "cust_name", width: 22 },
       { header: "INR Order", key: "inr", width: 16 },
-      { header: "Customer Rate", key: "rate", width: 15 },
+      { header: "Daily Rate", key: "rate", width: 15 },
+      { header: "My Rate", key: "base", width: 14 },
       { header: "AED Charged", key: "aed", width: 16 },
-      { header: "Base Rate", key: "base", width: 14 },
       { header: "Gross Profit (AED)", key: "gross", width: 18 },
       { header: "Delivery %", key: "deliv_pct", width: 12 },
-      { header: "Delivery Amt (AED)", key: "deliv_amt", width: 18 },
+      { header: "Delivery Cut (AED)", key: "deliv_amt", width: 18 },
       { header: "Net Profit (AED)", key: "net", width: 18 },
+      { header: "Distributed (INR)", key: "dist_inr", width: 18 },
+      { header: "Pending INR", key: "rem_inr", width: 16 },
       { header: "Status", key: "status", width: 14 },
     ];
     wsTxn.getRow(1).font = { bold: true };
@@ -38,18 +46,20 @@ export async function GET(request: Request) {
         cust_name: t.customer_name,
         inr: t.inr_amount,
         rate: t.customer_rate,
-        aed: t.aed_amount,
         base: t.base_rate,
+        aed: t.aed_amount,
         gross: t.gross_profit_aed,
         deliv_pct: t.delivery_charge_pct * 100 + "%",
         deliv_amt: t.delivery_charge_aed,
         net: t.net_profit_aed,
+        dist_inr: t.total_distributed_inr,
+        rem_inr: t.remaining_inr,
         status: t.status,
       });
     });
 
-    // 2. Customers & Outstanding
-    const wsCust = workbook.addWorksheet("Customer Balances");
+    // 2. Customer Receivables & Balances
+    const wsCust = workbook.addWorksheet("Customer Receivables");
     wsCust.columns = [
       { header: "Customer Code", key: "code", width: 15 },
       { header: "Customer Name", key: "name", width: 25 },
@@ -72,7 +82,37 @@ export async function GET(request: Request) {
       });
     });
 
-    // 3. Bank Distrip
+    // 3. India Distribution Splits
+    const wsSplits = workbook.addWorksheet("India Distribution");
+    wsSplits.columns = [
+      { header: "Split Date", key: "date", width: 14 },
+      { header: "Transaction ID", key: "txn_num", width: 20 },
+      { header: "Customer", key: "cust_name", width: 22 },
+      { header: "India Party", key: "party", width: 18 },
+      { header: "INR Amount", key: "inr", width: 18 },
+      { header: "Wholesale Rate", key: "rate", width: 16 },
+      { header: "AED Equivalent", key: "aed_eq", width: 18 },
+      { header: "Status", key: "status", width: 14 },
+      { header: "Notes", key: "notes", width: 25 },
+    ];
+    wsSplits.getRow(1).font = { bold: true };
+
+    const splits = await listDistributionSplits({ from, to });
+    splits.forEach((s) => {
+      wsSplits.addRow({
+        date: s.split_date,
+        txn_num: s.transaction_number,
+        cust_name: s.customer_name,
+        party: s.distributor_code,
+        inr: s.inr_amount,
+        rate: s.wholesale_rate,
+        aed_eq: s.aed_equivalent,
+        status: s.status,
+        notes: s.notes,
+      });
+    });
+
+    // 4. Bank Distribution Ledger
     const wsBank = workbook.addWorksheet("Bank Distribution");
     wsBank.columns = [
       { header: "Date", key: "date", width: 14 },
@@ -96,7 +136,7 @@ export async function GET(request: Request) {
       });
     });
 
-    // 4. Daily Performance Summary
+    // 5. Daily Performance Summary
     const wsSummary = workbook.addWorksheet("Daily Summary");
     wsSummary.columns = [
       { header: "Date", key: "date", width: 14 },
@@ -110,7 +150,7 @@ export async function GET(request: Request) {
     const dailyRows = await getDailySummaryReport();
     dailyRows.forEach((d) => {
       wsSummary.addRow({
-        date: typeof d.date === 'string' ? d.date.slice(0, 10) : new Date(d.date).toISOString().slice(0, 10),
+        date: typeof d.date === "string" ? d.date.slice(0, 10) : new Date(d.date).toISOString().slice(0, 10),
         count: Number(d.count),
         inr: Number(d.total_inr),
         aed: Number(d.total_aed),
