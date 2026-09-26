@@ -11,18 +11,17 @@ import {
   Landmark,
   Wallet,
   FileSpreadsheet,
-  ShieldCheck,
 } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "New Transaction", href: "/transactions/new", icon: PlusCircle, highlight: true },
-  { name: "Transactions", href: "/transactions", icon: ArrowLeftRight },
+  { name: "New Transfer", href: "/transactions/new", icon: PlusCircle, highlight: true },
+  { name: "All Transfers", href: "/transactions", icon: ArrowLeftRight },
   { name: "Customers", href: "/customers", icon: Users },
-  { name: "Wholesale Partners", href: "/distributors", icon: Building2 },
-  { name: "Bank Distribution", href: "/bank-distrip", icon: Landmark },
-  { name: "Receivables & Cash", href: "/receivables", icon: Wallet },
-  { name: "Reports & Export", href: "/reports", icon: FileSpreadsheet },
+  { name: "Customer Due & Cash", href: "/receivables", icon: Wallet },
+  { name: "Bank Payouts", href: "/bank-distrip", icon: Landmark },
+  { name: "India Partners", href: "/distributors", icon: Building2 },
+  { name: "Reports & Excel", href: "/reports", icon: FileSpreadsheet },
 ];
 
 export default function Sidebar() {
@@ -65,17 +64,17 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* User / Status Footer */}
+      {/* Footer */}
       <div className="p-4 border-t border-slate-800 bg-slate-950/40">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 font-semibold text-xs border border-slate-700">
             AD
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-slate-200 truncate">Administrator</p>
+            <p className="text-xs font-semibold text-slate-200 truncate">Admin</p>
             <div className="flex items-center gap-1.5 text-[11px] text-emerald-400">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>PostgreSQL / SQLite</span>
+              <span>Online</span>
             </div>
           </div>
         </div>

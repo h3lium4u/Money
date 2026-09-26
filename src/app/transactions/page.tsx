@@ -4,12 +4,9 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Search,
-  Filter,
   PlusCircle,
   FileSpreadsheet,
-  XCircle,
-  Eye,
-  CheckCircle,
+  Clock,
 } from "lucide-react";
 
 export default function TransactionsPage() {
@@ -17,7 +14,8 @@ export default function TransactionsPage() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Filters
+  // Quick preset filter
+  const [timeFilter, setTimeFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -35,7 +33,10 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     fetchTransactions();
-  }, [selectedCustomer, statusFilter, fromDate, toDate]);
+  }, [timeFilter, selectedCustomer, statusFilter, fromDate, toDate]);
+
+  const todayStr = "2026-09-26";
+  const yesterdayStr = "2026-09-25";
 
   async function fetchCustomers() {
     try {
@@ -51,11 +52,26 @@ export default function TransactionsPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
+      if (timeFilter === "today") {
+        params.set("from", todayStr);
+        params.set("to", todayStr);
+      } else if (timeFilter === "yesterday") {
+        params.set("from", yesterdayStr);
+        params.set("to", yesterdayStr);
+      } else if (timeFilter === "week") {
+        params.set("from", "2026-09-20");
+        params.set("to", todayStr);
+      } else if (timeFilter === "month") {
+        params.set("from", "2026-09-01");
+        params.set("to", todayStr);
+      } else if (timeFilter === "custom" && fromDate && toDate) {
+        params.set("from", fromDate);
+        params.set("to", toDate);
+      }
+
       if (selectedCustomer) params.set("customerId", selectedCustomer);
       if (statusFilter) params.set("status", statusFilter);
-      if (fromDate) params.set("from", fromDate);
-      if (toDate) params.set("to", toDate);
-      params.set("limit", "200");
+      params.set("limit", "100");
 
       const res = await fetch(`/api/transactions?${params.toString()}`);
       const data = await res.json();
@@ -102,98 +118,124 @@ export default function TransactionsPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Transactions Registry</h2>
-          <p className="text-xs text-slate-500">Comprehensive database records of all cross-border transfers.</p>
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">All Transfers</h2>
+          <p className="text-xs text-slate-500">History of all customer money transfers.</p>
         </div>
 
         <div className="flex items-center gap-3">
           <a
             href="/api/reports/export-excel"
-            className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 shadow-sm"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 shadow-sm"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Export Excel</span>
+            <span>Excel Export</span>
           </a>
 
           <Link
             href="/transactions/new"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm"
           >
             <PlusCircle className="w-3.5 h-3.5" />
-            <span>New Transaction</span>
+            <span>+ New Transfer</span>
           </Link>
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-        {/* Search */}
-        <div className="relative">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search Txn ID / Name..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full text-xs pl-8 pr-3 py-2 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          />
+      {/* Filter Bar with Today explicitly featured */}
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-xs font-bold text-slate-700 uppercase tracking-wider mr-2 flex items-center gap-1">
+            <Clock className="w-3.5 h-3.5 text-emerald-600" /> Time:
+          </span>
+          {[
+            { id: "all", label: "All Transfers" },
+            { id: "today", label: "Today" },
+            { id: "yesterday", label: "Yesterday" },
+            { id: "week", label: "This Week" },
+            { id: "month", label: "This Month" },
+            { id: "custom", label: "Custom Dates" },
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setTimeFilter(item.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                timeFilter === item.id
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
 
-        {/* Customer Select */}
-        <select
-          value={selectedCustomer}
-          onChange={(e) => setSelectedCustomer(e.target.value)}
-          className="text-xs font-medium border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-        >
-          <option value="">-- All Customers --</option>
-          {customers.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+        {/* Dropdowns & Search */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1 border-t border-slate-100">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search transfer # or customer..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full text-xs pl-8 pr-3 py-2 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
 
-        {/* Status */}
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="text-xs font-medium border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-        >
-          <option value="">-- All Statuses --</option>
-          <option value="CONFIRMED">Confirmed</option>
-          <option value="VOIDED">Voided</option>
-        </select>
+          <select
+            value={selectedCustomer}
+            onChange={(e) => setSelectedCustomer(e.target.value)}
+            className="text-xs font-bold border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          >
+            <option value="">-- All Customers --</option>
+            {customers.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
 
-        {/* Date From */}
-        <input
-          type="date"
-          value={fromDate}
-          onChange={(e) => setFromDate(e.target.value)}
-          className="text-xs font-medium border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-        />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="text-xs font-bold border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          >
+            <option value="">-- All Statuses --</option>
+            <option value="CONFIRMED">Active (Confirmed)</option>
+            <option value="VOIDED">Voided (Canceled)</option>
+          </select>
 
-        {/* Date To */}
-        <input
-          type="date"
-          value={toDate}
-          onChange={(e) => setToDate(e.target.value)}
-          className="text-xs font-medium border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-        />
+          {timeFilter === "custom" && (
+            <div className="flex items-center gap-1.5">
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="w-1/2 text-xs border border-slate-300 rounded-lg p-1.5"
+              />
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="w-1/2 text-xs border border-slate-300 rounded-lg p-1.5"
+              />
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Transactions Table */}
+      {/* Transfers Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+            <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
               <tr>
-                <th className="py-3 px-4">Transaction ID</th>
+                <th className="py-3 px-4">Transfer #</th>
                 <th className="py-3 px-4">Date</th>
                 <th className="py-3 px-4">Customer</th>
-                <th className="py-3 px-4 text-right">INR Order</th>
-                <th className="py-3 px-4 text-right">Customer Rate</th>
-                <th className="py-3 px-4 text-right">AED Charged</th>
-                <th className="py-3 px-4 text-right">Cost AED</th>
+                <th className="py-3 px-4 text-right">INR Amount</th>
+                <th className="py-3 px-4 text-right">Rate</th>
+                <th className="py-3 px-4 text-right">Customer Pays (AED)</th>
                 <th className="py-3 px-4 text-right">Net Profit</th>
                 <th className="py-3 px-4 text-center">Status</th>
                 <th className="py-3 px-4 text-center">Actions</th>
@@ -202,38 +244,35 @@ export default function TransactionsPage() {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={10} className="py-12 text-center text-xs text-slate-400">
-                    Loading records from database...
+                  <td colSpan={9} className="py-12 text-center text-xs text-slate-400">
+                    Loading transfers...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-12 text-center text-xs text-slate-400">
-                    No transactions found matching criteria.
+                  <td colSpan={9} className="py-12 text-center text-xs text-slate-400">
+                    No transfers found matching filter.
                   </td>
                 </tr>
               ) : (
                 filtered.map((t) => (
                   <tr key={t.id} className="hover:bg-slate-50 transition-colors">
                     <td className="py-3 px-4 font-mono font-medium text-slate-900">{t.transaction_number}</td>
-                    <td className="py-3 px-4 text-slate-600">{t.transaction_date}</td>
-                    <td className="py-3 px-4 font-semibold text-slate-900">
-                      <Link href={`/customers/${t.customer_id}`} className="hover:underline text-emerald-700">
+                    <td className="py-3 px-4 text-slate-600 font-medium">{t.transaction_date}</td>
+                    <td className="py-3 px-4 font-bold text-slate-900">
+                      <Link href={`/customers/${t.customer_id}`} className="hover:underline text-emerald-800">
                         {t.customer_name}
                       </Link>
                     </td>
-                    <td className="py-3 px-4 text-right font-medium text-slate-900">
+                    <td className="py-3 px-4 text-right font-semibold text-slate-900">
                       ₹ {t.inr_amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </td>
                     <td className="py-3 px-4 text-right font-mono text-slate-700">{t.customer_rate}</td>
-                    <td className="py-3 px-4 text-right font-semibold text-slate-900">
+                    <td className="py-3 px-4 text-right font-bold text-slate-900">
                       {t.aed_amount.toFixed(2)} AED
                     </td>
-                    <td className="py-3 px-4 text-right text-slate-500 font-mono">
-                      {t.cost_aed.toFixed(2)}
-                    </td>
                     <td
-                      className={`py-3 px-4 text-right font-semibold ${
+                      className={`py-3 px-4 text-right font-bold ${
                         t.net_profit_aed >= 0 ? "text-emerald-600" : "text-rose-600"
                       }`}
                     >
@@ -254,7 +293,7 @@ export default function TransactionsPage() {
                       {t.status === "CONFIRMED" && (
                         <button
                           onClick={() => setVoidingTxn(t)}
-                          className="px-2 py-1 text-[11px] font-semibold text-rose-600 hover:bg-rose-50 rounded"
+                          className="px-2 py-1 text-[11px] font-bold text-rose-600 hover:bg-rose-50 rounded"
                         >
                           Void
                         </button>
@@ -272,19 +311,19 @@ export default function TransactionsPage() {
       {voidingTxn && (
         <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
-            <h3 className="text-base font-bold text-slate-900">Void Transaction</h3>
+            <h3 className="text-base font-bold text-slate-900">Void Transfer</h3>
             <p className="text-xs text-slate-600">
               Are you sure you want to void <span className="font-mono font-bold text-slate-900">{voidingTxn.transaction_number}</span>?
-              This will mark the record as voided and adjust customer balances.
+              This will cancel the order and subtract it from customer balance.
             </p>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Reason for Cancellation (Required for Audit Trail)
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Reason for cancellation
               </label>
               <input
                 type="text"
-                placeholder="e.g. Customer requested cancellation / duplicate entry"
+                placeholder="e.g. Customer canceled / typing mistake"
                 value={voidReason}
                 onChange={(e) => setVoidReason(e.target.value)}
                 className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500"
@@ -296,7 +335,7 @@ export default function TransactionsPage() {
                 onClick={() => setVoidingTxn(null)}
                 className="px-4 py-2 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-50"
               >
-                Cancel
+                Keep Transfer
               </button>
               <button
                 onClick={handleConfirmVoid}
