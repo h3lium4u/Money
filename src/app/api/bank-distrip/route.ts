@@ -1,0 +1,38 @@
+import { NextResponse } from "next/server";
+import { listBankDistripAccounts, listBankDistripRecords, createBankDistripRecord } from "@/lib/repository";
+import { z } from "zod";
+
+const createRecordSchema = z.object({
+  record_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"),
+  account_id: z.string().min(1, "Account ID is required"),
+  order_inr: z.number().default(0),
+  commission_inr: z.number().default(0),
+  paid_inr: z.number().default(0),
+  notes: z.string().optional(),
+});
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const accountId = searchParams.get("accountId") || undefined;
+
+    const accounts = listBankDistripAccounts();
+    const records = listBankDistripRecords(accountId);
+
+    return NextResponse.json({ accounts, records });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || "Failed to load bank distrip data" }, { status: 500 });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const validated = createRecordSchema.parse(body);
+
+    const record = createBankDistripRecord(validated);
+    return NextResponse.json(record, { status: 201 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || "Failed to create bank distrip record" }, { status: 400 });
+  }
+}
