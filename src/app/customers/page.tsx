@@ -5,19 +5,29 @@ import Link from "next/link";
 import {
   Users,
   Search,
-  ArrowUpRight,
   PlusCircle,
   Coins,
   CheckCircle,
   AlertCircle,
   CreditCard,
+  UserPlus,
+  AlertTriangle,
 } from "lucide-react";
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [balanceFilter, setBalanceFilter] = useState("all"); // 'all', 'owing', 'cleared'
+  const [balanceFilter, setBalanceFilter] = useState("all");
+
+  // Create Customer Modal State
+  const [showModal, setShowModal] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newCode, setNewCode] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [newRate, setNewRate] = useState("38.25");
+  const [submitting, setSubmitting] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCustomers();
@@ -36,8 +46,49 @@ export default function CustomersPage() {
     }
   }
 
+  async function handleCreateCustomer(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newName.trim()) {
+      setModalError("Customer name is required");
+      return;
+    }
+
+    setSubmitting(true);
+    setModalError(null);
+    try {
+      const res = await fetch("/api/customers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newName.trim(),
+          code: newCode.trim() || undefined,
+          phone: newPhone.trim() || undefined,
+          default_rate: newRate ? parseFloat(newRate) : 38.25,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      setShowModal(false);
+      setNewName("");
+      setNewCode("");
+      setNewPhone("");
+      setNewRate("38.25");
+      fetchCustomers();
+    } catch (err: any) {
+      setModalError(err.message || "Failed to create customer");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   const filtered = customers.filter((c) => {
-    if (search && !c.name.toLowerCase().includes(search.toLowerCase()) && !c.code.toLowerCase().includes(search.toLowerCase())) {
+    if (
+      search &&
+      !c.name.toLowerCase().includes(search.toLowerCase()) &&
+      !c.code.toLowerCase().includes(search.toLowerCase())
+    ) {
       return false;
     }
     if (balanceFilter === "owing" && (c.outstanding_balance || 0) <= 0.01) return false;
@@ -52,22 +103,38 @@ export default function CustomersPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Customer Accounts & Receivables</h2>
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Dubai Customers Master</h2>
           <p className="text-xs text-slate-500">
-            {customers.length} regular clients mapped from historical remittance accounts.
+            {customers.length === 0
+              ? "No customers yet. Click '+ Add Customer' to register a new client."
+              : `${customers.length} registered Dubai customer accounts.`}
           </p>
         </div>
 
-        <div className="flex items-center gap-4 bg-rose-50 border border-rose-200 px-4 py-2 rounded-xl">
-          <div className="w-8 h-8 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center">
-            <Coins className="w-4 h-4" />
-          </div>
-          <div>
-            <span className="text-[10px] font-bold text-rose-800 uppercase tracking-wider">Total Customer Receivables</span>
-            <p className="text-sm font-bold text-rose-950">
-              {totalOutstanding.toLocaleString("en-US", { minimumFractionDigits: 2 })} AED
-            </p>
-          </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>+ Add Customer</span>
+          </button>
+
+          {customers.length > 0 && (
+            <div className="flex items-center gap-3 bg-rose-50 border border-rose-200 px-4 py-2 rounded-xl">
+              <div className="w-8 h-8 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center">
+                <Coins className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-rose-800 uppercase tracking-wider">
+                  Total Outstanding Due
+                </span>
+                <p className="text-sm font-bold text-rose-950">
+                  {totalOutstanding.toLocaleString("en-US", { minimumFractionDigits: 2 })} AED
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -85,7 +152,7 @@ export default function CustomersPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-slate-500 mr-1">Status:</span>
+          <span className="text-xs font-semibold text-slate-500 mr-1">Filter:</span>
           {[
             { id: "all", label: "All Customers" },
             { id: "owing", label: "Has Balance Due" },
@@ -112,7 +179,7 @@ export default function CustomersPage() {
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
               <tr>
-                <th className="py-3 px-4">Customer</th>
+                <th className="py-3 px-4">Customer Name</th>
                 <th className="py-3 px-4">Code</th>
                 <th className="py-3 px-4 text-right">Default Rate</th>
                 <th className="py-3 px-4 text-right">Total Processed (INR)</th>
@@ -127,6 +194,22 @@ export default function CustomersPage() {
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-xs text-slate-400">
                     Loading customers...
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-16 text-center">
+                    <Users className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                    <p className="text-sm font-bold text-slate-800">No Customers Found</p>
+                    <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                      All default names have been cleared. Click "+ Add Customer" above to create your clients.
+                    </p>
+                    <button
+                      onClick={() => setShowModal(true)}
+                      className="mt-4 px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm"
+                    >
+                      + Add First Customer
+                    </button>
                   </td>
                 </tr>
               ) : (
@@ -170,7 +253,7 @@ export default function CustomersPage() {
                           href={`/customers/${c.id}`}
                           className="px-2.5 py-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded"
                         >
-                          Ledger ➔
+                          Statement ➔
                         </Link>
                       </td>
                     </tr>
@@ -181,6 +264,108 @@ export default function CustomersPage() {
           </table>
         </div>
       </div>
+
+      {/* CREATE CUSTOMER MODAL */}
+      {showModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-emerald-600" />
+                <span>Add New Dubai Customer</span>
+              </h3>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {modalError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs font-medium flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{modalError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCreateCustomer} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Customer Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. DIVAN or SAMI"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Code (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. CUST-001"
+                    value={newCode}
+                    onChange={(e) => setNewCode(e.target.value)}
+                    className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Default Rate
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    placeholder="38.25"
+                    value={newRate}
+                    onChange={(e) => setNewRate(e.target.value)}
+                    className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Phone (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="+971 50 ..."
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value)}
+                  className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 shadow-sm"
+                >
+                  {submitting ? "Saving..." : "Save Customer"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

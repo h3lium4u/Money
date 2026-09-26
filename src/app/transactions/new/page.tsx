@@ -12,6 +12,7 @@ import {
   Trash2,
   Split,
   Layers,
+  UserPlus,
 } from "lucide-react";
 
 interface CustomerOption {
@@ -75,39 +76,92 @@ export default function NewTransactionPage() {
   const [error, setError] = useState<string | null>(null);
   const [successTxn, setSuccessTxn] = useState<any | null>(null);
 
+  // New Customer Modal State
+  const [showNewCustModal, setShowNewCustModal] = useState(false);
+  const [newCustName, setNewCustName] = useState("");
+  const [newCustCode, setNewCustCode] = useState("");
+  const [newCustPhone, setNewCustPhone] = useState("");
+  const [newCustRate, setNewCustRate] = useState("38.25");
+  const [savingNewCust, setSavingNewCust] = useState(false);
+  const [newCustError, setNewCustError] = useState<string | null>(null);
+
   // Load customers and distributors
   useEffect(() => {
-    async function loadOptions() {
-      try {
-        const [cRes, dRes] = await Promise.all([
-          fetch("/api/customers"),
-          fetch("/api/distributors"),
-        ]);
-        const cJson = await cRes.json();
-        const dJson = await dRes.json();
-        setCustomers(cJson);
-        const filteredDists = (dJson || []).filter((d: any) =>
-          ["INDIA_DISTRIBUTOR", "HYBRID", "BANK_ACCOUNT"].includes(d.partner_type)
-        );
-        setDistributors(filteredDists);
-        if (cJson.length > 0) {
-          setCustomerId(cJson[0].id);
-          if (cJson[0].default_rate) {
-            setCustomerRate(String(cJson[0].default_rate));
-          }
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }
     loadOptions();
   }, []);
+
+  async function loadOptions() {
+    try {
+      const [cRes, dRes] = await Promise.all([
+        fetch("/api/customers"),
+        fetch("/api/distributors"),
+      ]);
+      const cJson = await cRes.json();
+      const dJson = await dRes.json();
+      setCustomers(cJson || []);
+      const filteredDists = (dJson || []).filter((d: any) =>
+        ["INDIA_DISTRIBUTOR", "HYBRID", "BANK_ACCOUNT"].includes(d.partner_type)
+      );
+      setDistributors(filteredDists);
+      if (cJson?.length > 0 && !customerId) {
+        setCustomerId(cJson[0].id);
+        if (cJson[0].default_rate) {
+          setCustomerRate(String(cJson[0].default_rate));
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
   function handleCustomerChange(cId: string) {
     setCustomerId(cId);
     const selected = customers.find((c) => c.id === cId);
     if (selected?.default_rate) {
       setCustomerRate(String(selected.default_rate));
+    }
+  }
+
+  async function handleCreateNewCustomer(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newCustName.trim()) {
+      setNewCustError("Customer name is required");
+      return;
+    }
+
+    setSavingNewCust(true);
+    setNewCustError(null);
+    try {
+      const res = await fetch("/api/customers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newCustName.trim(),
+          code: newCustCode.trim() || undefined,
+          phone: newCustPhone.trim() || undefined,
+          default_rate: newCustRate ? parseFloat(newCustRate) : 38.25,
+        }),
+      });
+
+      const created = await res.json();
+      if (!res.ok) throw new Error(created.error);
+
+      // Add to list and immediately select
+      setCustomers((prev) => [...prev, created]);
+      setCustomerId(created.id);
+      if (created.default_rate) {
+        setCustomerRate(String(created.default_rate));
+      }
+
+      setShowNewCustModal(false);
+      setNewCustName("");
+      setNewCustCode("");
+      setNewCustPhone("");
+      setNewCustRate("38.25");
+    } catch (err: any) {
+      setNewCustError(err.message || "Failed to create customer");
+    } finally {
+      setSavingNewCust(false);
     }
   }
 
@@ -180,12 +234,14 @@ export default function NewTransactionPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!customerId) {
-      setError("Please select a customer");
+      setError("Please select a customer or click '+ New Customer' to create one");
       return;
     }
 
     if (totalAllocatedInr > totalOrderInr) {
-      setError(`Total distributed (₹${totalAllocatedInr.toLocaleString()}) cannot exceed customer order (₹${totalOrderInr.toLocaleString()})`);
+      setError(
+        `Total distributed (₹${totalAllocatedInr.toLocaleString()}) cannot exceed customer order (₹${totalOrderInr.toLocaleString()})`
+      );
       return;
     }
 
@@ -247,7 +303,9 @@ export default function NewTransactionPage() {
               <CheckCircle2 className="w-6 h-6" />
             </div>
             <div>
-              <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Transfer Saved Successfully</span>
+              <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">
+                Transfer Saved Successfully
+              </span>
               <h3 className="text-base font-mono font-bold text-slate-900">{successTxn.transaction_number}</h3>
               <p className="text-xs text-slate-600">
                 ₹ {successTxn.inr_amount.toLocaleString()} for {selectedCustomer?.name} •{" "}
@@ -310,25 +368,44 @@ export default function NewTransactionPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
-                <span>Dubai Customer</span>
-                {selectedCustomer && (
-                  <span className="text-[10px] text-slate-500 font-semibold">
-                    Due: {(selectedCustomer.outstanding_balance || 0).toFixed(2)} AED
-                  </span>
-                )}
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Dubai Customer
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowNewCustModal(true)}
+                  className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1 transition-colors"
+                >
+                  <UserPlus className="w-3 h-3" />
+                  <span>+ New Customer</span>
+                </button>
+              </div>
+
               <select
                 value={customerId}
                 onChange={(e) => handleCustomerChange(e.target.value)}
                 className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
+                {customers.length === 0 ? (
+                  <option value="">-- No customers yet. Click "+ New Customer" above --</option>
+                ) : (
+                  <>
+                    <option value="">-- Choose Existing Customer ({customers.length}) --</option>
+                    {customers.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} {c.code ? `(${c.code})` : ""}
+                      </option>
+                    ))}
+                  </>
+                )}
               </select>
+
+              {selectedCustomer && (
+                <div className="text-[10px] text-slate-500 font-semibold mt-1">
+                  Balance Due: {(selectedCustomer.outstanding_balance || 0).toFixed(2)} AED
+                </div>
+              )}
             </div>
           </div>
 
@@ -574,17 +651,118 @@ export default function NewTransactionPage() {
             )}
           </div>
 
-          {/* Architecture Reminder Card */}
+          {/* Quick Guidance Box */}
           <div className="p-4 bg-white rounded-xl border border-slate-200 text-xs text-slate-600 space-y-2 shadow-sm">
-            <span className="font-bold text-slate-900 block">Core Architecture Principles</span>
-            <ul className="list-disc pl-4 space-y-1 text-slate-500 text-[11px]">
-              <li><strong>Zero Frontend Trust</strong>: All values are verified and re-computed on the server.</li>
-              <li><strong>Decoupled Accounting</strong>: Customer payments (Receivables) and India distributions (Wholesale/Splits) are managed independently.</li>
-              <li><strong>Audited</strong>: Every transaction creation and void is recorded in the audit trail.</li>
-            </ul>
+            <span className="font-bold text-slate-900 block">Customer Workflow</span>
+            <p className="text-slate-500 text-[11px] leading-relaxed">
+              If the customer is new, click <strong>"+ New Customer"</strong> to create them on the spot. Once created, they will be saved to your database and ready for selection on all future transfers.
+            </p>
           </div>
         </div>
       </div>
+
+      {/* QUICK INLINE NEW CUSTOMER MODAL */}
+      {showNewCustModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-emerald-600" />
+                <span>Create New Dubai Customer</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowNewCustModal(false)}
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {newCustError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs font-medium flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{newCustError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCreateNewCustomer} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Customer Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. DIVAN or AHMAD"
+                  value={newCustName}
+                  onChange={(e) => setNewCustName(e.target.value)}
+                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Code (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. CUST-001"
+                    value={newCustCode}
+                    onChange={(e) => setNewCustCode(e.target.value)}
+                    className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Default Rate
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    placeholder="38.25"
+                    value={newCustRate}
+                    onChange={(e) => setNewCustRate(e.target.value)}
+                    className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Phone (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="+971 50 ..."
+                  value={newCustPhone}
+                  onChange={(e) => setNewCustPhone(e.target.value)}
+                  className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowNewCustModal(false)}
+                  className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingNewCust}
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 shadow-sm"
+                >
+                  {savingNewCust ? "Saving..." : "Create & Select"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
