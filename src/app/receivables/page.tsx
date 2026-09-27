@@ -34,12 +34,14 @@ export default function ReceivablesPage() {
     try {
       const res = await fetch("/api/customers");
       const data = await res.json();
-      setCustomers(data || []);
-      if (data?.length > 0 && !selectedCustId) {
-        setSelectedCustId(data[0].id);
+      const validCusts = Array.isArray(data) ? data : [];
+      setCustomers(validCusts);
+      if (validCusts.length > 0 && !selectedCustId) {
+        setSelectedCustId(validCusts[0].id);
       }
     } catch (err) {
       console.error(err);
+      setCustomers([]);
     } finally {
       setLoading(false);
     }

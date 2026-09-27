@@ -99,19 +99,23 @@ export default function NewTransactionPage() {
       ]);
       const cJson = await cRes.json();
       const dJson = await dRes.json();
-      setCustomers(cJson || []);
-      const filteredDists = (dJson || []).filter((d: any) =>
+      const validCustomers = Array.isArray(cJson) ? cJson : [];
+      const validDists = Array.isArray(dJson) ? dJson : [];
+      setCustomers(validCustomers);
+      const filteredDists = validDists.filter((d: any) =>
         ["INDIA_DISTRIBUTOR", "HYBRID", "BANK_ACCOUNT"].includes(d.partner_type)
       );
       setDistributors(filteredDists);
-      if (cJson?.length > 0 && !customerId) {
-        setCustomerId(cJson[0].id);
-        if (cJson[0].default_rate) {
-          setCustomerRate(String(cJson[0].default_rate));
+      if (validCustomers.length > 0 && !customerId) {
+        setCustomerId(validCustomers[0].id);
+        if (validCustomers[0].default_rate) {
+          setCustomerRate(String(validCustomers[0].default_rate));
         }
       }
     } catch (err) {
       console.error(err);
+      setCustomers([]);
+      setDistributors([]);
     }
   }
 

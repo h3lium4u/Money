@@ -195,22 +195,26 @@ export default function IndiaDistributionPage() {
       const splitsData = await splitsRes.json();
       const txnsData = await txnsRes.json();
 
-      setDistributors(distData || []);
-      setSplits(splitsData || []);
-      setTransactions(txnsData || []);
+      const validDists = Array.isArray(distData) ? distData : [];
+      const validSplits = Array.isArray(splitsData) ? splitsData : [];
+      const validTxns = Array.isArray(txnsData) ? txnsData : [];
 
-      if (distData.length > 0) {
-        setModalDistId(distData[0].id);
+      setDistributors(validDists);
+      setSplits(validSplits);
+      setTransactions(validTxns);
+
+      if (validDists.length > 0) {
+        setModalDistId(validDists[0].id);
       }
-      if (txnsData.length > 0) {
-        setModalTxnId(txnsData[0].id);
+      if (validTxns.length > 0) {
+        setModalTxnId(validTxns[0].id);
       }
 
       if (typeof window !== "undefined") {
         const params = new URLSearchParams(window.location.search);
         const txnParam = params.get("txn");
-        if (txnParam && txnsData?.length > 0) {
-          const match = txnsData.find((t: any) => t.id === txnParam || t.transaction_number === txnParam);
+        if (txnParam && validTxns.length > 0) {
+          const match = validTxns.find((t: any) => t.id === txnParam || t.transaction_number === txnParam);
           if (match) {
             setSelectedTxnId(match.id);
             setModalTxnId(match.id);
@@ -219,6 +223,9 @@ export default function IndiaDistributionPage() {
       }
     } catch (err) {
       console.error(err);
+      setDistributors([]);
+      setSplits([]);
+      setTransactions([]);
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,4 @@
-import { getPool, isNeonEnabled } from "./db.ts";
+import { query, getPool, isNeonEnabled } from "./db.ts";
 
 export type StorageStatus = "normal" | "getting-high" | "high" | "critical";
 
@@ -190,36 +190,38 @@ export async function getLiveDatabaseStats(): Promise<{
   dbName: string;
   topTables: TableStorageInfo[];
 }> {
-  const p = getPool();
-
-  if (p) {
-    const dbInfo = await p.query(
-      "SELECT pg_database_size(current_database()) as size_bytes, current_database() as db_name"
-    );
-    const sizeBytes = parseInt(dbInfo.rows[0]?.size_bytes || "0", 10);
-    const dbName = dbInfo.rows[0]?.db_name || "neondb";
-
-    let topTables: TableStorageInfo[] = [];
+  if (isNeonEnabled()) {
     try {
-      const tableRows = await p.query(`
-        SELECT 
-          table_name,
-          pg_total_relation_size(quote_ident(table_name)) as total_bytes
-        FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        ORDER BY total_bytes DESC
-        LIMIT 8
-      `);
-      topTables = tableRows.rows.map((r: any) => ({
-        tableName: r.table_name,
-        totalBytes: parseInt(r.total_bytes || "0", 10),
-        formattedSize: formatBytes(parseInt(r.total_bytes || "0", 10)),
-      }));
-    } catch {
-      // Table breakdown is non-critical
-    }
+      const dbInfo = await query(
+        "SELECT pg_database_size(current_database()) as size_bytes, current_database() as db_name"
+      );
+      const sizeBytes = parseInt(dbInfo[0]?.size_bytes || "0", 10);
+      const dbName = dbInfo[0]?.db_name || "neondb";
 
-    return { sizeBytes, dbName, topTables };
+      let topTables: TableStorageInfo[] = [];
+      try {
+        const tableRows = await query(`
+          SELECT 
+            table_name,
+            pg_total_relation_size(quote_ident(table_name)) as total_bytes
+          FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          ORDER BY total_bytes DESC
+          LIMIT 8
+        `);
+        topTables = tableRows.map((r: any) => ({
+          tableName: r.table_name,
+          totalBytes: parseInt(r.total_bytes || "0", 10),
+          formattedSize: formatBytes(parseInt(r.total_bytes || "0", 10)),
+        }));
+      } catch {
+        // Table breakdown is non-critical
+      }
+
+      return { sizeBytes, dbName, topTables };
+    } catch {
+      // Fall through to fallback if query fails
+    }
   }
 
   // SQLite fallback if ever needed

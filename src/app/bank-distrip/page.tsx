@@ -120,13 +120,17 @@ export default function BankDistripPage() {
       if (selectedAccount) url += `?accountId=${selectedAccount}`;
       const res = await fetch(url);
       const json = await res.json();
-      setAccounts(json.accounts || []);
-      setRecords(json.records || []);
-      if (json.accounts?.length > 0 && !recAccountId) {
-        setRecAccountId(json.accounts[0].id);
+      const validAccounts = Array.isArray(json.accounts) ? json.accounts : [];
+      const validRecords = Array.isArray(json.records) ? json.records : [];
+      setAccounts(validAccounts);
+      setRecords(validRecords);
+      if (validAccounts.length > 0 && !recAccountId) {
+        setRecAccountId(validAccounts[0].id);
       }
     } catch (err) {
       console.error(err);
+      setAccounts([]);
+      setRecords([]);
     } finally {
       setLoading(false);
     }

@@ -41,6 +41,7 @@ export default function DashboardPage() {
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [loading, setLoading] = useState(true);
+  const [dbError, setDbError] = useState<string | null>(null);
   const [kpis, setKpis] = useState<KPIState | null>(null);
   const [dailyTrends, setDailyTrends] = useState<any[]>([]);
   const [recentTxns, setRecentTxns] = useState<any[]>([]);
@@ -55,6 +56,7 @@ export default function DashboardPage() {
 
   async function fetchDashboardData() {
     setLoading(true);
+    setDbError(null);
     try {
       let url = "/api/dashboard/summary";
       const params = new URLSearchParams();
@@ -85,8 +87,12 @@ export default function DashboardPage() {
 
       const res = await fetch(url);
       const json = await res.json();
-      setKpis(json.kpis);
-      setDailyTrends(json.dailyTrends || []);
+      if (res.ok && json.kpis) {
+        setKpis(json.kpis);
+        setDailyTrends(Array.isArray(json.dailyTrends) ? json.dailyTrends : []);
+      } else if (!res.ok) {
+        setDbError(json.error || "Failed to load dashboard data");
+      }
 
       // Fetch transfers matching the date filter
       let txnUrl = `/api/transactions?limit=10`;
@@ -106,9 +112,18 @@ export default function DashboardPage() {
 
       const resTxns = await fetch(txnUrl);
       const jsonTxns = await resTxns.json();
-      setRecentTxns(jsonTxns || []);
-    } catch (err) {
+      if (resTxns.ok && Array.isArray(jsonTxns)) {
+        setRecentTxns(jsonTxns);
+      } else {
+        setRecentTxns([]);
+        if (!resTxns.ok && !json.error) {
+          setDbError(jsonTxns.error || "Failed to load recent transactions");
+        }
+      }
+    } catch (err: any) {
       console.error(err);
+      setDbError(err.message || "Network error while connecting to server");
+      setRecentTxns([]);
     } finally {
       setLoading(false);
     }
@@ -147,6 +162,30 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* Database Error Banner if offline or waking up */}
+      {dbError && (
+        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="text-xs">
+              <span className="font-bold block">Database Connection Notice</span>
+              <p className="text-amber-800 mt-0.5">{dbError}</p>
+              {dbError.includes("DATABASE_URL") && (
+                <p className="mt-1 text-[11px] text-amber-700">
+                  Please add <strong>DATABASE_URL</strong> to your Vercel Project Settings (Settings ➔ Environment Variables) and redeploy.
+                </p>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={() => fetchDashboardData()}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg transition-colors shrink-0 cursor-pointer self-start sm:self-center"
+          >
+            <span>Retry Connection</span>
+          </button>
+        </div>
+      )}
 
       {/* Top Filter Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
@@ -475,7 +514,11 @@ export default function DashboardPage() {
               {recentTxns.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
-                    No transactions found for the selected timeframe.
+                    {loading
+                      ? "Loading transactions..."
+                      : dbError
+                      ? "Unable to load transactions (Database offline or waking up)."
+                      : "No transactions found for the selected timeframe."}
                   </td>
                 </tr>
               ) : (

@@ -157,7 +157,8 @@ export default function CustomerDetailPage() {
     return <div className="p-8 text-center text-xs text-slate-500">Customer account not found.</div>;
   }
 
-  const { customer, entries } = data;
+  const customer = data.customer;
+  const entries = Array.isArray(data.entries) ? data.entries : [];
   const outstanding = customer.outstanding_balance || 0;
 
   return (

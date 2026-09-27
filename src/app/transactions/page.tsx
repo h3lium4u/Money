@@ -142,8 +142,8 @@ export default function TransactionsPage() {
       ]);
       const cData = await cRes.json();
       const dData = await dRes.json();
-      setCustomers(cData || []);
-      const activeDists = (dData || []).filter((d: any) =>
+      setCustomers(Array.isArray(cData) ? cData : []);
+      const activeDists = (Array.isArray(dData) ? dData : []).filter((d: any) =>
         ["INDIA_DISTRIBUTOR", "HYBRID", "BANK_ACCOUNT"].includes(d.partner_type)
       );
       setDistributors(activeDists);
@@ -152,6 +152,8 @@ export default function TransactionsPage() {
       }
     } catch (err) {
       console.error(err);
+      setCustomers([]);
+      setDistributors([]);
     }
   }
 
@@ -182,9 +184,10 @@ export default function TransactionsPage() {
 
       const res = await fetch(`/api/transactions?${params.toString()}`);
       const data = await res.json();
-      setTransactions(data || []);
+      setTransactions(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
+      setTransactions([]);
     } finally {
       setLoading(false);
     }

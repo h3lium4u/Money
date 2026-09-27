@@ -46,10 +46,15 @@ export default function ReportsPage() {
 
       const res = await fetch(`/api/dashboard/summary?${params.toString()}`);
       const json = await res.json();
-      setKpis(json.kpis);
-      setDailyRows(json.dailyTrends || []);
+      if (res.ok && json.kpis) {
+        setKpis(json.kpis);
+        setDailyRows(Array.isArray(json.dailyTrends) ? json.dailyTrends : []);
+      } else {
+        setDailyRows([]);
+      }
     } catch (err) {
       console.error(err);
+      setDailyRows([]);
     } finally {
       setLoading(false);
     }

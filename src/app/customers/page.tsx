@@ -54,9 +54,10 @@ export default function CustomersPage() {
     try {
       const res = await fetch("/api/customers");
       const data = await res.json();
-      setCustomers(data || []);
+      setCustomers(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
+      setCustomers([]);
     } finally {
       setLoading(false);
     }
