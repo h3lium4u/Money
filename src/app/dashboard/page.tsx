@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import {
   TrendingUp,
@@ -45,6 +45,23 @@ export default function DashboardPage() {
   const [kpis, setKpis] = useState<KPIState | null>(null);
   const [dailyTrends, setDailyTrends] = useState<any[]>([]);
   const [recentTxns, setRecentTxns] = useState<any[]>([]);
+
+  // Date input refs for opening calendar on click
+  const fromDateRef = useRef<HTMLInputElement>(null);
+  const toDateRef = useRef<HTMLInputElement>(null);
+
+  const openDatePicker = (ref: React.RefObject<HTMLInputElement | null>) => {
+    if (!ref.current) return;
+    try {
+      if (typeof ref.current.showPicker === "function") {
+        ref.current.showPicker();
+      } else {
+        ref.current.focus();
+      }
+    } catch {
+      ref.current.focus();
+    }
+  };
 
   // Current system date context
   const todayStr = "2026-09-26";
@@ -138,192 +155,221 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header and Quick Actions */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Remittance Dashboard</h2>
-          <p className="text-xs text-slate-500">
-            Real-time Dubai ➔ India remittance volume, margins, profit, and receivables tracking.
+          <h2 className="text-[22px] font-bold text-slate-900 dark:text-slate-100" style={{ fontFamily: '"Helvetica Neue", Arial, sans-serif', letterSpacing: "-0.02em" }}>
+            Remittance Dashboard
+          </h2>
+          <p className="text-[13.5px] text-slate-500 dark:text-slate-400 mt-1">
+            Real-time Dubai → India remittance volume, margins, profit, and receivables tracking.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          {/* Fresh Teal "New Transfer" button */}
           <Link
             href="/transactions/new"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 transition-colors shadow-sm"
+            className="inline-flex items-center justify-center gap-1.5 flex-1 sm:flex-initial px-4 py-2 text-[13.5px] font-medium transition-colors cursor-pointer"
+            style={{ background: "#0F766E", color: "#ffffff", borderRadius: 100, fontFamily: "var(--font-body)", border: "none", letterSpacing: "-0.01em", boxShadow: "0 1px 3px rgba(15,118,110,0.15)" }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#0D9488"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "#0F766E"; }}
           >
-            <PlusCircle className="w-3.5 h-3.5" />
+            <PlusCircle className="w-4 h-4" />
             <span>New Transfer</span>
           </Link>
           <Link
             href="/reports"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg hover:bg-slate-50 transition-colors shadow-sm"
+            className="inline-flex items-center justify-center gap-1.5 flex-1 sm:flex-initial px-4 py-2 text-[13.5px] font-medium transition-colors bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/60"
+            style={{ borderRadius: 100, fontFamily: "var(--font-body)", letterSpacing: "-0.01em" }}
           >
-            <FileSpreadsheet className="w-3.5 h-3.5" />
+            <FileSpreadsheet className="w-4 h-4" />
             <span>Excel Export</span>
           </Link>
         </div>
       </div>
 
-      {/* Database Error Banner if offline or waking up */}
+      {/* Database Error Banner */}
       {dbError && (
-        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+        <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/30 rounded-lg">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <div className="text-xs">
-              <span className="font-bold block">Database Connection Notice</span>
-              <p className="text-amber-800 mt-0.5">{dbError}</p>
-              {dbError.includes("DATABASE_URL") && (
-                <p className="mt-1 text-[11px] text-amber-700">
-                  Please add <strong>DATABASE_URL</strong> to your Vercel Project Settings (Settings ➔ Environment Variables) and redeploy.
-                </p>
-              )}
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+            <div className="text-[13px] text-amber-900 dark:text-amber-200">
+              <span className="font-semibold block">Database Connection Notice</span>
+              <p className="text-amber-800 dark:text-amber-300 mt-1">{dbError}</p>
             </div>
           </div>
           <button
             onClick={() => fetchDashboardData()}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg transition-colors shrink-0 cursor-pointer self-start sm:self-center"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium shrink-0 cursor-pointer self-start sm:self-auto"
+            style={{ background: "#0F766E", color: "#ffffff", borderRadius: 100, border: "none", fontFamily: "var(--font-body)" }}
           >
-            <span>Retry Connection</span>
+            Retry Connection
           </button>
         </div>
       )}
 
       {/* Top Filter Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-xs font-bold text-slate-700 uppercase tracking-wider mr-2 flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-emerald-600" /> View Range:
-          </span>
-
-          {[
-            { id: "today", label: "Today" },
-            { id: "yesterday", label: "Yesterday" },
-            { id: "week", label: "This Week" },
-            { id: "month", label: "This Month" },
-            { id: "year", label: "This Year" },
-            { id: "all", label: "All Time" },
-            { id: "custom", label: "Custom Date" },
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setTimeframe(item.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                timeframe === item.id
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Custom Date Pickers */}
-        {timeframe === "custom" && (
-          <div className="flex items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
-            <input
-              type="date"
-              value={customFrom}
-              onChange={(e) => setCustomFrom(e.target.value)}
-              className="text-xs border border-slate-300 rounded-lg p-1.5 text-slate-700"
-            />
-            <span className="text-xs text-slate-400">➔</span>
-            <input
-              type="date"
-              value={customTo}
-              onChange={(e) => setCustomTo(e.target.value)}
-              className="text-xs border border-slate-300 rounded-lg p-1.5 text-slate-700"
-            />
+      <div className="p-3.5 sm:p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-all">
+        <div className="flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[13px] font-medium mr-1.5 flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
+              <Clock className="w-4 h-4 text-teal-600 dark:text-teal-400" /> View Range:
+            </span>
+            {[
+              { id: "today", label: "Today" },
+              { id: "yesterday", label: "Yesterday" },
+              { id: "week", label: "This Week" },
+              { id: "month", label: "This Month" },
+              { id: "year", label: "This Year" },
+              { id: "all", label: "All Time" },
+              { id: "custom", label: "Custom Date" },
+            ].map((item) => {
+              const isSelected = timeframe === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setTimeframe(item.id)}
+                  className={`px-3.5 py-1.5 text-[13px] font-medium rounded-full transition-all cursor-pointer ${
+                    isSelected
+                      ? "bg-[#0F766E] text-white shadow-2xs"
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                  }`}
+                  style={{ fontFamily: "var(--font-body)" }}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
           </div>
-        )}
+
+          {timeframe === "custom" && (
+            <div className="flex items-center gap-2 pt-2.5 2xl:pt-0 border-t 2xl:border-t-0 border-slate-100 dark:border-slate-800 shrink-0 flex-nowrap">
+              <span className="text-[12px] font-medium text-slate-500 dark:text-slate-400 hidden sm:inline">
+                Range:
+              </span>
+              {/* Start Date Pill */}
+              <div
+                onClick={() => openDatePicker(fromDateRef)}
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-teal-500 dark:hover:border-teal-400 focus-within:border-teal-600 dark:focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-500/20 transition-all shadow-2xs cursor-pointer group"
+                title="Click anywhere to choose Start Date"
+              >
+                <Calendar
+                  className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 cursor-pointer group-hover:scale-110 transition-transform"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openDatePicker(fromDateRef);
+                  }}
+                />
+                <input
+                  ref={fromDateRef}
+                  type="date"
+                  value={customFrom}
+                  onChange={(e) => setCustomFrom(e.target.value)}
+                  className="text-[13px] bg-transparent text-slate-800 dark:text-slate-100 outline-none uppercase font-medium cursor-pointer w-[125px]"
+                  title="Choose Start Date (DD-MM-YYYY)"
+                />
+              </div>
+              <span className="text-[13px] text-slate-400 font-medium px-0.5">➔</span>
+              {/* End Date Pill */}
+              <div
+                onClick={() => openDatePicker(toDateRef)}
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-teal-500 dark:hover:border-teal-400 focus-within:border-teal-600 dark:focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-500/20 transition-all shadow-2xs cursor-pointer group"
+                title="Click anywhere to choose End Date"
+              >
+                <Calendar
+                  className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 cursor-pointer group-hover:scale-110 transition-transform"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openDatePicker(toDateRef);
+                  }}
+                />
+                <input
+                  ref={toDateRef}
+                  type="date"
+                  value={customTo}
+                  onChange={(e) => setCustomTo(e.target.value)}
+                  className="text-[13px] bg-transparent text-slate-800 dark:text-slate-100 outline-none uppercase font-medium cursor-pointer w-[125px]"
+                  title="Choose End Date (DD-MM-YYYY)"
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* SECTION 1: PRIMARY KPI CARDS */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+          <h3 className="text-[13px] font-medium uppercase tracking-widest flex items-center gap-2 text-slate-500 dark:text-slate-400">
             <span>Primary Performance Metrics</span>
-            {timeframe === "today" ? (
-              <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 normal-case font-semibold">
-                Showing Today ({todayStr})
-              </span>
-            ) : (
-              <span className="text-[10px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 normal-case font-medium">
-                Filtered Range
-              </span>
-            )}
+            <span className="px-2.5 py-0.5 text-[11px] font-medium normal-case border border-slate-200 dark:border-slate-700 rounded-md bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300">
+              {timeframe === "today" ? `Today · ${todayStr}` : "Filtered Range"}
+            </span>
           </h3>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Card 1: Today's / Filtered INR */}
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {/* Card 1 — INR Sent */}
+          <div className="p-5 flex flex-col justify-between rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                {timeframe === "today" ? "Today's INR Sent" : "Total INR Sent"}
+              <span className="text-[12px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-400">
+                {timeframe === "today" ? "INR Sent Today" : "Total INR Sent"}
               </span>
-              <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                <Coins className="w-4 h-4" />
-              </div>
+              <Coins className="w-4 h-4 text-teal-600 dark:text-teal-400" />
             </div>
-            <div className="mt-3">
-              <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
+            <div className="mt-5">
+              <div className="text-[26px] font-bold text-slate-900 dark:text-slate-100" style={{ fontFamily: '"Helvetica Neue", Arial, sans-serif', letterSpacing: "-0.02em" }}>
                 {formatINR(timeframe === "today" ? kpis?.todayInr : kpis?.totalInrProcessed)}
-              </h3>
-              <p className="text-[11px] text-slate-400 mt-1">India orders received from Dubai customers</p>
+              </div>
+              <p className="text-[12px] mt-1 text-slate-400 dark:text-slate-400">India orders received from Dubai customers</p>
             </div>
           </div>
 
-          {/* Card 2: Today's / Filtered AED */}
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          {/* Card 2 — AED Charged */}
+          <div className="p-5 flex flex-col justify-between rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                {timeframe === "today" ? "Today's AED Charged" : "Total AED Charged"}
+              <span className="text-[12px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-400">
+                {timeframe === "today" ? "AED Charged Today" : "Total AED Charged"}
               </span>
-              <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-                <Banknote className="w-4 h-4" />
-              </div>
+              <Banknote className="w-4 h-4 text-slate-500 dark:text-slate-400" />
             </div>
-            <div className="mt-3">
-              <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
+            <div className="mt-5">
+              <div className="text-[26px] font-bold text-slate-900 dark:text-slate-100" style={{ fontFamily: '"Helvetica Neue", Arial, sans-serif', letterSpacing: "-0.02em" }}>
                 {formatAED(timeframe === "today" ? kpis?.todayAed : kpis?.totalAedCharged)}
-              </h3>
-              <p className="text-[11px] text-slate-400 mt-1">Calculated as: (INR / 1000) × Daily Rate</p>
+              </div>
+              <p className="text-[12px] mt-1 text-slate-400 dark:text-slate-400">Calculated as: (INR / 1000) × Daily Rate</p>
             </div>
           </div>
 
-          {/* Card 3: Today's / Filtered Transactions */}
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          {/* Card 3 — Transfers */}
+          <div className="p-5 flex flex-col justify-between rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                {timeframe === "today" ? "Today's Transfers" : "Transfer Count"}
+              <span className="text-[12px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-400">
+                {timeframe === "today" ? "Transfers Today" : "Transfer Count"}
               </span>
-              <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                <Layers className="w-4 h-4" />
-              </div>
+              <Layers className="w-4 h-4 text-slate-500 dark:text-slate-400" />
             </div>
-            <div className="mt-3">
-              <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
-                {timeframe === "today" ? kpis?.todayTxnCount || 0 : kpis?.transactionCount || 0} Transfers
-              </h3>
-              <p className="text-[11px] text-slate-400 mt-1">Confirmed customer orders</p>
+            <div className="mt-5">
+              <div className="text-[26px] font-bold text-slate-900 dark:text-slate-100" style={{ fontFamily: '"Helvetica Neue", Arial, sans-serif', letterSpacing: "-0.02em" }}>
+                {(timeframe === "today" ? kpis?.todayTxnCount : kpis?.transactionCount) || 0} Transfers
+              </div>
+              <p className="text-[12px] mt-1 text-slate-400 dark:text-slate-400">Confirmed customer orders</p>
             </div>
           </div>
 
-          {/* Card 4: Today's / Filtered Net Profit */}
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between bg-gradient-to-br from-white to-emerald-50/40">
+          {/* Card 4 — Net Profit (Fresh Teal Accent Card) */}
+          <div className="p-5 flex flex-col justify-between rounded-lg bg-[#0F766E] border border-[#0F766E] shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">
-                {timeframe === "today" ? "Today's Net Profit" : "Net Profit"}
+              <span className="text-[12px] font-semibold uppercase tracking-widest text-[#CCFBF1]">
+                {timeframe === "today" ? "Net Profit Today" : "Net Profit"}
               </span>
-              <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                <TrendingUp className="w-4 h-4" />
-              </div>
+              <TrendingUp className="w-4 h-4 text-[#5EEAD4]" />
             </div>
-            <div className="mt-3">
-              <h3 className="text-2xl font-bold text-emerald-600 tracking-tight">
+            <div className="mt-5">
+              <div className="text-[26px] font-bold text-white" style={{ fontFamily: '"Helvetica Neue", Arial, sans-serif', letterSpacing: "-0.02em" }}>
                 {formatAED(timeframe === "today" ? kpis?.todayProfit : kpis?.netProfitAed)}
-              </h3>
-              <p className="text-[11px] text-slate-400 mt-1">Gross Profit minus 20% delivery charge</p>
+              </div>
+              <p className="text-[12px] mt-1 text-[#CCFBF1]">Gross Profit minus 20% delivery charge</p>
             </div>
           </div>
         </div>
@@ -331,109 +377,109 @@ export default function DashboardPage() {
 
       {/* SECTION 2: SECONDARY OPERATIONAL METRICS */}
       <div>
-        <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
+        <h3 className="text-[13.5px] font-semibold uppercase tracking-wider mb-3 text-slate-700 dark:text-slate-300">
           Secondary Operational Balances (Receivables & India Distribution)
         </h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {/* 1. Customer Outstanding Balance */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between text-[13.5px] text-slate-600 dark:text-slate-300 font-medium mb-2">
               <span className="flex items-center gap-1.5">
-                <Wallet className="w-3.5 h-3.5 text-rose-500" />
+                <Wallet className="w-4 h-4 text-rose-500" />
                 Customer Balance Pending
               </span>
-              <span className="text-[10px] text-slate-400 uppercase">Receivable</span>
+              <span className="text-[11px] text-slate-400 uppercase font-semibold">Receivable</span>
             </div>
-            <div className="text-xl font-bold text-rose-600">
+            <div className="text-[22px] font-bold text-rose-600 dark:text-rose-400">
               {formatAED(kpis?.outstandingReceivablesAed)}
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
+            <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1">
               Pending payment from Dubai customers
             </p>
           </div>
 
           {/* 2. Total AED Collected */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between text-[13.5px] text-slate-600 dark:text-slate-300 font-medium mb-2">
               <span className="flex items-center gap-1.5">
-                <Banknote className="w-3.5 h-3.5 text-emerald-500" />
+                <Banknote className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                 Total AED Collected
               </span>
-              <span className="text-[10px] text-slate-400 uppercase">Received</span>
+              <span className="text-[11px] text-slate-400 uppercase font-semibold">Received</span>
             </div>
-            <div className="text-xl font-bold text-emerald-600">
+            <div className="text-[22px] font-bold text-teal-700 dark:text-teal-400">
               {formatAED(kpis?.totalAedCollected)}
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
+            <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1">
               Payments successfully collected from customers
             </p>
           </div>
 
           {/* 3. India Distribution Pending */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between text-[13.5px] text-slate-600 dark:text-slate-300 font-medium mb-2">
               <span className="flex items-center gap-1.5">
-                <Split className="w-3.5 h-3.5 text-amber-500" />
+                <Split className="w-4 h-4 text-amber-500" />
                 India Distribution Pending
               </span>
-              <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-bold">Unallocated</span>
+              <span className="text-[11px] text-amber-700 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-400 px-2 py-0.5 rounded font-bold">Unallocated</span>
             </div>
-            <div className="text-xl font-bold text-amber-600">
+            <div className="text-[22px] font-bold text-amber-600 dark:text-amber-400">
               {formatINR(kpis?.indiaDistributionPendingInr)}
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
+            <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1">
               Customer orders waiting to be allocated to India parties
             </p>
           </div>
 
           {/* 4. Bank Distribution Pending */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between text-[13.5px] text-slate-600 dark:text-slate-300 font-medium mb-2">
               <span className="flex items-center gap-1.5">
-                <Building2 className="w-3.5 h-3.5 text-blue-500" />
+                <Building2 className="w-4 h-4 text-blue-500" />
                 Bank Accounts Balance
               </span>
-              <span className="text-[10px] text-slate-400 uppercase">Bank Ledger</span>
+              <span className="text-[11px] text-slate-400 uppercase font-semibold">Bank Ledger</span>
             </div>
-            <div className="text-xl font-bold text-slate-900">
+            <div className="text-[22px] font-bold text-slate-900 dark:text-slate-100">
               {formatINR(kpis?.bankDistributionPendingInr)}
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
+            <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1">
               Net running balance across bank accounts (MK, SALA, etc.)
             </p>
           </div>
 
           {/* 5. Gross Profit */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between text-[13.5px] text-slate-600 dark:text-slate-300 font-medium mb-2">
               <span className="flex items-center gap-1.5">
-                <TrendingUp className="w-3.5 h-3.5 text-indigo-500" />
+                <TrendingUp className="w-4 h-4 text-indigo-500" />
                 Gross Profit
               </span>
-              <span className="text-[10px] text-slate-400 uppercase">Profit</span>
+              <span className="text-[11px] text-slate-400 uppercase font-semibold">Profit</span>
             </div>
-            <div className="text-xl font-bold text-indigo-600">
+            <div className="text-[22px] font-bold text-indigo-600 dark:text-indigo-400">
               {formatAED(kpis?.grossProfitAed)}
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
+            <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1">
               Profit before delivery fee deductions
             </p>
           </div>
 
           {/* 6. Delivery Charges Total */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between text-[13.5px] text-slate-600 dark:text-slate-300 font-medium mb-2">
               <span className="flex items-center gap-1.5">
-                <Coins className="w-3.5 h-3.5 text-purple-500" />
+                <Coins className="w-4 h-4 text-purple-500" />
                 Delivery Fees (20%)
               </span>
-              <span className="text-[10px] text-slate-400 uppercase">Fee Cut</span>
+              <span className="text-[11px] text-slate-400 uppercase font-semibold">Fee Cut</span>
             </div>
-            <div className="text-xl font-bold text-slate-900">
+            <div className="text-[22px] font-bold text-slate-900 dark:text-slate-100">
               {formatAED(kpis?.deliveryChargesAed)}
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
+            <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1">
               20% cut deducted from gross profit
             </p>
           </div>
@@ -442,35 +488,35 @@ export default function DashboardPage() {
 
       {/* SECTION 3: VISUAL CHARTS & TRENDS */}
       {dailyTrends.length > 0 && (
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+        <div className="p-4 sm:p-5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+            <h3 className="text-[13.5px] font-semibold uppercase tracking-wider text-slate-800 dark:text-slate-200">
               Daily Volume & Profit Progression
             </h3>
-            <span className="text-xs text-slate-400 font-medium">
+            <span className="text-[13px] text-slate-500 dark:text-slate-400 font-medium">
               {dailyTrends.length} Active Days in Period
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-3 pt-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 sm:gap-3 pt-2">
             {dailyTrends.map((d) => (
               <div
                 key={d.date}
-                className="p-3.5 rounded-lg border border-slate-100 bg-slate-50/50 space-y-2"
+                className="p-3.5 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-2"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-bold text-slate-800">{d.date}</span>
-                  <span className="text-[10px] font-bold bg-white text-slate-700 px-1.5 py-0.5 rounded border border-slate-200">
+                  <span className="text-[13px] font-mono font-bold text-slate-800 dark:text-slate-200">{d.date}</span>
+                  <span className="text-[11px] font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
                     {d.count} Txn
                   </span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block uppercase tracking-wider">INR Sent</span>
-                  <span className="text-xs font-bold text-slate-900">{formatINR(d.inrVolume)}</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block uppercase tracking-wider">INR Sent</span>
+                  <span className="text-[13.5px] font-bold text-slate-900 dark:text-slate-100">{formatINR(d.inrVolume)}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-emerald-700 block uppercase tracking-wider font-semibold">Net Profit</span>
-                  <span className="text-xs font-bold text-emerald-600">{formatAED(d.netProfit)}</span>
+                  <span className="text-[11px] text-teal-700 dark:text-teal-400 block uppercase tracking-wider font-semibold">Net Profit</span>
+                  <span className="text-[13.5px] font-bold text-teal-700 dark:text-teal-400">{formatAED(d.netProfit)}</span>
                 </div>
               </div>
             ))}
@@ -479,17 +525,17 @@ export default function DashboardPage() {
       )}
 
       {/* SECTION 4: RECENT TRANSACTIONS TABLE */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+      <div className="rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-bold text-slate-900">Recent Remittance Transfers</h3>
-            <p className="text-xs text-slate-500">
+            <h3 className="text-[15px] font-bold text-slate-900 dark:text-slate-100">Recent Remittance Transfers</h3>
+            <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-0.5">
               Dubai customer orders and their India distribution status
             </p>
           </div>
           <Link
             href="/transactions"
-            className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+            className="text-[13px] font-semibold text-teal-700 dark:text-teal-400 hover:text-teal-800 flex items-center gap-1"
           >
             <span>View All</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -497,8 +543,8 @@ export default function DashboardPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200 text-[10px]">
+          <table className="w-full text-left text-[13px]">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800 text-[11px]">
               <tr>
                 <th className="px-4 py-3">Txn ID</th>
                 <th className="px-4 py-3">Date</th>
@@ -510,10 +556,10 @@ export default function DashboardPage() {
                 <th className="px-4 py-3">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 font-medium">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
               {recentTxns.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
+                  <td colSpan={8} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500 text-[13px]">
                     {loading
                       ? "Loading transactions..."
                       : dbError
@@ -523,37 +569,37 @@ export default function DashboardPage() {
                 </tr>
               ) : (
                 recentTxns.map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="px-4 py-3 font-mono font-bold text-slate-900">
+                  <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                    <td className="px-4 py-3 font-mono font-bold text-slate-900 dark:text-slate-100">
                       <span>{t.transaction_number}</span>
                     </td>
-                    <td className="px-4 py-3 text-slate-600">{t.transaction_date}</td>
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{t.transaction_date}</td>
                     <td className="px-4 py-3">
-                      <div className="font-bold text-slate-800">{t.customer_name}</div>
+                      <div className="font-bold text-slate-800 dark:text-slate-200">{t.customer_name}</div>
                       {t.customer_code && (
-                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                        <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">
                           {t.customer_code}
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3 font-bold text-slate-900">{formatINR(t.inr_amount)}</td>
-                    <td className="px-4 py-3 font-bold text-slate-900">{formatAED(t.aed_amount)}</td>
-                    <td className="px-4 py-3 font-bold text-emerald-600">{formatAED(t.net_profit_aed)}</td>
+                    <td className="px-4 py-3 font-bold text-slate-900 dark:text-slate-100">{formatINR(t.inr_amount)}</td>
+                    <td className="px-4 py-3 font-bold text-slate-900 dark:text-slate-100">{formatAED(t.aed_amount)}</td>
+                    <td className="px-4 py-3 font-bold text-teal-700 dark:text-teal-400">{formatAED(t.net_profit_aed)}</td>
                     <td className="px-4 py-3">
                       {t.remaining_inr === 0 ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">
-                          <ShieldCheck className="w-3 h-3" />
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-teal-50 dark:bg-teal-950/40 text-teal-800 dark:text-teal-300 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800">
+                          <ShieldCheck className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                           <span>100% Allocated ({formatINR(t.total_distributed_inr)})</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-50 text-amber-800 px-2 py-0.5 rounded border border-amber-200">
-                          <AlertCircle className="w-3 h-3" />
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800">
+                          <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                           <span>Pending {formatINR(t.remaining_inr)}</span>
                         </span>
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span className="text-[11px] font-bold uppercase px-2 py-0.5 rounded bg-teal-50 dark:bg-teal-950/40 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
                         {t.status}
                       </span>
                     </td>

@@ -7,77 +7,270 @@ import {
   PlusCircle,
   ArrowLeftRight,
   Users,
-  Building2,
   Landmark,
   Wallet,
   FileSpreadsheet,
   Split,
   Settings,
+  X,
 } from "lucide-react";
+import { useTheme } from "@/context/ThemeContext";
 
 const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "New Remittance", href: "/transactions/new", icon: PlusCircle, highlight: true },
-  { name: "All Transfers", href: "/transactions", icon: ArrowLeftRight },
-  { name: "Dubai Customers", href: "/customers", icon: Users },
-  { name: "Customer Receivables", href: "/receivables", icon: Wallet },
-  { name: "Distribution Partners", href: "/distributors", icon: Split },
-  { name: "Bank Distribution", href: "/bank-distrip", icon: Landmark },
-  { name: "Reports & Excel", href: "/reports", icon: FileSpreadsheet },
-  { name: "Settings", href: "/settings/system-health", icon: Settings },
+  { name: "Dashboard",             href: "/dashboard",          icon: LayoutDashboard },
+  { name: "New Remittance",        href: "/transactions/new",   icon: PlusCircle,      highlight: true },
+  { name: "All Transfers",         href: "/transactions",       icon: ArrowLeftRight },
+  { name: "Customers",             href: "/customers",          icon: Users },
+  { name: "Receivables",           href: "/receivables",        icon: Wallet },
+  { name: "Distributors",          href: "/distributors",       icon: Split },
+  { name: "Bank Ledger",           href: "/bank-distrip",       icon: Landmark },
+  { name: "Reports",               href: "/reports",            icon: FileSpreadsheet },
+  { name: "Settings",              href: "/settings/system-health", icon: Settings },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { theme, isMobileMenuOpen, closeMobileMenu } = useTheme();
+  const isDark = theme === "dark";
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-200 flex flex-col shrink-0 min-h-screen border-r border-slate-800">
-      {/* Brand Header */}
-      <div className="h-16 flex items-center px-6 border-b border-slate-800 gap-3">
-        <div className="w-9 h-9 rounded-lg bg-emerald-500 flex items-center justify-center text-slate-950 font-bold text-lg shadow-sm">
-          P
+    <aside
+      className={`fixed inset-y-0 left-0 z-50 flex flex-col shrink-0 min-h-screen transition-transform duration-300 md:static md:translate-x-0 ${
+        isMobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full md:translate-x-0"
+      }`}
+      style={{
+        width: 250,
+        background: isDark ? "#0F172A" : "#FFFFFF",
+        borderRight: `1px solid ${isDark ? "#1E293B" : "#D9D9D9"}`,
+      }}
+    >
+      {/* Brand — Fresh Teal header */}
+      <div
+        style={{
+          height: 64,
+          background: "#0F766E",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 18px",
+          flexShrink: 0,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+          {/* Logo mark */}
+          <div
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 6,
+              background: "#FFFFFF",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: '"Helvetica Neue", Arial, sans-serif',
+                fontWeight: 700,
+                fontSize: 16,
+                color: "#0F766E",
+                lineHeight: 1,
+              }}
+            >
+              R
+            </span>
+          </div>
+
+          <div>
+            <div
+              style={{
+                fontFamily: '"Helvetica Neue", Arial, sans-serif',
+                fontWeight: 700,
+                fontSize: 16,
+                letterSpacing: "0.08em",
+                color: "#FFFFFF",
+                textTransform: "uppercase",
+                lineHeight: 1,
+              }}
+            >
+              REMIT
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--font-body)",
+                fontWeight: 500,
+                fontSize: 12,
+                color: "#CCFBF1",
+                marginTop: 3,
+                letterSpacing: "0.04em",
+              }}
+            >
+              Dubai → India
+            </div>
+          </div>
         </div>
-        <div>
-          <h1 className="font-bold text-white text-base leading-tight tracking-tight">PETTI REMIT</h1>
-          <p className="text-[11px] text-emerald-400 font-medium tracking-wider uppercase">Dubai ➔ India</p>
-        </div>
+
+        {/* Mobile Close Button */}
+        <button
+          type="button"
+          onClick={closeMobileMenu}
+          className="p-1 rounded-md text-white/80 hover:text-white hover:bg-teal-800/50 md:hidden"
+          aria-label="Close Sidebar"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
-      {/* Navigation Links */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      {/* Section label */}
+      <div style={{ padding: "24px 20px 8px 20px" }}>
+        <span
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            color: isDark ? "#64748B" : "#999999",
+          }}
+        >
+          Menu
+        </span>
+      </div>
+
+      {/* Navigation */}
+      <nav style={{ flex: 1, padding: "0 12px 16px", overflowY: "auto" }}>
         {navigation.map((item) => {
-          const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+          const isActive =
+            pathname === item.href ||
+            (item.href !== "/dashboard" && pathname.startsWith(item.href));
           const Icon = item.icon;
+
           return (
             <Link
               key={item.name}
               href={item.href}
-              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                item.highlight && !isActive
-                  ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30"
-                  : isActive
-                  ? "bg-emerald-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-              }`}
+              onClick={closeMobileMenu}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "10px 12px",
+                borderRadius: 8,
+                marginBottom: 3,
+                fontSize: 14.5,
+                fontWeight: isActive ? 600 : 400,
+                textDecoration: "none",
+                color: isActive
+                  ? isDark ? "#2DD4BF" : "#0F766E"
+                  : isDark ? "#94A3B8" : "#666666",
+                background: isActive
+                  ? isDark ? "rgba(20, 184, 166, 0.14)" : "#F0FDFA"
+                  : "transparent",
+                borderLeft: `3px solid ${
+                  isActive
+                    ? isDark ? "#2DD4BF" : "#0F766E"
+                    : "transparent"
+                }`,
+                transition: "color 0.12s, background 0.12s",
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  (e.currentTarget as HTMLElement).style.color = isDark ? "#F8FAFC" : "#1A1A1A";
+                  (e.currentTarget as HTMLElement).style.background = isDark ? "#1E293B" : "#F5F5F5";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  (e.currentTarget as HTMLElement).style.color = isDark ? "#94A3B8" : "#666666";
+                  (e.currentTarget as HTMLElement).style.background = "transparent";
+                }
+              }}
             >
-              <Icon className={`w-4 h-4 ${isActive ? "text-white" : item.highlight ? "text-emerald-400" : "text-slate-400"}`} />
+              <Icon
+                style={{
+                  width: 16,
+                  height: 16,
+                  flexShrink: 0,
+                  color: isActive
+                    ? isDark ? "#2DD4BF" : "#0F766E"
+                    : isDark ? "#64748B" : "#999999",
+                }}
+              />
               <span>{item.name}</span>
+
+              {/* Indicator dot */}
+              {item.highlight && !isActive && (
+                <span
+                  style={{
+                    marginLeft: "auto",
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: isDark ? "#2DD4BF" : "#0F766E",
+                  }}
+                />
+              )}
             </Link>
           );
         })}
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-slate-800 bg-slate-950/40">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 font-semibold text-xs border border-slate-700">
-            AD
+      <div
+        style={{
+          padding: "16px 20px",
+          borderTop: `1px solid ${isDark ? "#1E293B" : "#D9D9D9"}`,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: "50%",
+              background: "#0F766E",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#FFFFFF",
+              }}
+            >
+              R
+            </span>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-slate-200 truncate">Admin</p>
-            <div className="flex items-center gap-1.5 text-[11px] text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Online</span>
+          <div>
+            <div
+              style={{
+                fontSize: 14,
+                fontWeight: 600,
+                color: isDark ? "#F8FAFC" : "#1A1A1A",
+              }}
+            >
+              Admin
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 1 }}>
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: "#10B981",
+                  display: "inline-block",
+                }}
+              />
+              <span style={{ fontSize: 12, color: isDark ? "#64748B" : "#999999" }}>
+                Online
+              </span>
             </div>
           </div>
         </div>

@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   FileSpreadsheet,
   Printer,
   ArrowDownToLine,
   Clock,
+  Calendar,
 } from "lucide-react";
+import { ReceiptPrinterModal } from "@/components/animation/ReceiptPrinterModal";
 
 export default function ReportsPage() {
   const [period, setPeriod] = useState("all");
@@ -15,6 +17,23 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState<any | null>(null);
   const [dailyRows, setDailyRows] = useState<any[]>([]);
+  const [showPrinterModal, setShowPrinterModal] = useState(false);
+
+  const fromDateRef = useRef<HTMLInputElement>(null);
+  const toDateRef = useRef<HTMLInputElement>(null);
+
+  const openDatePicker = (ref: React.RefObject<HTMLInputElement | null>) => {
+    if (!ref.current) return;
+    try {
+      if (typeof ref.current.showPicker === "function") {
+        ref.current.showPicker();
+      } else {
+        ref.current.focus();
+      }
+    } catch {
+      ref.current.focus();
+    }
+  };
 
   const todayStr = "2026-09-26";
   const yesterdayStr = "2026-09-25";
@@ -93,8 +112,10 @@ export default function ReportsPage() {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => window.print()}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 shadow-sm"
+            type="button"
+            onClick={() => setShowPrinterModal(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 shadow-sm cursor-pointer transition-all"
+            title="Preview and print thermal report receipt"
           >
             <Printer className="w-3.5 h-3.5 text-slate-500" />
             <span>Print Report</span>
@@ -140,20 +161,50 @@ export default function ReportsPage() {
         </div>
 
         {period === "custom" && (
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              className="text-xs border border-slate-300 rounded px-2.5 py-1.5 text-slate-700 font-medium"
-            />
-            <span className="text-xs text-slate-400">to</span>
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              className="text-xs border border-slate-300 rounded px-2.5 py-1.5 text-slate-700 font-medium"
-            />
+          <div className="flex items-center gap-2 shrink-0 flex-nowrap">
+            <div
+              onClick={() => openDatePicker(fromDateRef)}
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-teal-500 dark:hover:border-teal-400 focus-within:border-teal-600 dark:focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-500/20 transition-all shadow-2xs cursor-pointer group"
+              title="Click anywhere to choose Start Date"
+            >
+              <Calendar
+                className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 cursor-pointer group-hover:scale-110 transition-transform"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openDatePicker(fromDateRef);
+                }}
+              />
+              <input
+                ref={fromDateRef}
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="text-[13px] bg-transparent text-slate-800 dark:text-slate-100 outline-none uppercase font-medium cursor-pointer w-[125px]"
+                title="Choose Start Date (DD-MM-YYYY)"
+              />
+            </div>
+            <span className="text-[13px] text-slate-400 font-medium px-0.5">➔</span>
+            <div
+              onClick={() => openDatePicker(toDateRef)}
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-teal-500 dark:hover:border-teal-400 focus-within:border-teal-600 dark:focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-500/20 transition-all shadow-2xs cursor-pointer group"
+              title="Click anywhere to choose End Date"
+            >
+              <Calendar
+                className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 cursor-pointer group-hover:scale-110 transition-transform"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openDatePicker(toDateRef);
+                }}
+              />
+              <input
+                ref={toDateRef}
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="text-[13px] bg-transparent text-slate-800 dark:text-slate-100 outline-none uppercase font-medium cursor-pointer w-[125px]"
+                title="Choose End Date (DD-MM-YYYY)"
+              />
+            </div>
           </div>
         )}
       </div>
@@ -232,6 +283,35 @@ export default function ReportsPage() {
           </table>
         </div>
       </div>
+
+      {/* Animated Receipt Printer Modal */}
+      <ReceiptPrinterModal
+        isOpen={showPrinterModal}
+        reportType="financial-report"
+        reportData={{
+          title: "BUSINESS FINANCIAL REPORT",
+          period:
+            period === "today"
+              ? "TODAY"
+              : period === "yesterday"
+              ? "YESTERDAY"
+              : period === "week"
+              ? "THIS WEEK"
+              : period === "month"
+              ? "THIS MONTH"
+              : period === "custom" && fromDate && toDate
+              ? `${fromDate} to ${toDate}`
+              : "ALL TIME",
+          totalInr: kpis?.totalInrProcessed || kpis?.todayInr || 0,
+          totalAed: kpis?.totalAedCharged || kpis?.todayAed || 0,
+          netProfit: kpis?.netProfitAed || kpis?.todayProfit || 0,
+          txnCount: kpis?.transactionCount || kpis?.todayTxnCount || 0,
+        }}
+        onCompletePrint={() => {
+          window.print();
+        }}
+        onClose={() => setShowPrinterModal(false)}
+      />
     </div>
   );
 }

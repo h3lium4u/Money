@@ -2,105 +2,276 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────────────────
+   REMIT DESIGN SYSTEM — Light (White default) & Dark Theme
+───────────────────────────────────────────────────────────────────────── */
+
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  /* Light Theme tokens (Default White Mode) */
+  --bg:           #FFFFFF;
+  --bg-surface:   #FFFFFF;
+  --bg-muted:     #F8FAFC;
+  --bg-hover:     #F1F5F9;
+  --fg:           #121827;
+  --fg-heading:   #121827;
+  --fg-body:      #1E293B;
+  --fg-muted:     #64748B;
+  --fg-faint:     #94A3B8;
+  --border:       #D9D9D9;
+  --border-strong: #CBD5E1;
+
+  /* Fresh Teal Accent */
+  --accent:       #0F766E;
+  --accent-hover: #0D9488;
+  --accent-soft:  #F0FDFA;
+  --accent-border: #CCFBF1;
+
+  /* Typography */
+  --font-display: "Helvetica Neue", "Helvetica Now Display", Arial, sans-serif;
+  --font-body:    var(--font-inter, "Inter"), "Helvetica Neue", Arial, sans-serif;
+
+  /* Radii scale */
+  --r-xs:   5px;
+  --r-sm:   8px;
+  --r-md:   16px;
+  --r-lg:   20px;
+  --r-full: 100px;
+}
+
+/* ── Dark Theme Tokens ── */
+html.dark, :root[data-theme="dark"] {
+  --bg:           #0B0F19;
+  --bg-surface:   #111827;
+  --bg-muted:     #1E293B;
+  --bg-hover:     #1E293B;
+  --fg:           #F8FAFC;
+  --fg-heading:   #F8FAFC;
+  --fg-body:      #E2E8F0;
+  --fg-muted:     #94A3B8;
+  --fg-faint:     #64748B;
+  --border:       #1E293B;
+  --border-strong: #334155;
+
+  --accent:       #14B8A6;
+  --accent-hover: #2DD4BF;
+  --accent-soft:  rgba(20, 184, 166, 0.14);
+  --accent-border: rgba(20, 184, 166, 0.28);
+}
+
+/* ── Reset & Core ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: var(--bg);
+  color: var(--fg-body);
+  font-family: var(--font-body);
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Custom scrollbars for data tables */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+/* ── Headings ── */
+h1, h2 {
+  font-family: var(--font-display);
+  color: var(--fg-heading);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
 }
 
-/* ========================================================
-   CLEAN PROFESSIONAL PRINT STYLES
-   Eliminates unwanted pages, hides navigation and buttons,
-   and formats clean statements for printing & PDF saving.
-   ======================================================== */
+h3, h4, h5, h6 {
+  font-family: var(--font-body);
+  color: var(--fg-heading);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* ── Interactive states ── */
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; font-family: inherit; }
+
+/* ── Flat card override ── */
+.rounded-xl, .rounded-lg {
+  box-shadow: none !important;
+  animation: fadeInUp 0.3s ease both;
+}
+
+.rounded-xl.border, .rounded-lg.border {
+  transition: border-color 0.15s ease, transform 0.2s ease, background-color 0.2s ease;
+}
+.rounded-xl.border:hover, .rounded-lg.border:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+
+/* ── Dark Mode Class Overrides (Seamless across all pages) ── */
+html.dark body {
+  background: #0B0F19 !important;
+  color: #E2E8F0 !important;
+}
+
+html.dark .bg-white {
+  background-color: #111827 !important;
+  color: #E2E8F0;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-slate-50\/50 {
+  background-color: #0F172A !important;
+}
+
+html.dark .bg-slate-100 {
+  background-color: #1E293B !important;
+}
+
+html.dark .border-slate-200,
+html.dark .border-slate-100 {
+  border-color: #1E293B !important;
+}
+
+html.dark .text-slate-900,
+html.dark .text-slate-800 {
+  color: #F8FAFC !important;
+}
+
+html.dark .text-slate-700,
+html.dark .text-slate-600 {
+  color: #CBD5E1 !important;
+}
+
+html.dark .text-slate-500,
+html.dark .text-slate-400 {
+  color: #94A3B8 !important;
+}
+
+html.dark .divide-slate-100,
+html.dark .divide-slate-200 {
+  border-color: #1E293B !important;
+}
+
+html.dark thead.bg-slate-50 {
+  background-color: #0D131F !important;
+  color: #94A3B8 !important;
+  border-color: #1E293B !important;
+}
+
+html.dark tr.hover\:bg-slate-50\/80:hover {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* ── Form Controls Default (White Theme) ── */
+input,
+select,
+textarea {
+  background-color: #ffffff;
+  color: #121827;
+  border-color: #cbd5e1;
+}
+
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background-color: #111827 !important;
+  border-color: #334155 !important;
+  color: #F8FAFC !important;
+}
+
+/* ── Date Inputs Format (DD-MM-YYYY uppercase) & Calendar Picker ── */
+input[type="date"] {
+  text-transform: uppercase;
+  font-family: inherit;
+  letter-spacing: 0.04em;
+}
+
+input[type="date"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+/* Custom styled browser calendar picker indicator */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.7;
+  padding: 2px;
+  border-radius: 4px;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+html.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.85);
+}
+
+/* ── Mobile Layout Optimization ── */
+@media (max-width: 640px) {
+  /* Ensure tables scroll smoothly on touch devices without jank */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ── Animations ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.rounded-xl:nth-child(1), .rounded-lg:nth-child(1) { animation-delay: 0.04s; }
+.rounded-xl:nth-child(2), .rounded-lg:nth-child(2) { animation-delay: 0.08s; }
+.rounded-xl:nth-child(3), .rounded-lg:nth-child(3) { animation-delay: 0.12s; }
+.rounded-xl:nth-child(4), .rounded-lg:nth-child(4) { animation-delay: 0.16s; }
+.rounded-xl:nth-child(5), .rounded-lg:nth-child(5) { animation-delay: 0.20s; }
+.rounded-xl:nth-child(6), .rounded-lg:nth-child(6) { animation-delay: 0.24s; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-muted); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: var(--r-xs); }
+::-webkit-scrollbar-thumb:hover { background: var(--fg-faint); }
+
+/* ── Print ── */
 @media print {
-  /* Hide unwanted UI elements */
-  aside,
-  header,
-  nav,
-  button,
-  .no-print,
-  input,
-  select {
-    display: none !important;
-  }
-
-  /* Reset layout structure for printing */
+  aside, header, nav, button, .no-print, input, select { display: none !important; }
   html, body {
-    height: auto !important;
-    min-height: auto !important;
-    overflow: visible !important;
-    background: #ffffff !important;
-    color: #000000 !important;
-    font-size: 10pt !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    height: auto !important; overflow: visible !important;
+    background: #fff !important; color: #000 !important;
+    font-size: 10pt !important; margin: 0 !important; padding: 0 !important;
   }
-
-  /* Expand main container to full page */
-  main {
-    padding: 0 !important;
-    margin: 0 !important;
-    overflow: visible !important;
-    height: auto !important;
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-
-  /* Remove outer flex and scroll restraints */
-  div {
-    overflow: visible !important;
-  }
-
-  /* Clean table formatting */
-  table {
-    width: 100% !important;
-    border-collapse: collapse !important;
-    page-break-inside: auto;
-  }
-  tr {
-    page-break-inside: avoid;
-    page-break-after: auto;
-  }
-  thead {
-    display: table-header-group;
-  }
-  th, td {
-    padding: 6px 8px !important;
-    border-bottom: 1px solid #e2e8f0 !important;
-  }
-
-  /* Remove shadows and borders from cards */
-  .shadow-sm, .shadow-md, .shadow-xl {
-    box-shadow: none !important;
-  }
-  .border {
-    border-color: #cbd5e1 !important;
-  }
-
-  /* Display elements marked specifically for print */
-  .print-only {
-    display: block !important;
-  }
+  main { padding: 0 !important; margin: 0 !important; overflow: visible !important; width: 100% !important; }
+  div { overflow: visible !important; }
+  table { width: 100% !important; border-collapse: collapse !important; }
+  tr { page-break-inside: avoid; }
+  thead { display: table-header-group; }
+  th, td { padding: 6px 8px !important; border-bottom: 1px solid #d9d9d9 !important; }
+  .shadow-sm, .shadow-md, .shadow-xl { box-shadow: none !important; }
+  .print-only { display: block !important; }
 }

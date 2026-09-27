@@ -350,7 +350,7 @@ export default function NewTransactionPage() {
       {/* Main Grid: Entry Form & Authoritative Calculation Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Form Column */}
-        <form onSubmit={handleSubmit} className="lg:col-span-7 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-5">
+        <form onSubmit={handleSubmit} className="lg:col-span-7 bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
           {error && (
             <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs font-medium flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
@@ -361,7 +361,7 @@ export default function NewTransactionPage() {
           {/* Section: Customer & Date */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                 Date
               </label>
               <input
@@ -369,19 +369,19 @@ export default function NewTransactionPage() {
                 required
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full text-xs font-medium border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full text-xs font-medium border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                   Dubai Customer
                 </label>
                 <button
                   type="button"
                   onClick={() => setShowNewCustModal(true)}
-                  className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1 transition-colors"
+                  className="text-[11px] font-bold text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/40 dark:text-teal-300 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800 flex items-center gap-1 transition-colors cursor-pointer"
                 >
                   <UserPlus className="w-3 h-3" />
                   <span>+ New Customer</span>
@@ -391,7 +391,7 @@ export default function NewTransactionPage() {
               <select
                 value={customerId}
                 onChange={(e) => handleCustomerChange(e.target.value)}
-                className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 {customers.length === 0 ? (
                   <option value="">-- No customers yet. Click "+ New Customer" above --</option>
@@ -408,7 +408,7 @@ export default function NewTransactionPage() {
               </select>
 
               {selectedCustomer && (
-                <div className="text-[10px] text-slate-500 font-semibold mt-1">
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold mt-1">
                   Balance Due: {(selectedCustomer.outstanding_balance || 0).toFixed(2)} AED
                 </div>
               )}
@@ -418,11 +418,11 @@ export default function NewTransactionPage() {
           {/* Section: INR Order Amount */}
           <div>
             <div className="flex flex-wrap items-center justify-between gap-1 mb-1">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 INR Order Amount
               </label>
               {inrWords && (
-                <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 shadow-2xs">
+                <span className="text-xs font-semibold text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/40 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800 shadow-2xs">
                   {inrWords}
                 </span>
               )}
@@ -436,12 +436,12 @@ export default function NewTransactionPage() {
                 placeholder="120000"
                 value={inrAmount}
                 onChange={(e) => setInrAmount(e.target.value)}
-                className="w-full text-base font-bold pl-8 pr-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                className="w-full text-base font-bold pl-8 pr-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs"
               />
             </div>
             {inrWords && (
-              <div className="mt-1.5 p-2 bg-emerald-50/90 border border-emerald-200/90 rounded-lg flex items-center gap-2 text-xs text-emerald-900 animate-in fade-in duration-100">
-                <span className="font-bold text-[10px] tracking-wider uppercase bg-emerald-200 text-emerald-950 px-1.5 py-0.5 rounded font-mono shrink-0">
+              <div className="mt-1.5 p-2 bg-teal-50/90 dark:bg-teal-950/40 border border-teal-200/90 dark:border-teal-800 rounded-lg flex items-center gap-2 text-xs text-teal-900 dark:text-teal-200 animate-in fade-in duration-100">
+                <span className="font-bold text-[10px] tracking-wider uppercase bg-teal-200 dark:bg-teal-800 text-teal-950 dark:text-teal-100 px-1.5 py-0.5 rounded font-mono shrink-0">
                   In Words:
                 </span>
                 <span className="font-semibold">{inrWords}</span>
@@ -452,9 +452,9 @@ export default function NewTransactionPage() {
           {/* Section: Rates */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 flex items-center justify-between">
                 <span>Daily Rate (Customer)</span>
-                <span className="text-[10px] text-emerald-700 font-bold">AED / 1000 INR</span>
+                <span className="text-[10px] text-teal-700 dark:text-teal-400 font-bold">AED / 1000 INR</span>
               </label>
               <input
                 type="number"
@@ -463,14 +463,14 @@ export default function NewTransactionPage() {
                 placeholder="38.25"
                 value={customerRate}
                 onChange={(e) => setCustomerRate(e.target.value)}
-                className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 flex items-center justify-between">
                 <span>My Rate (Base Cost)</span>
-                <span className="text-[10px] text-blue-700 font-bold">INR / 1 AED</span>
+                <span className="text-[10px] text-blue-700 dark:text-blue-400 font-bold">INR / 1 AED</span>
               </label>
               <input
                 type="number"
@@ -479,7 +479,7 @@ export default function NewTransactionPage() {
                 placeholder="26.20"
                 value={baseRate}
                 onChange={(e) => setBaseRate(e.target.value)}
-                className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
           </div>
@@ -487,7 +487,7 @@ export default function NewTransactionPage() {
           {/* Section: Delivery Cut & Notes */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                 Delivery Charge Cut (%)
               </label>
               <input
@@ -496,12 +496,12 @@ export default function NewTransactionPage() {
                 placeholder="20"
                 value={deliveryPct}
                 onChange={(e) => setDeliveryPct(e.target.value)}
-                className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                 Transfer Notes
               </label>
               <input
@@ -509,17 +509,17 @@ export default function NewTransactionPage() {
                 placeholder="Reference or instructions..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full text-xs font-medium border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full text-xs font-medium border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
           </div>
 
           {/* SEPARATE SECTION: India Distribution Splits (Decoupled & Optional) */}
-          <div className="pt-4 border-t border-slate-200 space-y-3">
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                  <Split className="w-3.5 h-3.5 text-emerald-600" />
+                <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
+                  <Split className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                   <span>India Distribution Split (Optional)</span>
                 </h4>
                 <p className="text-[11px] text-slate-400">
@@ -530,7 +530,7 @@ export default function NewTransactionPage() {
               <button
                 type="button"
                 onClick={addSplit}
-                className="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200 flex items-center gap-1"
+                className="text-xs font-bold text-teal-700 hover:text-teal-800 bg-teal-50 dark:bg-teal-950/40 dark:text-teal-300 px-2.5 py-1 rounded border border-teal-200 dark:border-teal-800 flex items-center gap-1 cursor-pointer"
               >
                 <PlusCircle className="w-3.5 h-3.5" />
                 <span>+ Split Order</span>
@@ -539,13 +539,13 @@ export default function NewTransactionPage() {
 
             {/* Allocation Status Indicator */}
             {splits.length > 0 && (
-              <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 text-xs flex items-center justify-between">
+              <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-xs flex items-center justify-between">
                 <span>
                   Allocated: <strong>₹{totalAllocatedInr.toLocaleString()}</strong> / ₹{totalOrderInr.toLocaleString()}
                 </span>
                 <span>
                   Remaining to Distribute:{" "}
-                  <strong className={remainingInr === 0 ? "text-emerald-600" : "text-amber-600"}>
+                  <strong className={remainingInr === 0 ? "text-teal-600 dark:text-teal-400" : "text-amber-600"}>
                     ₹{remainingInr.toLocaleString()}
                   </strong>
                 </span>
@@ -554,13 +554,13 @@ export default function NewTransactionPage() {
 
             {/* Split Rows */}
             {splits.map((s, idx) => (
-              <div key={s.id} className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
-                <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+              <div key={s.id} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400">
                   <span>Split #{idx + 1}</span>
                   <button
                     type="button"
                     onClick={() => removeSplit(s.id)}
-                    className="text-rose-600 hover:text-rose-700 flex items-center gap-1"
+                    className="text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer"
                   >
                     <Trash2 className="w-3 h-3" />
                     <span>Remove</span>
@@ -568,13 +568,13 @@ export default function NewTransactionPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-600 mb-0.5">
+                    <label className="block text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 mb-0.5">
                       India Party
                     </label>
                     <select
                       value={s.distributor_id}
                       onChange={(e) => updateSplit(s.id, "distributor_id", e.target.value)}
-                      className="w-full text-xs font-bold border border-slate-300 rounded p-1.5 text-slate-900"
+                      className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                     >
                       {distributors.map((d) => (
                         <option key={d.id} value={d.id}>
@@ -584,7 +584,7 @@ export default function NewTransactionPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-600 mb-0.5">
+                    <label className="block text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 mb-0.5">
                       INR Amount
                     </label>
                     <input
@@ -593,7 +593,7 @@ export default function NewTransactionPage() {
                       placeholder="Amount"
                       value={s.inr_amount}
                       onChange={(e) => updateSplit(s.id, "inr_amount", e.target.value)}
-                      className="w-full text-xs font-bold border border-slate-300 rounded p-1.5 text-slate-900"
+                      className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                     />
                   </div>
                 </div>
@@ -601,11 +601,11 @@ export default function NewTransactionPage() {
             ))}
           </div>
 
-          {/* Submit Button */}
+          {/* Submit Button — Fresh Teal */}
           <button
             type="submit"
             disabled={saving || calculating}
-            className="w-full py-3 bg-slate-900 text-white rounded-lg text-sm font-bold hover:bg-slate-800 disabled:opacity-50 transition-all shadow-sm"
+            className="w-full py-3 bg-[#0F766E] hover:bg-[#0D9488] text-white rounded-lg text-sm font-bold disabled:opacity-50 transition-all shadow-sm cursor-pointer"
           >
             {saving ? "Saving to Neon Database..." : "Confirm & Save Transfer"}
           </button>
@@ -613,9 +613,9 @@ export default function NewTransactionPage() {
 
         {/* Right Column: Authoritative Server Calculations Preview */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="bg-slate-900 text-slate-100 p-6 rounded-xl shadow-sm border border-slate-800 space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+          <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <span className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-wider flex items-center gap-1.5">
                 <Calculator className="w-3.5 h-3.5" />
                 Backend Calculation Preview
               </span>
@@ -626,57 +626,57 @@ export default function NewTransactionPage() {
               <div className="space-y-4">
                 {/* AED Charged */}
                 <div>
-                  <span className="text-[11px] text-slate-400 uppercase font-semibold">AED Amount Charged to Customer</span>
-                  <div className="text-3xl font-mono font-bold text-white mt-1">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase font-semibold">AED Amount Charged to Customer</span>
+                  <div className="text-3xl font-mono font-bold text-slate-900 dark:text-white mt-1">
                     {preview.aedAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })} AED
                   </div>
-                  <span className="text-[10px] text-emerald-400 font-mono">
+                  <span className="text-[10px] text-teal-700 dark:text-emerald-400 font-mono">
                     = (₹{preview.inrAmount.toLocaleString()} / 1000) × {preview.customerRate.toFixed(4)}
                   </span>
                 </div>
 
-                <div className="pt-3 border-t border-slate-800 space-y-2 text-xs">
-                  <div className="flex justify-between text-slate-300">
-                    <span className="text-slate-400">Wholesale Cost (AED):</span>
-                    <span className="font-mono font-bold">
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2 text-xs">
+                  <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                    <span className="text-slate-500 dark:text-slate-400">Wholesale Cost (AED):</span>
+                    <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
                       {preview.costAed.toFixed(2)} AED
                     </span>
                   </div>
 
-                  <div className="flex justify-between text-slate-300">
-                    <span className="text-slate-400">Gross Margin:</span>
-                    <span className="font-mono font-bold text-emerald-400">
+                  <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                    <span className="text-slate-500 dark:text-slate-400">Gross Margin:</span>
+                    <span className="font-mono font-bold text-teal-700 dark:text-emerald-400">
                       +{preview.grossProfitAed.toFixed(2)} AED
                     </span>
                   </div>
 
-                  <div className="flex justify-between text-slate-300">
-                    <span className="text-slate-400">Delivery Fee (20%):</span>
-                    <span className="font-mono font-bold text-slate-400">
+                  <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                    <span className="text-slate-500 dark:text-slate-400">Delivery Fee (20%):</span>
+                    <span className="font-mono font-bold text-slate-500 dark:text-slate-400">
                       -{preview.deliveryChargeAed.toFixed(2)} AED
                     </span>
                   </div>
 
-                  <div className="flex justify-between text-slate-100 pt-2 border-t border-slate-800 text-sm">
-                    <span className="font-bold text-emerald-400">Net Business Profit:</span>
-                    <span className="font-mono font-bold text-emerald-400 text-base">
+                  <div className="flex justify-between items-center p-3 rounded-lg bg-teal-50 dark:bg-teal-950/40 border border-teal-200/80 dark:border-teal-900/60 mt-3">
+                    <span className="font-bold text-teal-900 dark:text-teal-200">Net Business Profit:</span>
+                    <span className="font-mono font-bold text-teal-700 dark:text-teal-300 text-lg">
                       {preview.netProfitAed.toFixed(2)} AED
                     </span>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="py-12 text-center text-slate-500 text-xs">
+              <div className="py-12 text-center text-slate-400 dark:text-slate-500 text-xs">
                 Enter transfer amounts and rates to view authoritative calculations.
               </div>
             )}
           </div>
 
           {/* Quick Guidance Box */}
-          <div className="p-4 bg-white rounded-xl border border-slate-200 text-xs text-slate-600 space-y-2 shadow-sm">
-            <span className="font-bold text-slate-900 block">Customer Workflow</span>
-            <p className="text-slate-500 text-[11px] leading-relaxed">
-              If the customer is new, click <strong>"+ New Customer"</strong> to create them on the spot. Once created, they will be saved to your database and ready for selection on all future transfers.
+          <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400 space-y-2 shadow-sm">
+            <span className="font-bold text-slate-900 dark:text-slate-100 block">Customer Workflow</span>
+            <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed">
+              If the customer is new, click <strong className="text-teal-700 dark:text-teal-400">"+ New Customer"</strong> to create them on the spot. Once created, they will be saved to your database and ready for selection on all future transfers.
             </p>
           </div>
         </div>
@@ -718,13 +718,13 @@ export default function NewTransactionPage() {
                   placeholder="e.g. DIVAN or AHMAD"
                   value={newCustName}
                   onChange={(e) => setNewCustName(e.target.value)}
-                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                     Code (Optional)
                   </label>
                   <input
@@ -732,12 +732,12 @@ export default function NewTransactionPage() {
                     placeholder="e.g. CUST-001"
                     value={newCustCode}
                     onChange={(e) => setNewCustCode(e.target.value)}
-                    className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900"
+                    className="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                     Default Rate
                   </label>
                   <input
@@ -746,13 +746,13 @@ export default function NewTransactionPage() {
                     placeholder="38.25"
                     value={newCustRate}
                     onChange={(e) => setNewCustRate(e.target.value)}
-                    className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900"
+                    className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                   Phone (Optional)
                 </label>
                 <input
@@ -760,22 +760,22 @@ export default function NewTransactionPage() {
                   placeholder="+971 50 ..."
                   value={newCustPhone}
                   onChange={(e) => setNewCustPhone(e.target.value)}
-                  className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900"
+                  className="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowNewCustModal(false)}
-                  className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  className="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={savingNewCust}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 shadow-sm"
+                  className="px-4 py-2 bg-[#0F766E] hover:bg-[#0D9488] text-white rounded-lg text-xs font-bold disabled:opacity-50 shadow-sm cursor-pointer"
                 >
                   {savingNewCust ? "Saving..." : "Create & Select"}
                 </button>

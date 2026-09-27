@@ -16,6 +16,7 @@ import {
   Trash2,
   AlertTriangle,
 } from "lucide-react";
+import { ReceiptPrinterModal } from "@/components/animation/ReceiptPrinterModal";
 
 export default function CustomerDetailPage() {
   const params = useParams();
@@ -45,6 +46,7 @@ export default function CustomerDetailPage() {
   const [editCustRate, setEditCustRate] = useState("38.25");
   const [isSubmittingCustEdit, setIsSubmittingCustEdit] = useState(false);
   const [custEditError, setCustEditError] = useState<string | null>(null);
+  const [showPrinterModal, setShowPrinterModal] = useState(false);
 
   useEffect(() => {
     if (id) fetchCustomerLedger();
@@ -183,10 +185,12 @@ export default function CustomerDetailPage() {
           </button>
 
           <button
-            onClick={() => window.print()}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 shadow-sm"
+            type="button"
+            onClick={() => setShowPrinterModal(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 shadow-sm cursor-pointer transition-all"
+            title="Preview and print thermal statement receipt"
           >
-            <Printer className="w-3.5 h-3.5" />
+            <Printer className="w-3.5 h-3.5 text-slate-500" />
             <span>Print Statement</span>
           </button>
 
@@ -567,6 +571,29 @@ export default function CustomerDetailPage() {
           </form>
         </div>
       )}
+      {/* Animated Receipt Printer Modal */}
+      <ReceiptPrinterModal
+        isOpen={showPrinterModal}
+        reportType="customer-statement"
+        customerData={{
+          name: customer.name,
+          code: customer.code,
+          totalInr: customer.total_inr,
+          totalPaid: customer.total_paid,
+          outstanding: outstanding,
+          entries: entries.map((e: any) => ({
+            date: e.date,
+            type: e.type,
+            reference: e.reference || (e.type === "TRANSACTION" ? "Remittance Order" : "Payment Received"),
+            amount: e.type === "TRANSACTION" ? e.inr_amount : e.aed_amount,
+            currency: e.type === "TRANSACTION" ? "INR" : "AED",
+          })),
+        }}
+        onCompletePrint={() => {
+          window.print();
+        }}
+        onClose={() => setShowPrinterModal(false)}
+      />
     </div>
   );
 }
