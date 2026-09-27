@@ -57,10 +57,10 @@ export default function NewTransactionPage() {
   // Inputs
   const [date, setDate] = useState("2026-09-26");
   const [customerId, setCustomerId] = useState("");
-  const [inrAmount, setInrAmount] = useState<string>("1000000");
-  const [customerRate, setCustomerRate] = useState<string>("38.25");
-  const [baseRate, setBaseRate] = useState<string>("26.20");
-  const [deliveryPct, setDeliveryPct] = useState<string>("20");
+  const [inrAmount, setInrAmount] = useState<string>("");
+  const [customerRate, setCustomerRate] = useState<string>("");
+  const [baseRate, setBaseRate] = useState<string>("");
+  const [deliveryPct, setDeliveryPct] = useState<string>("");
   const [notes, setNotes] = useState("");
 
   // Distribution Splits (Optional at order entry)
@@ -106,12 +106,6 @@ export default function NewTransactionPage() {
         ["INDIA_DISTRIBUTOR", "HYBRID", "BANK_ACCOUNT"].includes(d.partner_type)
       );
       setDistributors(filteredDists);
-      if (validCustomers.length > 0 && !customerId) {
-        setCustomerId(validCustomers[0].id);
-        if (validCustomers[0].default_rate) {
-          setCustomerRate(String(validCustomers[0].default_rate));
-        }
-      }
     } catch (err) {
       console.error(err);
       setCustomers([]);
@@ -175,7 +169,7 @@ export default function NewTransactionPage() {
     const inr = parseFloat(inrAmount);
     const cRate = parseFloat(customerRate);
     const bRate = parseFloat(baseRate);
-    const dPct = parseFloat(deliveryPct) / 100;
+    const dPct = deliveryPct ? parseFloat(deliveryPct) / 100 : 0.2;
 
     if (!inr || inr <= 0 || !cRate || cRate <= 0 || !bRate || bRate <= 0) {
       setPreview(null);
@@ -243,6 +237,23 @@ export default function NewTransactionPage() {
       return;
     }
 
+    const inr = parseFloat(inrAmount);
+    const cRate = parseFloat(customerRate);
+    const bRate = parseFloat(baseRate);
+
+    if (!inr || inr <= 0) {
+      setError("Please enter a valid INR order amount");
+      return;
+    }
+    if (!cRate || cRate <= 0) {
+      setError("Please enter a valid customer rate");
+      return;
+    }
+    if (!bRate || bRate <= 0) {
+      setError("Please enter a valid base rate");
+      return;
+    }
+
     if (totalAllocatedInr > totalOrderInr) {
       setError(
         `Total distributed (₹${totalAllocatedInr.toLocaleString()}) cannot exceed customer order (₹${totalOrderInr.toLocaleString()})`
@@ -267,10 +278,10 @@ export default function NewTransactionPage() {
         body: JSON.stringify({
           transaction_date: date,
           customer_id: customerId,
-          inr_amount: parseFloat(inrAmount),
-          customer_rate: parseFloat(customerRate),
-          base_rate: parseFloat(baseRate),
-          delivery_charge_pct: parseFloat(deliveryPct) / 100,
+          inr_amount: inr,
+          customer_rate: cRate,
+          base_rate: bRate,
+          delivery_charge_pct: deliveryPct ? parseFloat(deliveryPct) / 100 : 0.2,
           notes: notes || undefined,
           splits: payloadSplits.length > 0 ? payloadSplits : undefined,
         }),
@@ -393,18 +404,14 @@ export default function NewTransactionPage() {
                 onChange={(e) => handleCustomerChange(e.target.value)}
                 className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
-                {customers.length === 0 ? (
-                  <option value="">-- No customers yet. Click "+ New Customer" above --</option>
-                ) : (
-                  <>
-                    <option value="">-- Choose Existing Customer ({customers.length}) --</option>
-                    {customers.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} {c.code ? `(${c.code})` : ""}
-                      </option>
-                    ))}
-                  </>
-                )}
+                <option value="">
+                  {customers.length === 0 ? "Select Customer" : `Select Customer (${customers.length})`}
+                </option>
+                {customers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} {c.code ? `(${c.code})` : ""}
+                  </option>
+                ))}
               </select>
 
               {selectedCustomer && (
@@ -433,7 +440,7 @@ export default function NewTransactionPage() {
                 type="number"
                 step="any"
                 required
-                placeholder="120000"
+                placeholder="e.g. 1000000"
                 value={inrAmount}
                 onChange={(e) => setInrAmount(e.target.value)}
                 className="w-full text-base font-bold pl-8 pr-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs"
@@ -460,7 +467,7 @@ export default function NewTransactionPage() {
                 type="number"
                 step="any"
                 required
-                placeholder="38.25"
+                placeholder="e.g. 38.25"
                 value={customerRate}
                 onChange={(e) => setCustomerRate(e.target.value)}
                 className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
@@ -476,7 +483,7 @@ export default function NewTransactionPage() {
                 type="number"
                 step="any"
                 required
-                placeholder="26.20"
+                placeholder="e.g. 26.20"
                 value={baseRate}
                 onChange={(e) => setBaseRate(e.target.value)}
                 className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
@@ -493,7 +500,7 @@ export default function NewTransactionPage() {
               <input
                 type="number"
                 step="any"
-                placeholder="20"
+                placeholder="e.g. 20"
                 value={deliveryPct}
                 onChange={(e) => setDeliveryPct(e.target.value)}
                 className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
@@ -506,7 +513,7 @@ export default function NewTransactionPage() {
               </label>
               <input
                 type="text"
-                placeholder="Reference or instructions..."
+                placeholder="e.g. Bill #123, Reference or instructions..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="w-full text-xs font-medium border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
