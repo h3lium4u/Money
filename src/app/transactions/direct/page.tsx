@@ -6,15 +6,13 @@ import {
   Calculator,
   CheckCircle2,
   AlertTriangle,
-  Coins,
   RefreshCw,
   PlusCircle,
   Trash2,
-  Split,
-  Layers,
   UserPlus,
   Calendar,
   ShieldCheck,
+  Zap,
 } from "lucide-react";
 import { numberToIndianWords } from "@/lib/number-to-words";
 import { getTodayDateString } from "@/lib/date-utils";
@@ -25,13 +23,6 @@ interface CustomerOption {
   name: string;
   default_rate?: number;
   outstanding_balance?: number;
-}
-
-interface DistributorOption {
-  id: string;
-  code: string;
-  name: string;
-  partner_type: string;
 }
 
 interface CalculationPreview {
@@ -47,14 +38,9 @@ interface CalculationPreview {
   warning?: string | null;
 }
 
-interface SplitItem {
-  id: string;
-  distributor_id: string;
-  inr_amount: string;
-  notes?: string;
-}
+const DEFAULT_PARTY_NAMES = ["AWAFI", "BASID", "HAJA", "NF2", "SARABU"];
 
-export default function NewTransactionPage() {
+export default function DirectTransferPage() {
   const router = useRouter();
 
   // Inputs
@@ -64,9 +50,65 @@ export default function NewTransactionPage() {
   const [inrAmounts, setInrAmounts] = useState<string[]>(["", "", ""]);
   const [customerRate, setCustomerRate] = useState<string>("");
   const [baseRate, setBaseRate] = useState<string>("");
-  const [deliveryPct, setDeliveryPct] = useState<string>("");
-  const [notes, setNotes] = useState("");
+
+  // Customers
+  const [customers, setCustomers] = useState<CustomerOption[]>([]);
+
+  // Calculation state
+  const [preview, setPreview] = useState<CalculationPreview | null>(null);
+  const [calculating, setCalculating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successTxn, setSuccessTxn] = useState<any | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  // New Customer Modal State
+  const [showNewCustModal, setShowNewCustModal] = useState(false);
+  const [newCustName, setNewCustName] = useState("");
+  const [newCustCode, setNewCustCode] = useState("");
+  const [newCustPhone, setNewCustPhone] = useState("");
+  const [newCustRate, setNewCustRate] = useState("38.25");
+  const [savingNewCust, setSavingNewCust] = useState(false);
+  const [newCustError, setNewCustError] = useState<string | null>(null);
+
+  // Load allowed parties on mount
+  useEffect(() => {
+    loadParties();
+  }, []);
+
+  async function loadParties() {
+    try {
+      const res = await fetch("/api/parties");
+      const allParties: CustomerOption[] = await res.json();
+      if (!Array.isArray(allParties)) {
+        setCustomers([]);
+        return;
+      }
+
+      // Sort with the 5 default parties first in order, then extra ones
+      allParties.sort((a, b) => {
+        const aIndex = DEFAULT_PARTY_NAMES.indexOf(a.name?.toUpperCase()?.trim());
+        const bIndex = DEFAULT_PARTY_NAMES.indexOf(b.name?.toUpperCase()?.trim());
+        if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+        if (aIndex !== -1) return -1;
+        if (bIndex !== -1) return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      setCustomers(allParties);
+    } catch (err) {
+      console.error("Failed to load parties:", err);
+      setCustomers([]);
+    }
+  }
+
+  function handleCustomerChange(cId: string) {
+    setCustomerId(cId);
+    const selected = customers.find((c) => c.id === cId);
+    if (selected?.default_rate) {
+      setCustomerRate(String(selected.default_rate));
+    }
+  }
 
   const openDatePicker = () => {
     if (dateInputRef.current) {
@@ -100,119 +142,17 @@ export default function NewTransactionPage() {
     setInrAmounts((prev) => prev.filter((_, i) => i !== index));
   }
 
-  // Distribution Splits (Optional at order entry)
-  const [splits, setSplits] = useState<SplitItem[]>([]);
-
-  // Options
-  const [customers, setCustomers] = useState<CustomerOption[]>([]);
-  const [distributors, setDistributors] = useState<DistributorOption[]>([]);
-
-  // Calculation state
-  const [preview, setPreview] = useState<CalculationPreview | null>(null);
-  const [calculating, setCalculating] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successTxn, setSuccessTxn] = useState<any | null>(null);
-
-  // New Customer Modal State
-  const [showNewCustModal, setShowNewCustModal] = useState(false);
-  const [newCustName, setNewCustName] = useState("");
-  const [newCustCode, setNewCustCode] = useState("");
-  const [newCustPhone, setNewCustPhone] = useState("");
-  const [newCustRate, setNewCustRate] = useState("38.25");
-  const [savingNewCust, setSavingNewCust] = useState(false);
-  const [newCustError, setNewCustError] = useState<string | null>(null);
-
-  // Load customers and distributors
-  useEffect(() => {
-    loadOptions();
-  }, []);
-
-  async function loadOptions() {
-    try {
-      const [cRes, dRes] = await Promise.all([
-        fetch("/api/customers"),
-        fetch("/api/distributors"),
-      ]);
-      const cJson = await cRes.json();
-      const dJson = await dRes.json();
-      const validCustomers = Array.isArray(cJson) ? cJson : [];
-      const validDists = Array.isArray(dJson) ? dJson : [];
-      setCustomers(validCustomers);
-      const filteredDists = validDists.filter((d: any) =>
-        ["INDIA_DISTRIBUTOR", "HYBRID", "BANK_ACCOUNT"].includes(d.partner_type)
-      );
-      setDistributors(filteredDists);
-    } catch (err) {
-      console.error(err);
-      setCustomers([]);
-      setDistributors([]);
-    }
-  }
-
-  function handleCustomerChange(cId: string) {
-    setCustomerId(cId);
-    const selected = customers.find((c) => c.id === cId);
-    if (selected?.default_rate) {
-      setCustomerRate(String(selected.default_rate));
-    }
-  }
-
-  async function handleCreateNewCustomer(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newCustName.trim()) {
-      setNewCustError("Customer name is required");
-      return;
-    }
-
-    setSavingNewCust(true);
-    setNewCustError(null);
-    try {
-      const res = await fetch("/api/customers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: newCustName.trim(),
-          code: newCustCode.trim() || undefined,
-          phone: newCustPhone.trim() || undefined,
-          default_rate: newCustRate ? parseFloat(newCustRate) : 38.25,
-        }),
-      });
-
-      const created = await res.json();
-      if (!res.ok) throw new Error(created.error);
-
-      // Add to list and immediately select
-      setCustomers((prev) => [...prev, created]);
-      setCustomerId(created.id);
-      if (created.default_rate) {
-        setCustomerRate(String(created.default_rate));
-      }
-
-      setShowNewCustModal(false);
-      setNewCustName("");
-      setNewCustCode("");
-      setNewCustPhone("");
-      setNewCustRate("38.25");
-    } catch (err: any) {
-      setNewCustError(err.message || "Failed to create customer");
-    } finally {
-      setSavingNewCust(false);
-    }
-  }
-
-  // Non-empty, valid amounts (blank fields are completely ignored and not reflected in calculations or Excel)
+  // Only non-empty, positive amounts are evaluated
   const validAmounts = inrAmounts
     .map((val) => parseFloat(val))
     .filter((num) => !isNaN(num) && num > 0);
   const totalOrderInr = validAmounts.reduce((sum, num) => sum + num, 0);
 
-  // Live Server Calculation
+  // Live Server Calculation with deliveryChargePct = 0 (No delivery fee)
   useEffect(() => {
     const inr = totalOrderInr;
     const cRate = parseFloat(customerRate);
     const bRate = parseFloat(baseRate);
-    const dPct = deliveryPct ? parseFloat(deliveryPct) / 100 : 0.2;
 
     if (!inr || inr <= 0 || !cRate || cRate <= 0 || !bRate || bRate <= 0) {
       setPreview(null);
@@ -230,7 +170,7 @@ export default function NewTransactionPage() {
             inrAmount: inr,
             customerRate: cRate,
             baseRate: bRate,
-            deliveryChargePct: isNaN(dPct) ? 0.2 : dPct,
+            deliveryChargePct: 0, // No delivery charge
           }),
         });
         const data = await res.json();
@@ -245,38 +185,55 @@ export default function NewTransactionPage() {
     }, 150);
 
     return () => clearTimeout(timer);
-  }, [inrAmounts, customerRate, baseRate, deliveryPct, totalOrderInr]);
+  }, [inrAmounts, customerRate, baseRate, totalOrderInr]);
 
-  // Splits Calculation
-  const totalAllocatedInr = splits.reduce((sum, s) => sum + (parseFloat(s.inr_amount) || 0), 0);
-  const remainingInr = Math.max(0, totalOrderInr - totalAllocatedInr);
+  async function handleCreateNewCustomer(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newCustName.trim()) {
+      setNewCustError("Customer name is required");
+      return;
+    }
 
-  function addSplit() {
-    if (distributors.length === 0) return;
-    setSplits([
-      ...splits,
-      {
-        id: Math.random().toString(),
-        distributor_id: distributors[0].id,
-        inr_amount: remainingInr > 0 ? String(remainingInr) : "",
-        notes: "",
-      },
-    ]);
+    setSavingNewCust(true);
+    setNewCustError(null);
+    try {
+      const res = await fetch("/api/parties", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newCustName.trim(),
+          code: newCustCode.trim() || undefined,
+          phone: newCustPhone.trim() || undefined,
+          default_rate: newCustRate ? parseFloat(newCustRate) : 38.25,
+        }),
+      });
+
+      const created = await res.json();
+      if (!res.ok) throw new Error(created.error);
+
+      setCustomers((prev) => [...prev, created]);
+      setCustomerId(created.id);
+      if (created.default_rate) {
+        setCustomerRate(String(created.default_rate));
+      }
+
+      setShowNewCustModal(false);
+      setNewCustName("");
+      setNewCustCode("");
+      setNewCustPhone("");
+      setNewCustRate("38.25");
+    } catch (err: any) {
+      setNewCustError(err.message || "Failed to create party");
+    } finally {
+      setSavingNewCust(false);
+    }
   }
 
-  function updateSplit(id: string, field: keyof SplitItem, value: string) {
-    setSplits(splits.map((s) => (s.id === id ? { ...s, [field]: value } : s)));
-  }
-
-  function removeSplit(id: string) {
-    setSplits(splits.filter((s) => s.id !== id));
-  }
-
-  // Intercept form submit and ask for confirmation
+  // Pre-save validation: Prompt confirmation modal
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!customerId) {
-      setError("Please select a customer or click '+ New Customer' to create one");
+      setError("Please select a customer or click '+ New Customer' to add one");
       return;
     }
 
@@ -297,18 +254,11 @@ export default function NewTransactionPage() {
       return;
     }
 
-    if (totalAllocatedInr > totalOrderInr) {
-      setError(
-        `Total distributed (₹${totalAllocatedInr.toLocaleString()}) cannot exceed customer order (₹${totalOrderInr.toLocaleString()})`
-      );
-      return;
-    }
-
     setError(null);
     setShowConfirmModal(true);
   }
 
-  // Save after user confirms details
+  // Final database submission after confirmation
   async function handleFinalSave() {
     const inr = totalOrderInr;
     const cRate = parseFloat(customerRate);
@@ -317,20 +267,13 @@ export default function NewTransactionPage() {
     setSaving(true);
     setError(null);
     try {
-      const payloadSplits = splits
-        .filter((s) => parseFloat(s.inr_amount) > 0)
-        .map((s) => ({
-          distributor_id: s.distributor_id,
-          inr_amount: parseFloat(s.inr_amount),
-          notes: s.notes || undefined,
-        }));
-
-      // Breakdown of only entered amounts (empty fields omitted)
+      // Record breakdown of entered amounts only (empty fields are omitted from notes & Excel)
       const breakdownText =
         validAmounts.length > 1
-          ? `Breakdown: ${validAmounts.map((a) => "₹" + a.toLocaleString("en-IN")).join(" + ")}`
-          : "";
-      const finalNotes = [notes.trim(), breakdownText].filter(Boolean).join(" | ") || undefined;
+          ? `Breakdown: ${validAmounts
+              .map((a) => "₹" + a.toLocaleString("en-IN"))
+              .join(" + ")}`
+          : undefined;
 
       const res = await fetch("/api/transactions", {
         method: "POST",
@@ -341,9 +284,8 @@ export default function NewTransactionPage() {
           inr_amount: inr,
           customer_rate: cRate,
           base_rate: bRate,
-          delivery_charge_pct: deliveryPct ? parseFloat(deliveryPct) / 100 : 0.2,
-          notes: finalNotes,
-          splits: payloadSplits.length > 0 ? payloadSplits : undefined,
+          delivery_charge_pct: 0, // No delivery charge
+          notes: breakdownText,
         }),
       });
 
@@ -352,9 +294,7 @@ export default function NewTransactionPage() {
 
       setSuccessTxn(data);
       setShowConfirmModal(false);
-      setSplits([]);
       setInrAmounts(["", "", ""]);
-      setNotes("");
     } catch (err: any) {
       setError(err.message || "Failed to save transfer");
       setShowConfirmModal(false);
@@ -369,29 +309,45 @@ export default function NewTransactionPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-xl font-bold text-slate-900 tracking-tight">New Money Transfer (Dubai ➔ India)</h2>
-        <p className="text-xs text-slate-500">
-          Enter only basic transfer parameters. AED amounts, gross margin, delivery cut, and net profit are calculated by the backend.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+              Direct Transfer (Wholesale / Party)
+            </h2>
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 px-2 py-0.5 rounded-full border border-teal-200 dark:border-teal-800">
+              0% Delivery Fee
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Streamlined transfer for primary parties (AWAFI, BASID, HAJA, NF2, SARABU). No delivery cuts, no distribution split.
+          </p>
+        </div>
       </div>
 
       {/* Success Banner */}
       {successTxn && (
-        <div className="bg-emerald-50 border-2 border-emerald-500 rounded-xl p-5 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-500 rounded-xl p-5 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
               <CheckCircle2 className="w-6 h-6" />
             </div>
             <div>
-              <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">
-                Transfer Saved Successfully
+              <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+                Direct Transfer Saved Successfully
               </span>
-              <h3 className="text-base font-mono font-bold text-slate-900">{successTxn.transaction_number}</h3>
-              <p className="text-xs text-slate-600">
+              <h3 className="text-base font-mono font-bold text-slate-900 dark:text-slate-100">
+                {successTxn.transaction_number}
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400">
                 ₹ {successTxn.inr_amount.toLocaleString()} for {selectedCustomer?.name} •{" "}
-                <span className="font-bold text-slate-900">{successTxn.aed_amount.toFixed(2)} AED</span> •{" "}
-                <span className="font-bold text-emerald-700">Profit: {successTxn.net_profit_aed.toFixed(2)} AED</span>
+                <span className="font-bold text-slate-900 dark:text-slate-100">
+                  {successTxn.aed_amount.toFixed(2)} AED
+                </span>{" "}
+                •{" "}
+                <span className="font-bold text-emerald-700 dark:text-emerald-400">
+                  Net Profit: {successTxn.net_profit_aed.toFixed(2)} AED
+                </span>
               </p>
             </div>
           </div>
@@ -400,33 +356,29 @@ export default function NewTransactionPage() {
               onClick={() => {
                 setSuccessTxn(null);
                 setInrAmounts(["", "", ""]);
-                setNotes("");
                 setDate(getTodayDateString());
               }}
-              className="px-3.5 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm"
+              className="px-3.5 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm cursor-pointer"
             >
               + Another Transfer
             </button>
             <button
-              onClick={() => router.push(`/distributors`)}
-              className="px-3.5 py-1.5 bg-white text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg hover:bg-slate-50"
+              onClick={() => router.push(`/parties/${customerId}`)}
+              className="px-3.5 py-1.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer"
             >
-              View India Splits
-            </button>
-            <button
-              onClick={() => router.push(`/customers/${customerId}`)}
-              className="px-3.5 py-1.5 bg-white text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg hover:bg-slate-50"
-            >
-              Customer Statement
+              Party Statement
             </button>
           </div>
         </div>
       )}
 
-      {/* Main Grid: Entry Form & Authoritative Calculation Summary */}
+      {/* Main Grid: Form & Calculation Preview */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Form Column */}
-        <form onSubmit={handleSubmit} className="lg:col-span-7 bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+        <form
+          onSubmit={handleSubmit}
+          className="lg:col-span-7 bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5"
+        >
           {error && (
             <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs font-medium flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
@@ -466,7 +418,7 @@ export default function NewTransactionPage() {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  Dubai Customer
+                  Party
                 </label>
                 <button
                   type="button"
@@ -474,7 +426,7 @@ export default function NewTransactionPage() {
                   className="text-[11px] font-bold text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/40 dark:text-teal-300 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800 flex items-center gap-1 transition-colors cursor-pointer"
                 >
                   <UserPlus className="w-3 h-3" />
-                  <span>+ New Customer</span>
+                  <span>+ New Party</span>
                 </button>
               </div>
 
@@ -484,7 +436,7 @@ export default function NewTransactionPage() {
                 className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="">
-                  {customers.length === 0 ? "Select Customer" : `Select Customer (${customers.length})`}
+                  {customers.length === 0 ? "Select Party" : `Select Party (${customers.length} available)`}
                 </option>
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -619,124 +571,15 @@ export default function NewTransactionPage() {
             </div>
           </div>
 
-          {/* Section: Delivery Cut & Notes */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                Delivery Charge Cut (%)
-              </label>
-              <input
-                type="number"
-                step="any"
-                placeholder="e.g. 20"
-                value={deliveryPct}
-                onChange={(e) => setDeliveryPct(e.target.value)}
-                className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                Transfer Notes
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Bill #123, Reference or instructions..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="w-full text-xs font-medium border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
-              />
-            </div>
+          {/* Notice: No Delivery Fee & No Splits */}
+          <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200/80 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2">
+            <Zap className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
+            <span>
+              <strong>Direct Transfer Mode:</strong> Delivery fee is set to 0%. Net profit equals gross margin. Transfer notes and distribution splits are excluded.
+            </span>
           </div>
 
-          {/* SEPARATE SECTION: India Distribution Splits (Decoupled & Optional) */}
-          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
-                  <Split className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                  <span>India Distribution Split (Optional)</span>
-                </h4>
-                <p className="text-[11px] text-slate-400">
-                  Split this order among India parties (MK, ISMAIL, SARABU, etc.) now or allocate later.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={addSplit}
-                className="text-xs font-bold text-teal-700 hover:text-teal-800 bg-teal-50 dark:bg-teal-950/40 dark:text-teal-300 px-2.5 py-1 rounded border border-teal-200 dark:border-teal-800 flex items-center gap-1 cursor-pointer"
-              >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span>+ Split Order</span>
-              </button>
-            </div>
-
-            {/* Allocation Status Indicator */}
-            {splits.length > 0 && (
-              <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-xs flex items-center justify-between">
-                <span>
-                  Allocated: <strong>₹{totalAllocatedInr.toLocaleString()}</strong> / ₹{totalOrderInr.toLocaleString()}
-                </span>
-                <span>
-                  Remaining to Distribute:{" "}
-                  <strong className={remainingInr === 0 ? "text-teal-600 dark:text-teal-400" : "text-amber-600"}>
-                    ₹{remainingInr.toLocaleString()}
-                  </strong>
-                </span>
-              </div>
-            )}
-
-            {/* Split Rows */}
-            {splits.map((s, idx) => (
-              <div key={s.id} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 space-y-2">
-                <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                  <span>Split #{idx + 1}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeSplit(s.id)}
-                    className="text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                    <span>Remove</span>
-                  </button>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 mb-0.5">
-                      India Party
-                    </label>
-                    <select
-                      value={s.distributor_id}
-                      onChange={(e) => updateSplit(s.id, "distributor_id", e.target.value)}
-                      className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
-                    >
-                      {distributors.map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 mb-0.5">
-                      INR Amount
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      placeholder="Amount"
-                      value={s.inr_amount}
-                      onChange={(e) => updateSplit(s.id, "inr_amount", e.target.value)}
-                      className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded p-1.5 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Submit Button — Fresh Teal */}
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={saving || calculating}
@@ -752,7 +595,7 @@ export default function NewTransactionPage() {
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <span className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-wider flex items-center gap-1.5">
                 <Calculator className="w-3.5 h-3.5" />
-                Backend Calculation Preview
+                Direct Transfer Calculations
               </span>
               {calculating && <RefreshCw className="w-3.5 h-3.5 text-slate-400 animate-spin" />}
             </div>
@@ -761,7 +604,9 @@ export default function NewTransactionPage() {
               <div className="space-y-4">
                 {/* AED Charged */}
                 <div>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase font-semibold">AED Amount Charged to Customer</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase font-semibold">
+                    AED Amount Charged to Customer
+                  </span>
                   <div className="text-3xl font-mono font-bold text-slate-900 dark:text-white mt-1">
                     {preview.aedAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })} AED
                   </div>
@@ -786,9 +631,9 @@ export default function NewTransactionPage() {
                   </div>
 
                   <div className="flex justify-between text-slate-600 dark:text-slate-300">
-                    <span className="text-slate-500 dark:text-slate-400">Delivery Fee (20%):</span>
-                    <span className="font-mono font-bold text-slate-500 dark:text-slate-400">
-                      -{preview.deliveryChargeAed.toFixed(2)} AED
+                    <span className="text-slate-500 dark:text-slate-400">Delivery Fee (0%):</span>
+                    <span className="font-mono font-bold text-slate-400">
+                      0.00 AED
                     </span>
                   </div>
 
@@ -809,27 +654,27 @@ export default function NewTransactionPage() {
 
           {/* Quick Guidance Box */}
           <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400 space-y-2 shadow-sm">
-            <span className="font-bold text-slate-900 dark:text-slate-100 block">Customer Workflow</span>
+            <span className="font-bold text-slate-900 dark:text-slate-100 block">Registered Parties</span>
             <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed">
-              If the customer is new, click <strong className="text-teal-700 dark:text-teal-400">"+ New Customer"</strong> to create them on the spot. Once created, they will be saved to your database and ready for selection on all future transfers.
+              Default registered parties: <strong>AWAFI, BASID, HAJA, NF2, SARABU</strong>. You can click <strong className="text-teal-700 dark:text-teal-400">"+ New Party"</strong> to add any additional party anytime.
             </p>
           </div>
         </div>
       </div>
 
-      {/* QUICK INLINE NEW CUSTOMER MODAL */}
+      {/* QUICK INLINE NEW PARTY MODAL */}
       {showNewCustModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in duration-150">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-emerald-600" />
-                <span>Create New Dubai Customer</span>
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-teal-600" />
+                <span>Add New Party</span>
               </h3>
               <button
                 type="button"
                 onClick={() => setShowNewCustModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold cursor-pointer"
               >
                 ✕
               </button>
@@ -844,13 +689,13 @@ export default function NewTransactionPage() {
 
             <form onSubmit={handleCreateNewCustomer} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Customer Name *
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Party Name *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. DIVAN or AHMAD"
+                  placeholder="e.g. AWAFI or NEW PARTY"
                   value={newCustName}
                   onChange={(e) => setNewCustName(e.target.value)}
                   className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
@@ -864,7 +709,7 @@ export default function NewTransactionPage() {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. CUST-001"
+                    placeholder="e.g. PARTY-01"
                     value={newCustCode}
                     onChange={(e) => setNewCustCode(e.target.value)}
                     className="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
@@ -903,7 +748,7 @@ export default function NewTransactionPage() {
                 <button
                   type="button"
                   onClick={() => setShowNewCustModal(false)}
-                  className="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  className="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -924,13 +769,13 @@ export default function NewTransactionPage() {
       {showConfirmModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in duration-150 my-8">
-            {/* Header */}
+            {/* Modal Header */}
             <div className="bg-gradient-to-r from-teal-700 to-teal-800 px-6 py-4 text-white flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <ShieldCheck className="w-6 h-6 text-teal-200 shrink-0" />
                 <div>
-                  <h3 className="text-base font-bold">Confirm Remittance Details</h3>
-                  <p className="text-[11px] text-teal-100">Please review all entered values before saving</p>
+                  <h3 className="text-base font-bold">Confirm Direct Transfer</h3>
+                  <p className="text-[11px] text-teal-100">Review all details before saving to database</p>
                 </div>
               </div>
               <button
@@ -947,7 +792,7 @@ export default function NewTransactionPage() {
               {/* Customer & Date */}
               <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700">
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Customer</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Party / Customer</span>
                   <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
                     {selectedCustomer?.name || "-"}
                   </p>
@@ -1033,9 +878,9 @@ export default function NewTransactionPage() {
                     </div>
 
                     <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                      <span>Delivery Fee ({(preview.deliveryChargePct * 100).toFixed(0)}%):</span>
-                      <span className="font-mono font-semibold text-rose-600 dark:text-rose-400">
-                        -{preview.deliveryChargeAed.toFixed(2)} AED
+                      <span>Delivery Fee:</span>
+                      <span className="font-mono font-semibold text-slate-400">
+                        0.00 AED (0% cut)
                       </span>
                     </div>
 
@@ -1046,36 +891,6 @@ export default function NewTransactionPage() {
                   </div>
                 )}
               </div>
-
-              {/* Optional Distribution Splits */}
-              {splits.length > 0 && (
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700 space-y-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    India Distribution Splits ({splits.length})
-                  </span>
-                  {splits.map((s, idx) => {
-                    const d = distributors.find((dist) => dist.id === s.distributor_id);
-                    return (
-                      <div key={idx} className="flex justify-between text-slate-700 dark:text-slate-300">
-                        <span>{d?.name || "Distributor"}</span>
-                        <span className="font-mono font-bold">
-                          ₹ {parseFloat(s.inr_amount || "0").toLocaleString("en-IN")}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Optional Notes */}
-              {notes && (
-                <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200/80 dark:border-slate-700">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                    Transfer Notes
-                  </span>
-                  <p className="text-slate-700 dark:text-slate-300">{notes}</p>
-                </div>
-              )}
             </div>
 
             {/* Modal Footer */}

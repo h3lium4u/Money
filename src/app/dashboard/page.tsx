@@ -18,6 +18,13 @@ import {
   ArrowRight,
   Split,
 } from "lucide-react";
+import {
+  getTodayDateString,
+  getYesterdayDateString,
+  getDaysAgoDateString,
+  getStartOfMonthDateString,
+  getStartOfYearDateString,
+} from "@/lib/date-utils";
 
 interface KPIState {
   todayInr: number;
@@ -38,8 +45,8 @@ interface KPIState {
 
 export default function DashboardPage() {
   const [timeframe, setTimeframe] = useState("today");
-  const [customFrom, setCustomFrom] = useState("");
-  const [customTo, setCustomTo] = useState("");
+  const [customFrom, setCustomFrom] = useState(getTodayDateString());
+  const [customTo, setCustomTo] = useState(getTodayDateString());
   const [loading, setLoading] = useState(true);
   const [dbError, setDbError] = useState<string | null>(null);
   const [kpis, setKpis] = useState<KPIState | null>(null);
@@ -64,8 +71,8 @@ export default function DashboardPage() {
   };
 
   // Current system date context
-  const todayStr = "2026-09-26";
-  const yesterdayStr = "2026-09-25";
+  const todayStr = getTodayDateString();
+  const yesterdayStr = getYesterdayDateString();
 
   useEffect(() => {
     fetchDashboardData();
@@ -85,13 +92,13 @@ export default function DashboardPage() {
         params.set("from", yesterdayStr);
         params.set("to", yesterdayStr);
       } else if (timeframe === "week") {
-        params.set("from", "2026-09-20");
+        params.set("from", getDaysAgoDateString(7));
         params.set("to", todayStr);
       } else if (timeframe === "month") {
-        params.set("from", "2026-09-01");
+        params.set("from", getStartOfMonthDateString());
         params.set("to", todayStr);
       } else if (timeframe === "year") {
-        params.set("from", "2026-01-01");
+        params.set("from", getStartOfYearDateString());
         params.set("to", todayStr);
       } else if (timeframe === "custom" && customFrom && customTo) {
         params.set("from", customFrom);

@@ -9,9 +9,11 @@ const schema = z.object({
   default_rate: z.number().positive().optional(),
 });
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const customers = await listCustomers();
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get("type") || "CUSTOMER";
+    const customers = await listCustomers(type);
     return NextResponse.json(customers);
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to list customers" }, { status: 500 });

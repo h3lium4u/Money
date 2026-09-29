@@ -21,6 +21,12 @@ import {
 } from "lucide-react";
 import { numberToIndianWords } from "@/lib/number-to-words";
 import { generateTransactionReceipt } from "@/lib/pdf-generator";
+import {
+  getTodayDateString,
+  getYesterdayDateString,
+  getDaysAgoDateString,
+  getStartOfMonthDateString,
+} from "@/lib/date-utils";
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -33,8 +39,8 @@ export default function TransactionsPage() {
   const [search, setSearch] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [fromDate, setFromDate] = useState(getTodayDateString());
+  const [toDate, setToDate] = useState(getTodayDateString());
 
   // Void modal state
   const [voidingTxn, setVoidingTxn] = useState<any | null>(null);
@@ -69,7 +75,7 @@ export default function TransactionsPage() {
   const [splitError, setSplitError] = useState<string | null>(null);
   // Quick payment modal state
   const [payingTxn, setPayingTxn] = useState<any | null>(null);
-  const [payDate, setPayDate] = useState("2026-09-26");
+  const [payDate, setPayDate] = useState(getTodayDateString());
   const [payAmount, setPayAmount] = useState("");
   const [payMethod, setPayMethod] = useState("CASH");
   const [payNotes, setPayNotes] = useState("");
@@ -78,7 +84,7 @@ export default function TransactionsPage() {
 
   function handleOpenPayModal(txn: any) {
     setPayingTxn(txn);
-    setPayDate(new Date().toISOString().slice(0, 10));
+    setPayDate(getTodayDateString());
     setPayAmount(String(txn.pending_aed ?? txn.aed_amount ?? ""));
     setPayMethod("CASH");
     setPayNotes(`Payment for ${txn.transaction_number}`);
@@ -131,8 +137,8 @@ export default function TransactionsPage() {
     fetchTransactions();
   }, [timeFilter, selectedCustomer, statusFilter, fromDate, toDate]);
 
-  const todayStr = "2026-09-26";
-  const yesterdayStr = "2026-09-25";
+  const todayStr = getTodayDateString();
+  const yesterdayStr = getYesterdayDateString();
 
   async function fetchMetadata() {
     try {
@@ -168,10 +174,10 @@ export default function TransactionsPage() {
         params.set("from", yesterdayStr);
         params.set("to", yesterdayStr);
       } else if (timeFilter === "week") {
-        params.set("from", "2026-09-20");
+        params.set("from", getDaysAgoDateString(7));
         params.set("to", todayStr);
       } else if (timeFilter === "month") {
-        params.set("from", "2026-09-01");
+        params.set("from", getStartOfMonthDateString());
         params.set("to", todayStr);
       } else if (timeFilter === "custom" && fromDate && toDate) {
         params.set("from", fromDate);

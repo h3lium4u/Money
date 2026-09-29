@@ -11,6 +11,7 @@ import {
   CheckCircle,
   HelpCircle,
 } from "lucide-react";
+import { getTodayDateString } from "@/lib/date-utils";
 
 export default function ReceivablesPage() {
   const [customers, setCustomers] = useState<any[]>([]);
@@ -19,7 +20,7 @@ export default function ReceivablesPage() {
   // Quick payment modal
   const [showModal, setShowModal] = useState(false);
   const [selectedCustId, setSelectedCustId] = useState("");
-  const [payDate, setPayDate] = useState(new Date().toISOString().slice(0, 10));
+  const [payDate, setPayDate] = useState(getTodayDateString());
   const [payAmount, setPayAmount] = useState("");
   const [payMethod, setPayMethod] = useState("CASH");
   const [payNotes, setPayNotes] = useState("");
@@ -67,6 +68,7 @@ export default function ReceivablesPage() {
       });
       if (res.ok) {
         setShowModal(false);
+        setPayDate(getTodayDateString());
         setPayAmount("");
         setPayNotes("");
         fetchCustomers();
@@ -93,7 +95,10 @@ export default function ReceivablesPage() {
         </div>
 
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => {
+            setPayDate(getTodayDateString());
+            setShowModal(true);
+          }}
           className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm"
         >
           <PlusCircle className="w-3.5 h-3.5" />

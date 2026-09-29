@@ -9,11 +9,17 @@ import {
   Calendar,
 } from "lucide-react";
 import { ReceiptPrinterModal } from "@/components/animation/ReceiptPrinterModal";
+import {
+  getTodayDateString,
+  getYesterdayDateString,
+  getDaysAgoDateString,
+  getStartOfMonthDateString,
+} from "@/lib/date-utils";
 
 export default function ReportsPage() {
   const [period, setPeriod] = useState("all");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [fromDate, setFromDate] = useState(getTodayDateString());
+  const [toDate, setToDate] = useState(getTodayDateString());
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState<any | null>(null);
   const [dailyRows, setDailyRows] = useState<any[]>([]);
@@ -35,8 +41,8 @@ export default function ReportsPage() {
     }
   };
 
-  const todayStr = "2026-09-26";
-  const yesterdayStr = "2026-09-25";
+  const todayStr = getTodayDateString();
+  const yesterdayStr = getYesterdayDateString();
 
   useEffect(() => {
     fetchReport();
@@ -53,10 +59,10 @@ export default function ReportsPage() {
         params.set("from", yesterdayStr);
         params.set("to", yesterdayStr);
       } else if (period === "week") {
-        params.set("from", "2026-09-20");
+        params.set("from", getDaysAgoDateString(7));
         params.set("to", todayStr);
       } else if (period === "month") {
-        params.set("from", "2026-09-01");
+        params.set("from", getStartOfMonthDateString());
         params.set("to", todayStr);
       } else if (period === "custom" && fromDate && toDate) {
         params.set("from", fromDate);

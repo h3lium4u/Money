@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Fragment } from "react";
 import { numberToIndianWords } from "@/lib/number-to-words";
+import { getTodayDateString } from "@/lib/date-utils";
 import {
   Building2,
   Coins,
@@ -49,7 +50,7 @@ export default function IndiaDistributionPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [modalTxnId, setModalTxnId] = useState("");
   const [modalDistId, setModalDistId] = useState("");
-  const [modalDate, setModalDate] = useState("2026-09-26");
+  const [modalDate, setModalDate] = useState(getTodayDateString());
   const [modalAmount, setModalAmount] = useState("");
   const [modalRate, setModalRate] = useState("");
   const [modalNotes, setModalNotes] = useState("");
@@ -97,7 +98,7 @@ export default function IndiaDistributionPage() {
     setModalTxnId(txn.id);
     const rem = Number(txn.remaining_inr || 0);
     setModalAmount(rem > 0 ? String(rem) : "");
-    setModalDate(txn.transaction_date || new Date().toISOString().slice(0, 10));
+    setModalDate(txn.transaction_date || getTodayDateString());
     setModalRate(txn.base_rate ? String(txn.base_rate) : "");
     setModalNotes("");
     setModalError(null);
@@ -113,6 +114,7 @@ export default function IndiaDistributionPage() {
       if (pendingTxn) {
         openAddModalForTxn(pendingTxn);
       } else {
+        setModalDate(getTodayDateString());
         setShowAddModal(true);
       }
     }

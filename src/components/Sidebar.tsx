@@ -5,8 +5,10 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   PlusCircle,
+  Zap,
   ArrowLeftRight,
   Users,
+  Handshake,
   Landmark,
   Wallet,
   FileSpreadsheet,
@@ -19,8 +21,10 @@ import { useTheme } from "@/context/ThemeContext";
 const navigation = [
   { name: "Dashboard",             href: "/dashboard",          icon: LayoutDashboard },
   { name: "New Remittance",        href: "/transactions/new",   icon: PlusCircle,      highlight: true },
+  { name: "Direct Transfer",       href: "/transactions/direct",icon: Zap,             highlight: true },
   { name: "All Transfers",         href: "/transactions",       icon: ArrowLeftRight },
   { name: "Customers",             href: "/customers",          icon: Users },
+  { name: "Parties",               href: "/parties",            icon: Handshake },
   { name: "Receivables",           href: "/receivables",        icon: Wallet },
   { name: "Distributors",          href: "/distributors",       icon: Split },
   { name: "Bank Ledger",           href: "/bank-distrip",       icon: Landmark },

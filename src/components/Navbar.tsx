@@ -13,9 +13,11 @@ export default function Navbar() {
   const isDark = theme === "dark";
 
   let title = "Dashboard";
-  if (pathname.startsWith("/transactions/new"))   title = "New Transaction";
+  if (pathname.startsWith("/transactions/direct")) title = "Direct Transfer";
+  else if (pathname.startsWith("/transactions/new")) title = "New Remittance";
   else if (pathname.startsWith("/transactions"))  title = "Transactions Registry";
   else if (pathname.startsWith("/customers"))     title = "Customers & Balances";
+  else if (pathname.startsWith("/parties"))       title = "Registered Parties & Ledger";
   else if (pathname.startsWith("/distributors"))  title = "India & AED Distributions";
   else if (pathname.startsWith("/bank-distrip"))  title = "Bank Distribution Ledger";
   else if (pathname.startsWith("/receivables"))   title = "Receivables & Cash on Hand";

@@ -1,5 +1,6 @@
 import { query, queryOne, execute } from "@/lib/db";
 import { calculateTransaction, roundTo } from "@/lib/calculations";
+import { getTodayDateString } from "@/lib/date-utils";
 import crypto from "node:crypto";
 
 export interface Customer {
@@ -9,6 +10,7 @@ export interface Customer {
   phone?: string | null;
   default_rate?: number | null;
   status: string;
+  entity_type?: string;
   total_inr?: number;
   total_aed?: number;
   total_paid?: number;
@@ -155,6 +157,7 @@ function mapCustomerRecord(r: any): Customer {
     phone: r.phone || null,
     default_rate: r.default_rate != null ? Number(r.default_rate) : null,
     status: r.status,
+    entity_type: r.entity_type || "CUSTOMER",
     total_inr: totalInr,
     total_aed: totalAed,
     total_paid: totalPaid,
@@ -243,8 +246,14 @@ function mapBankDistripRecord(r: any): BankDistripRecord {
   };
 }
 
-// ---------------- CUSTOMERS ----------------
-export async function listCustomers(): Promise<Customer[]> {
+// ---------------- CUSTOMERS & PARTIES ----------------
+export async function listCustomers(entityType: string = "CUSTOMER"): Promise<Customer[]> {
+  let whereClause = "";
+  const params: any[] = [];
+  if (entityType !== "ALL") {
+    params.push(entityType);
+    whereClause = `WHERE COALESCE(c.entity_type, 'CUSTOMER') = $1`;
+  }
   const rows = await query(`
     SELECT 
       c.*,
@@ -252,10 +261,15 @@ export async function listCustomers(): Promise<Customer[]> {
       COALESCE((SELECT SUM(t.aed_amount) FROM transactions t WHERE t.customer_id = c.id AND t.status = 'CONFIRMED'), 0) as total_aed,
       COALESCE((SELECT SUM(p.amount_aed) FROM customer_payments p WHERE p.customer_id = c.id), 0) as total_paid
     FROM customers c
+    ${whereClause}
     ORDER BY c.name ASC
-  `);
+  `, params);
 
   return rows.map(mapCustomerRecord);
+}
+
+export async function listParties(): Promise<Customer[]> {
+  return listCustomers("PARTY");
 }
 
 export async function getCustomer(id: string): Promise<Customer | null> {
@@ -273,17 +287,43 @@ export async function getCustomer(id: string): Promise<Customer | null> {
   return mapCustomerRecord(r);
 }
 
-export async function createCustomer(data: { name: string; code?: string; phone?: string; default_rate?: number }): Promise<Customer> {
-  const id = crypto.randomUUID();
-  const code = (data.code || data.name.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10)) + "-" + Math.floor(100 + Math.random() * 900);
+export async function createCustomer(data: {
+  name: string;
+  code?: string;
+  phone?: string;
+  default_rate?: number;
+  entity_type?: string;
+}): Promise<Customer> {
+  const entityType = data.entity_type || "CUSTOMER";
+  const id = entityType === "PARTY"
+    ? `party-${(data.code || data.name).toLowerCase().replace(/[^a-z0-9]/g, "")}`
+    : crypto.randomUUID();
+  const code = data.code?.trim() || (
+    data.name.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10) +
+    (entityType === "PARTY" ? "" : ("-" + Math.floor(100 + Math.random() * 900)))
+  );
   
   await execute(`
-    INSERT INTO customers (id, code, name, phone, default_rate, status)
-    VALUES ($1, $2, $3, $4, $5, 'ACTIVE')
-  `, [id, code, data.name.trim(), data.phone || null, data.default_rate || 38.25]);
+    INSERT INTO customers (id, code, name, phone, default_rate, status, entity_type)
+    VALUES ($1, $2, $3, $4, $5, 'ACTIVE', $6)
+    ON CONFLICT (code) DO UPDATE SET 
+      name = EXCLUDED.name,
+      entity_type = EXCLUDED.entity_type,
+      phone = COALESCE(EXCLUDED.phone, customers.phone),
+      default_rate = COALESCE(EXCLUDED.default_rate, customers.default_rate)
+  `, [id, code, data.name.trim(), data.phone || null, data.default_rate || 38.25, entityType]);
 
   const created = await getCustomer(id);
   return created!;
+}
+
+export async function createParty(data: {
+  name: string;
+  code?: string;
+  phone?: string;
+  default_rate?: number;
+}): Promise<Customer> {
+  return createCustomer({ ...data, entity_type: "PARTY" });
 }
 
 // ---------------- TRANSACTIONS ----------------
@@ -806,7 +846,63 @@ export async function listBankDistripAccounts(): Promise<BankDistripAccountRecor
   }));
 }
 
-export async function listBankDistripRecords(accountId?: string): Promise<BankDistripRecord[]> {
+export async function createBankDistripAccount(data: {
+  account_code: string;
+  account_name: string;
+  bank_name?: string;
+  account_number?: string;
+}): Promise<BankDistripAccountRecord> {
+  const id = `dist-${data.account_code.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+  await execute(`
+    INSERT INTO bank_distrip_accounts (id, account_code, account_name, bank_name, account_number, status)
+    VALUES ($1, $2, $3, $4, $5, 'ACTIVE')
+    ON CONFLICT (account_code) DO UPDATE SET account_name = EXCLUDED.account_name
+  `, [id, data.account_code.trim(), data.account_name.trim(), data.bank_name || null, data.account_number || null]);
+
+  const acc = await queryOne(`SELECT * FROM bank_distrip_accounts WHERE id = $1`, [id]);
+  return {
+    ...acc,
+    current_balance: 0,
+    created_at: formatDateTime(acc.created_at),
+  };
+}
+
+/**
+ * Authoritative running balance recalculation for a Bank/Distributor account.
+ * Re-evaluates every transaction in strict chronological sequence:
+ * BAL(row) = BAL(previous row) + ORDER(row) + COM(row) - PAID(row)
+ * with BAL(initial) = 0.
+ * Automatically propagates to all subsequent transactions.
+ */
+export async function recalculateBankDistripBalances(accountId: string): Promise<void> {
+  const rows = await query(`
+    SELECT id, order_inr, commission_inr, paid_inr, balance_inr
+    FROM bank_distrip_records
+    WHERE account_id = $1
+    ORDER BY record_date ASC, created_at ASC, id ASC
+  `, [accountId]);
+
+  let runningBal = 0;
+  for (const r of rows) {
+    const order = Number(r.order_inr || 0);
+    const com = Number(r.commission_inr || 0);
+    const paid = Number(r.paid_inr || 0);
+    runningBal = roundTo(runningBal + order + com - paid, 2);
+
+    if (Number(r.balance_inr) !== runningBal) {
+      await execute(`
+        UPDATE bank_distrip_records
+        SET balance_inr = $1
+        WHERE id = $2
+      `, [runningBal, r.id]);
+    }
+  }
+}
+
+export async function listBankDistripRecords(
+  accountId?: string,
+  sortOrder: "asc" | "desc" = "asc"
+): Promise<BankDistripRecord[]> {
   let sql = `
     SELECT r.*, a.account_code, a.account_name
     FROM bank_distrip_records r
@@ -817,7 +913,8 @@ export async function listBankDistripRecords(accountId?: string): Promise<BankDi
     params.push(accountId);
     sql += ` WHERE r.account_id = $${params.length}`;
   }
-  sql += ` ORDER BY r.record_date DESC, r.created_at DESC`;
+  const orderDir = sortOrder.toUpperCase() === "DESC" ? "DESC" : "ASC";
+  sql += ` ORDER BY r.record_date ${orderDir}, r.created_at ${orderDir}, r.id ${orderDir}`;
 
   const rows = await query(sql, params);
   return rows.map(mapBankDistripRecord);
@@ -832,29 +929,21 @@ export async function createBankDistripRecord(data: {
   notes?: string;
 }): Promise<BankDistripRecord> {
   const id = crypto.randomUUID();
-
-  // Get previous balance up to this date
-  const lastRecord = await queryOne(`
-    SELECT balance_inr 
-    FROM bank_distrip_records 
-    WHERE account_id = $1 AND record_date <= $2
-    ORDER BY record_date DESC, created_at DESC 
-    LIMIT 1
-  `, [data.account_id, data.record_date]);
-
-  const prevBal = lastRecord ? Number(lastRecord.balance_inr) : 0;
   const order = Number(data.order_inr || 0);
   const com = Number(data.commission_inr || 0);
   const paid = Number(data.paid_inr || 0);
-  const balance = roundTo(prevBal + order + com - paid, 2);
 
+  // Insert initial record (temporary balance 0; immediately recalculated accurately)
   await execute(`
     INSERT INTO bank_distrip_records (id, record_date, account_id, order_inr, commission_inr, paid_inr, balance_inr, notes)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-  `, [id, data.record_date, data.account_id, order, com, paid, balance, data.notes || null]);
+    VALUES ($1, $2, $3, $4, $5, $6, 0, $7)
+  `, [id, data.record_date, data.account_id, order, com, paid, data.notes || null]);
+
+  // Recalculate all balances in chronological order so every row reflects the exact running balance
+  await recalculateBankDistripBalances(data.account_id);
 
   const created = await queryOne(`
-    SELECT r.*, a.account_name
+    SELECT r.*, a.account_code, a.account_name
     FROM bank_distrip_records r
     JOIN bank_distrip_accounts a ON a.id = r.account_id
     WHERE r.id = $1
@@ -884,7 +973,7 @@ export async function getDashboardKPIs(filters?: { from?: string; to?: string; t
   }
 
   // Run all independent queries in parallel via Promise.all
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = getTodayDateString();
   const [
     todaySummary,
     txnSummary,
@@ -1175,11 +1264,17 @@ export async function updateDistributionSplit(id: string, data: {
 }
 
 export async function deleteBankDistripRecord(id: string): Promise<void> {
+  const existing = await queryOne(`SELECT account_id FROM bank_distrip_records WHERE id = $1`, [id]);
+  if (!existing) return;
+
   await execute(`DELETE FROM bank_distrip_records WHERE id = $1`, [id]);
+  // Recalculate all remaining records for this account so subsequent running balances are accurate
+  await recalculateBankDistripBalances(existing.account_id);
 }
 
 export async function updateBankDistripRecord(id: string, data: {
   record_date?: string;
+  account_id?: string;
   order_inr?: number;
   commission_inr?: number;
   paid_inr?: number;
@@ -1189,31 +1284,27 @@ export async function updateBankDistripRecord(id: string, data: {
   if (!existing) throw new Error("Record not found");
 
   const recordDate = data.record_date || existing.record_date;
+  const accountId = data.account_id || existing.account_id;
   const orderInr = data.order_inr !== undefined ? Number(data.order_inr) : Number(existing.order_inr);
   const commissionInr = data.commission_inr !== undefined ? Number(data.commission_inr) : Number(existing.commission_inr);
   const paidInr = data.paid_inr !== undefined ? Number(data.paid_inr) : Number(existing.paid_inr);
   const notes = data.notes !== undefined ? data.notes : existing.notes;
 
-  const lastRecord = await queryOne(`
-    SELECT balance_inr 
-    FROM bank_distrip_records 
-    WHERE account_id = $1 AND record_date <= $2 AND id != $3
-    ORDER BY record_date DESC, created_at DESC 
-    LIMIT 1
-  `, [existing.account_id, recordDate, id]);
-
-  const prevBal = lastRecord ? Number(lastRecord.balance_inr) : 0;
-  const newBal = roundTo(prevBal + orderInr + commissionInr - paidInr, 2);
-
   await execute(`
     UPDATE bank_distrip_records
-    SET record_date = $1, order_inr = $2, commission_inr = $3,
-        paid_inr = $4, balance_inr = $5, notes = $6
+    SET record_date = $1, account_id = $2, order_inr = $3, commission_inr = $4,
+        paid_inr = $5, notes = $6
     WHERE id = $7
-  `, [recordDate, orderInr, commissionInr, paidInr, newBal, notes || null, id]);
+  `, [recordDate, accountId, orderInr, commissionInr, paidInr, notes || null, id]);
+
+  // Recalculate this account and any previous account if changed
+  await recalculateBankDistripBalances(accountId);
+  if (existing.account_id !== accountId) {
+    await recalculateBankDistripBalances(existing.account_id);
+  }
 
   const updated = await queryOne(`
-    SELECT r.*, a.account_name
+    SELECT r.*, a.account_code, a.account_name
     FROM bank_distrip_records r
     JOIN bank_distrip_accounts a ON a.id = r.account_id
     WHERE r.id = $1

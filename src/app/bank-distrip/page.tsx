@@ -1,38 +1,73 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Landmark,
   PlusCircle,
   TrendingDown,
   TrendingUp,
   RefreshCw,
-  Coins,
-  ShieldCheck,
   Edit3,
   Trash2,
   AlertTriangle,
+  Calendar,
+  Layers,
+  ArrowUpDown,
+  Building2,
+  Info,
 } from "lucide-react";
+import { getTodayDateString } from "@/lib/date-utils";
+
+interface BankAccount {
+  id: string;
+  account_code: string;
+  account_name: string;
+  bank_name?: string | null;
+  account_number?: string | null;
+  status: string;
+  current_balance?: number;
+  created_at?: string;
+}
+
+interface BankRecord {
+  id: string;
+  record_date: string;
+  account_id: string;
+  account_code?: string;
+  account_name?: string;
+  order_inr: number;
+  commission_inr: number;
+  paid_inr: number;
+  balance_inr: number;
+  notes?: string | null;
+  created_at: string;
+}
 
 export default function BankDistripPage() {
-  const [accounts, setAccounts] = useState<any[]>([]);
-  const [records, setRecords] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<BankAccount[]>([]);
+  const [records, setRecords] = useState<BankRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedAccount, setSelectedAccount] = useState("");
+  const [selectedAccount, setSelectedAccount] = useState<string>("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  // Modal state
-  const [showModal, setShowModal] = useState(false);
-  const [recDate, setRecDate] = useState(new Date().toISOString().slice(0, 10));
-  const [recAccountId, setRecAccountId] = useState("");
-  const [recOrder, setRecOrder] = useState("");
-  const [recCom, setRecCom] = useState("");
-  const [recPaid, setRecPaid] = useState("");
-  const [recNotes, setRecNotes] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  // Date picker refs
+  const addDateRef = useRef<HTMLInputElement>(null);
+  const editDateRef = useRef<HTMLInputElement>(null);
 
-  // Edit Bank Record Modal State
-  const [editRecord, setEditRecord] = useState<any | null>(null);
-  const [editDate, setEditDate] = useState("");
+  // Add Transaction Modal State
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addDate, setAddDate] = useState(getTodayDateString());
+  const [addAccountId, setAddAccountId] = useState("");
+  const [addOrder, setAddOrder] = useState("");
+  const [addCom, setAddCom] = useState("");
+  const [addPaid, setAddPaid] = useState("");
+  const [addNotes, setAddNotes] = useState("");
+  const [addSubmitting, setAddSubmitting] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+
+  // Edit Transaction Modal State
+  const [editRecord, setEditRecord] = useState<BankRecord | null>(null);
+  const [editDateVal, setEditDateVal] = useState("");
   const [editOrder, setEditOrder] = useState("");
   const [editCom, setEditCom] = useState("");
   const [editPaid, setEditPaid] = useState("");
@@ -40,95 +75,64 @@ export default function BankDistripPage() {
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
-  // Delete Bank Record State
-  const [deleteRecordTarget, setDeleteRecordTarget] = useState<any | null>(null);
+  // Delete Transaction Modal State
+  const [deleteTarget, setDeleteTarget] = useState<BankRecord | null>(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  // New Account Modal State
+  const [showNewAccModal, setShowNewAccModal] = useState(false);
+  const [newAccCode, setNewAccCode] = useState("");
+  const [newAccName, setNewAccName] = useState("");
+  const [newAccBank, setNewAccBank] = useState("");
+  const [newAccNumber, setNewAccNumber] = useState("");
+  const [newAccSubmitting, setNewAccSubmitting] = useState(false);
+  const [newAccError, setNewAccError] = useState<string | null>(null);
+
+  const openDatePicker = (ref: React.RefObject<HTMLInputElement | null>) => {
+    if (ref.current) {
+      try {
+        if (typeof ref.current.showPicker === "function") {
+          ref.current.showPicker();
+        } else {
+          ref.current.focus();
+        }
+      } catch {
+        ref.current.focus();
+      }
+    }
+  };
+
   useEffect(() => {
     fetchBankData();
-  }, [selectedAccount]);
-
-  function openEditRecord(r: any) {
-    setEditRecord(r);
-    setEditDate(r.record_date);
-    setEditOrder(String(r.order_inr || 0));
-    setEditCom(String(r.commission_inr || 0));
-    setEditPaid(String(r.paid_inr || 0));
-    setEditNotes(r.notes || "");
-    setEditError(null);
-  }
-
-  async function handleUpdateRecord(e: React.FormEvent) {
-    e.preventDefault();
-    if (!editRecord) return;
-    setEditSubmitting(true);
-    setEditError(null);
-
-    try {
-      const res = await fetch("/api/bank-distrip", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: editRecord.id,
-          record_date: editDate,
-          order_inr: parseFloat(editOrder) || 0,
-          commission_inr: parseFloat(editCom) || 0,
-          paid_inr: parseFloat(editPaid) || 0,
-          notes: editNotes || undefined,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to update record");
-
-      setEditRecord(null);
-      fetchBankData();
-    } catch (err: any) {
-      setEditError(err.message || "Failed to update record");
-    } finally {
-      setEditSubmitting(false);
-    }
-  }
-
-  async function handleDeleteRecord() {
-    if (!deleteRecordTarget) return;
-    setDeleteSubmitting(true);
-    setDeleteError(null);
-
-    try {
-      const res = await fetch(`/api/bank-distrip?id=${deleteRecordTarget.id}`, {
-        method: "DELETE",
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to delete record");
-
-      setDeleteRecordTarget(null);
-      fetchBankData();
-    } catch (err: any) {
-      setDeleteError(err.message || "Failed to delete record");
-    } finally {
-      setDeleteSubmitting(false);
-    }
-  }
+  }, [selectedAccount, sortOrder]);
 
   async function fetchBankData() {
     setLoading(true);
     try {
-      let url = "/api/bank-distrip";
-      if (selectedAccount) url += `?accountId=${selectedAccount}`;
+      let url = `/api/bank-distrip?sort=${sortOrder}`;
+      if (selectedAccount) url += `&accountId=${selectedAccount}`;
       const res = await fetch(url);
       const json = await res.json();
-      const validAccounts = Array.isArray(json.accounts) ? json.accounts : [];
-      const validRecords = Array.isArray(json.records) ? json.records : [];
+      const validAccounts: BankAccount[] = Array.isArray(json.accounts)
+        ? json.accounts
+        : [];
+      const validRecords: BankRecord[] = Array.isArray(json.records)
+        ? json.records
+        : [];
+
       setAccounts(validAccounts);
       setRecords(validRecords);
-      if (validAccounts.length > 0 && !recAccountId) {
-        setRecAccountId(validAccounts[0].id);
+
+      // Auto-select the first account if none is selected yet
+      if (!selectedAccount && validAccounts.length > 0) {
+        setSelectedAccount(validAccounts[0].id);
+        setAddAccountId(validAccounts[0].id);
+      } else if (selectedAccount && !addAccountId) {
+        setAddAccountId(selectedAccount);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Failed to load bank distrip data:", err);
       setAccounts([]);
       setRecords([]);
     } finally {
@@ -136,480 +140,1106 @@ export default function BankDistripPage() {
     }
   }
 
-  async function handleCreateRecord(e: React.FormEvent) {
-    e.preventDefault();
-    if (!recAccountId) return;
+  // Find the selected account object
+  const activeAccount = accounts.find((a) => a.id === selectedAccount);
 
-    setSubmitting(true);
+  // Records for active account in chronological order for accurate totals & sequence
+  const activeRecords = records.filter(
+    (r) => !selectedAccount || r.account_id === selectedAccount
+  );
+
+  // Totals calculated from records
+  const totalOrders = activeRecords.reduce((sum, r) => sum + (Number(r.order_inr) || 0), 0);
+  const totalCommission = activeRecords.reduce((sum, r) => sum + (Number(r.commission_inr) || 0), 0);
+  const totalPaid = activeRecords.reduce((sum, r) => sum + (Number(r.paid_inr) || 0), 0);
+
+  // The latest running balance for this account
+  // In chronological order, it is the balance of the last record; mathematically: totalOrders + totalCommission - totalPaid
+  const latestRunningBalance =
+    activeRecords.length > 0
+      ? sortOrder === "asc"
+        ? activeRecords[activeRecords.length - 1].balance_inr
+        : activeRecords[0].balance_inr
+      : (activeAccount?.current_balance || 0);
+
+  // Previous balance for Add Modal live preview
+  const prevBalForAdd =
+    activeRecords.length > 0
+      ? (sortOrder === "asc"
+          ? activeRecords[activeRecords.length - 1].balance_inr
+          : activeRecords[0].balance_inr)
+      : 0;
+
+  const addOrderNum = parseFloat(addOrder) || 0;
+  const addComNum = parseFloat(addCom) || 0;
+  const addPaidNum = parseFloat(addPaid) || 0;
+  const addCalculatedBalance = prevBalForAdd + addOrderNum + addComNum - addPaidNum;
+
+  // Open Edit Modal
+  function openEditModal(record: BankRecord) {
+    setEditRecord(record);
+    setEditDateVal(record.record_date);
+    setEditOrder(String(record.order_inr || ""));
+    setEditCom(String(record.commission_inr || ""));
+    setEditPaid(String(record.paid_inr || ""));
+    setEditNotes(record.notes || "");
+    setEditError(null);
+  }
+
+  // Handle Add Transaction Submit
+  async function handleAddTransaction(e: React.FormEvent) {
+    e.preventDefault();
+    const targetAccId = addAccountId || selectedAccount;
+    if (!targetAccId) {
+      setAddError("Please select a bank/distributor account.");
+      return;
+    }
+
+    setAddSubmitting(true);
+    setAddError(null);
     try {
       const res = await fetch("/api/bank-distrip", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          record_date: recDate,
-          account_id: recAccountId,
-          order_inr: parseFloat(recOrder) || 0,
-          commission_inr: parseFloat(recCom) || 0,
-          paid_inr: parseFloat(recPaid) || 0,
-          notes: recNotes || undefined,
+          account_id: targetAccId,
+          record_date: addDate,
+          order_inr: parseFloat(addOrder) || 0,
+          commission_inr: parseFloat(addCom) || 0,
+          paid_inr: parseFloat(addPaid) || 0,
+          notes: addNotes.trim() || undefined,
         }),
       });
-      if (res.ok) {
-        setShowModal(false);
-        setRecOrder("");
-        setRecCom("");
-        setRecPaid("");
-        setRecNotes("");
-        fetchBankData();
-      }
-    } catch (err) {
-      console.error(err);
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to create transaction");
+
+      setShowAddModal(false);
+      setAddDate(getTodayDateString());
+      setAddOrder("");
+      setAddCom("");
+      setAddPaid("");
+      setAddNotes("");
+      await fetchBankData();
+    } catch (err: any) {
+      setAddError(err.message || "Failed to create transaction");
     } finally {
-      setSubmitting(false);
+      setAddSubmitting(false);
     }
   }
 
-  const formatINR = (val?: number) =>
-    `₹ ${(val || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+  // Handle Edit Transaction Submit
+  async function handleUpdateTransaction(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editRecord) return;
+
+    setEditSubmitting(true);
+    setEditError(null);
+    try {
+      const res = await fetch("/api/bank-distrip", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editRecord.id,
+          account_id: editRecord.account_id,
+          record_date: editDateVal,
+          order_inr: parseFloat(editOrder) || 0,
+          commission_inr: parseFloat(editCom) || 0,
+          paid_inr: parseFloat(editPaid) || 0,
+          notes: editNotes.trim() || undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update transaction");
+
+      setEditRecord(null);
+      await fetchBankData();
+    } catch (err: any) {
+      setEditError(err.message || "Failed to update transaction");
+    } finally {
+      setEditSubmitting(false);
+    }
+  }
+
+  // Handle Delete Transaction
+  async function handleDeleteTransaction() {
+    if (!deleteTarget) return;
+
+    setDeleteSubmitting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/bank-distrip?id=${deleteTarget.id}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to delete transaction");
+
+      setDeleteTarget(null);
+      await fetchBankData();
+    } catch (err: any) {
+      setDeleteError(err.message || "Failed to delete transaction");
+    } finally {
+      setDeleteSubmitting(false);
+    }
+  }
+
+  // Handle Create New Account
+  async function handleCreateNewAccount(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newAccCode.trim() || !newAccName.trim()) {
+      setNewAccError("Account Code and Account Name are required.");
+      return;
+    }
+
+    setNewAccSubmitting(true);
+    setNewAccError(null);
+    try {
+      const res = await fetch("/api/bank-distrip", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create_account",
+          account_code: newAccCode.trim().toUpperCase(),
+          account_name: newAccName.trim(),
+          bank_name: newAccBank.trim() || undefined,
+          account_number: newAccNumber.trim() || undefined,
+        }),
+      });
+
+      const created = await res.json();
+      if (!res.ok) throw new Error(created.error || "Failed to create account");
+
+      setShowNewAccModal(false);
+      setNewAccCode("");
+      setNewAccName("");
+      setNewAccBank("");
+      setNewAccNumber("");
+      await fetchBankData();
+      setSelectedAccount(created.id);
+      setAddAccountId(created.id);
+    } catch (err: any) {
+      setNewAccError(err.message || "Failed to create account");
+    } finally {
+      setNewAccSubmitting(false);
+    }
+  }
+
+  // Indian currency formatting (preserves negative values)
+  function formatINR(val?: number) {
+    if (val === undefined || val === null || isNaN(val)) return "₹ 0.00";
+    const isNegative = val < 0;
+    const abs = Math.abs(val);
+    const formatted = abs.toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    return isNegative ? `-₹ ${formatted}` : `₹ ${formatted}`;
+  }
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
+      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">India Bank Distribution Accounts</h2>
-          <p className="text-xs text-slate-500">
-            Unified bank accounts for India-side order disbursement, commissions, and funding.
-          </p>
-        </div>
-
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm"
-        >
-          <PlusCircle className="w-3.5 h-3.5" />
-          <span>Add Bank Entry</span>
-        </button>
-      </div>
-
-      {/* MK Account Unification Notice */}
-      <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 flex items-start gap-3">
-        <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-        <div>
-          <p className="font-bold text-emerald-950">Single Unified MK Account</p>
-          <p className="text-emerald-800 text-[11px] leading-relaxed mt-0.5">
-            As confirmed by the client, both historical MK blocks represent the exact same bank account (the second block was created due to a delayed entry). All MK orders, commissions, and payouts are unified into this single ledger.
-          </p>
-        </div>
-      </div>
-
-      {/* Account Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {accounts.map((acct) => {
-          const bal = acct.current_balance || 0;
-          return (
-            <div
-              key={acct.id}
-              onClick={() => setSelectedAccount(selectedAccount === acct.id ? "" : acct.id)}
-              className={`p-5 rounded-xl border transition-all cursor-pointer shadow-sm ${
-                selectedAccount === acct.id
-                  ? "bg-slate-900 text-white border-slate-900 ring-2 ring-emerald-500"
-                  : "bg-white text-slate-900 border-slate-200 hover:border-slate-300"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold tracking-tight">{acct.account_name}</h3>
-                <Landmark className={`w-4 h-4 ${selectedAccount === acct.id ? "text-emerald-400" : "text-slate-400"}`} />
-              </div>
-              <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                <span className={`text-[10px] uppercase tracking-wider font-semibold ${selectedAccount === acct.id ? "text-slate-400" : "text-slate-500"}`}>
-                  Current Balance
-                </span>
-                <p className={`text-base font-bold font-mono mt-0.5 ${selectedAccount === acct.id ? "text-white" : "text-slate-900"}`}>
-                  {formatINR(bal)}
-                </p>
-              </div>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-teal-600 dark:bg-teal-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+              <Landmark className="w-4 h-4" />
             </div>
-          );
-        })}
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+              BANK DISTRIP – Distributor Ledger
+            </h2>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Running balance ledger for bank & distributor accounts. Formula:{" "}
+            <code className="text-teal-700 dark:text-teal-400 font-mono font-bold bg-teal-50 dark:bg-teal-950/60 px-1.5 py-0.5 rounded">
+              Current Balance = Previous Balance + Order + Commission - Paid
+            </code>
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowNewAccModal(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-2xs transition-colors cursor-pointer"
+          >
+            <Building2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+            <span>+ New Account</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setAddAccountId(selectedAccount || (accounts[0]?.id || ""));
+              setAddDate(getTodayDateString());
+              setAddError(null);
+              setShowAddModal(true);
+            }}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold bg-[#0F766E] hover:bg-[#0D9488] text-white shadow-sm transition-all cursor-pointer"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>+ Add Transaction</span>
+          </button>
+        </div>
       </div>
 
-      {/* Bank Distrip Records Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+      {/* Account Selector Bar (Excel-Sheet Tabs / Dropdown) */}
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              Select Account / Distributor:
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+              className="text-xs font-semibold px-2.5 py-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800 rounded flex items-center gap-1 cursor-pointer transition-colors"
+              title="Toggle sequence order"
+            >
+              <ArrowUpDown className="w-3.5 h-3.5" />
+              <span>{sortOrder === "asc" ? "Chronological (Oldest First)" : "Reverse (Newest First)"}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Account Tabs */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+          {accounts.map((acc) => {
+            const isSelected = selectedAccount === acc.id;
+            const bal = acc.current_balance || 0;
+            const isNeg = bal < 0;
+
+            return (
+              <button
+                key={acc.id}
+                type="button"
+                onClick={() => {
+                  setSelectedAccount(acc.id);
+                  setAddAccountId(acc.id);
+                }}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 border cursor-pointer ${
+                  isSelected
+                    ? "bg-[#0F766E] text-white border-[#0F766E] shadow-sm ring-2 ring-teal-500/30"
+                    : "bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-400"
+                }`}
+              >
+                <span>{acc.account_name}</span>
+                <span
+                  className={`text-[11px] font-mono px-1.5 py-0.2 rounded ${
+                    isSelected
+                      ? "bg-teal-800/80 text-teal-100"
+                      : isNeg
+                      ? "bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300"
+                      : "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300"
+                  }`}
+                >
+                  {formatINR(bal)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Account Totals & Current Balance Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Current Balance */}
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Current Running Balance
+            </span>
+            {latestRunningBalance >= 0 ? (
+              <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            ) : (
+              <TrendingDown className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+            )}
+          </div>
+          <div
+            className={`text-2xl font-extrabold font-mono tracking-tight ${
+              latestRunningBalance < 0
+                ? "text-rose-600 dark:text-rose-400"
+                : "text-emerald-700 dark:text-emerald-400"
+            }`}
+          >
+            {formatINR(latestRunningBalance)}
+          </div>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500">
+            {activeAccount?.account_name || "Account"} latest cumulative balance
+          </p>
+        </div>
+
+        {/* Order Total */}
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Order Total
+            </span>
+            <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-mono px-1.5 py-0.5 rounded">
+              SUM
+            </span>
+          </div>
+          <div className="text-2xl font-bold font-mono text-slate-900 dark:text-slate-100 tracking-tight">
+            {formatINR(totalOrders)}
+          </div>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500">
+            Total of all order disbursements
+          </p>
+        </div>
+
+        {/* Commission Total */}
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Commission Total (COM)
+            </span>
+            <span className="text-[10px] bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 font-bold px-1.5 py-0.5 rounded">
+              + ADDED
+            </span>
+          </div>
+          <div className="text-2xl font-bold font-mono text-teal-700 dark:text-teal-400 tracking-tight">
+            {formatINR(totalCommission)}
+          </div>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500">
+            Added to running balance (never deducted)
+          </p>
+        </div>
+
+        {/* Paid Total */}
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Paid Total
+            </span>
+            <span className="text-[10px] bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 font-bold px-1.5 py-0.5 rounded">
+              - DEDUCTED
+            </span>
+          </div>
+          <div className="text-2xl font-bold font-mono text-slate-900 dark:text-slate-100 tracking-tight">
+            {formatINR(totalPaid)}
+          </div>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500">
+            Total funding / settlements paid out
+          </p>
+        </div>
+      </div>
+
+      {/* Main Ledger Table */}
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h4 className="font-bold text-slate-900 text-sm">
-              Bank Distribution Ledger {selectedAccount ? "(Filtered)" : "(All Accounts)"}
-            </h4>
-            <p className="text-xs text-slate-500">
-              Formula: Current Balance = Previous Balance + Order + Commission - Paid
+            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-2">
+              <span>Ledger:</span>
+              <span className="text-teal-700 dark:text-teal-400 font-extrabold">
+                {activeAccount?.account_name || "All Accounts"}
+              </span>
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Cumulative balance sequence: <code className="font-mono">BAL(row) = BAL(prev) + ORDER + COM - PAID</code>
             </p>
           </div>
-          {selectedAccount && (
-            <button
-              onClick={() => setSelectedAccount("")}
-              className="text-xs font-semibold text-emerald-600 hover:underline"
-            >
-              Show All Accounts
-            </button>
-          )}
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              {activeRecords.length} Transactions recorded
+            </span>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead className="bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-700 uppercase tracking-wider text-[11px]">
               <tr>
                 <th className="py-3 px-4">Date</th>
-                <th className="py-3 px-4">Account</th>
-                <th className="py-3 px-4 text-right">Order (INR)</th>
-                <th className="py-3 px-4 text-right">Commission (INR)</th>
-                <th className="py-3 px-4 text-right">Paid / Funded (INR)</th>
-                <th className="py-3 px-4 text-right">Running Balance (INR)</th>
+                <th className="py-3 px-4 text-right">Order</th>
+                <th className="py-3 px-4 text-right">COM</th>
+                <th className="py-3 px-4 text-right">Paid</th>
+                <th className="py-3 px-4 text-right">Balance</th>
                 <th className="py-3 px-4 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400 text-xs">
-                    Loading bank distribution records...
+                  <td colSpan={6} className="py-12 text-center text-slate-400 text-xs">
+                    <div className="flex items-center justify-center gap-2">
+                      <RefreshCw className="w-4 h-4 animate-spin text-teal-600" />
+                      <span>Loading ledger transactions...</span>
+                    </div>
                   </td>
                 </tr>
-              ) : records.length === 0 ? (
+              ) : activeRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400 text-xs">
-                    No distribution records found.
+                  <td colSpan={6} className="py-12 text-center text-slate-400 text-xs space-y-2">
+                    <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+                      No transactions recorded for {activeAccount?.account_name || "this account"} yet.
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      Click <strong className="text-teal-600">"+ Add Transaction"</strong> above to record your first entry.
+                    </p>
                   </td>
                 </tr>
               ) : (
-                records.map((r) => (
-                  <tr key={r.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-3 px-4 text-slate-600 font-medium">{r.record_date}</td>
-                    <td className="py-3 px-4 font-bold text-slate-900">{r.account_name}</td>
-                    <td className="py-3 px-4 text-right font-medium text-slate-900">{formatINR(r.order_inr)}</td>
-                    <td className="py-3 px-4 text-right text-slate-600">{formatINR(r.commission_inr)}</td>
-                    <td className="py-3 px-4 text-right text-emerald-700 font-medium">{formatINR(r.paid_inr)}</td>
-                    <td className="py-3 px-4 text-right font-mono font-bold text-slate-900">
-                      {formatINR(r.balance_inr)}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <button
-                          onClick={() => openEditRecord(r)}
-                          title="Edit Record"
-                          className="p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded border border-slate-200"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setDeleteRecordTarget(r);
-                            setDeleteError(null);
-                          }}
-                          title="Delete Record"
-                          className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded border border-rose-200"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                activeRecords.map((r, idx) => {
+                  const bal = Number(r.balance_inr || 0);
+                  const isNeg = bal < 0;
+
+                  return (
+                    <tr
+                      key={r.id}
+                      className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
+                    >
+                      <td className="py-3 px-4 font-mono font-medium text-slate-700 dark:text-slate-300">
+                        {r.record_date}
+                      </td>
+
+                      <td className="py-3 px-4 text-right font-mono font-semibold text-slate-900 dark:text-slate-100">
+                        {r.order_inr > 0 ? formatINR(r.order_inr) : "-"}
+                      </td>
+
+                      <td className="py-3 px-4 text-right font-mono text-teal-700 dark:text-teal-400 font-semibold">
+                        {r.commission_inr > 0 ? formatINR(r.commission_inr) : "-"}
+                      </td>
+
+                      <td className="py-3 px-4 text-right font-mono text-slate-800 dark:text-slate-200 font-semibold">
+                        {r.paid_inr > 0 ? formatINR(r.paid_inr) : "-"}
+                      </td>
+
+                      <td
+                        className={`py-3 px-4 text-right font-mono font-bold text-sm ${
+                          isNeg
+                            ? "text-rose-600 dark:text-rose-400"
+                            : "text-emerald-700 dark:text-emerald-400"
+                        }`}
+                      >
+                        {formatINR(bal)}
+                      </td>
+
+                      <td className="py-3 px-4 text-center">
+                        <div className="flex items-center justify-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(r)}
+                            title="Edit transaction"
+                            className="p-1.5 text-slate-500 hover:text-teal-700 hover:bg-teal-50 dark:hover:bg-teal-950/60 rounded border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTarget(r)}
+                            title="Delete transaction"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 rounded border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
+
+            {/* Total Row matching Excel sheet */}
+            {activeRecords.length > 0 && (
+              <tfoot className="bg-slate-100/90 dark:bg-slate-800 border-t-2 border-slate-300 dark:border-slate-700 font-bold text-xs">
+                <tr>
+                  <td className="py-3.5 px-4 font-extrabold uppercase text-slate-900 dark:text-slate-100 tracking-wider">
+                    ACCOUNT TOTALS
+                  </td>
+                  <td className="py-3.5 px-4 text-right font-mono font-extrabold text-slate-900 dark:text-slate-100">
+                    {formatINR(totalOrders)}
+                  </td>
+                  <td className="py-3.5 px-4 text-right font-mono font-extrabold text-teal-700 dark:text-teal-400">
+                    {formatINR(totalCommission)}
+                  </td>
+                  <td className="py-3.5 px-4 text-right font-mono font-extrabold text-slate-900 dark:text-slate-100">
+                    {formatINR(totalPaid)}
+                  </td>
+                  <td
+                    className={`py-3.5 px-4 text-right font-mono font-extrabold text-sm ${
+                      latestRunningBalance < 0
+                        ? "text-rose-600 dark:text-rose-400"
+                        : "text-emerald-700 dark:text-emerald-400"
+                    }`}
+                  >
+                    {formatINR(latestRunningBalance)}
+                  </td>
+                  <td className="py-3.5 px-4 text-center text-slate-400 font-normal">
+                    –
+                  </td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       </div>
 
-      {/* Add Bank Record Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <form
-            onSubmit={handleCreateRecord}
-            className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4"
-          >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900">Add Bank Distribution Record</h3>
+      {/* ADD TRANSACTION MODAL */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in duration-150 my-8">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-teal-700 to-teal-800 px-6 py-4 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Landmark className="w-5 h-5 text-teal-200" />
+                <h3 className="text-base font-bold">Add Ledger Transaction</h3>
+              </div>
               <button
                 type="button"
-                onClick={() => setShowModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+                onClick={() => setShowAddModal(false)}
+                className="text-teal-200 hover:text-white text-lg font-bold p-1 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Date</label>
-                <input
-                  type="date"
-                  required
-                  value={recDate}
-                  onChange={(e) => setRecDate(e.target.value)}
-                  className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
+            {addError && (
+              <div className="mx-6 mt-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{addError}</span>
               </div>
+            )}
 
+            <form onSubmit={handleAddTransaction} className="p-6 space-y-4">
+              {/* Account Selection */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Bank Account</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Account / Distributor *
+                </label>
                 <select
-                  value={recAccountId}
-                  onChange={(e) => setRecAccountId(e.target.value)}
-                  className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold"
+                  value={addAccountId}
+                  onChange={(e) => setAddAccountId(e.target.value)}
+                  required
+                  className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 >
+                  <option value="">Select Account</option>
                   {accounts.map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.account_name}
+                      {a.account_name} ({a.account_code})
                     </option>
                   ))}
                 </select>
               </div>
-            </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Order Amount (INR)
-              </label>
-              <input
-                type="number"
-                step="any"
-                placeholder="0"
-                value={recOrder}
-                onChange={(e) => setRecOrder(e.target.value)}
-                className="w-full text-sm font-medium border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
+              {/* Date Input */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Commission (INR)
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Date *
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-mono font-semibold">DD-MM-YYYY</span>
+                </div>
+                <div className="relative">
+                  <input
+                    ref={addDateRef}
+                    type="date"
+                    required
+                    value={addDate}
+                    onChange={(e) => setAddDate(e.target.value)}
+                    className="w-full text-xs font-medium border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 pr-10 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => openDatePicker(addDateRef)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 p-1 cursor-pointer transition-colors"
+                    title="Choose from calendar"
+                  >
+                    <Calendar className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Order Amount */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Order Amount (INR)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-sm">₹</span>
+                  <input
+                    type="number"
+                    step="any"
+                    placeholder="e.g. 384900"
+                    value={addOrder}
+                    onChange={(e) => setAddOrder(e.target.value)}
+                    className="w-full text-sm font-bold pl-8 pr-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              {/* Commission (COM) */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Commission (COM) (INR)
+                  </label>
+                  <span className="text-[10px] text-teal-700 dark:text-teal-400 font-semibold">
+                    Added to balance
+                  </span>
+                </div>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-sm">₹</span>
+                  <input
+                    type="number"
+                    step="any"
+                    placeholder="e.g. 5000 (optional, default 0)"
+                    value={addCom}
+                    onChange={(e) => setAddCom(e.target.value)}
+                    className="w-full text-sm font-bold pl-8 pr-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              {/* Paid Amount */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Paid / Funded Amount (INR)
+                  </label>
+                  <span className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold">
+                    Deducted from balance
+                  </span>
+                </div>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-sm">₹</span>
+                  <input
+                    type="number"
+                    step="any"
+                    placeholder="e.g. 600000"
+                    value={addPaid}
+                    onChange={(e) => setAddPaid(e.target.value)}
+                    className="w-full text-sm font-bold pl-8 pr-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              {/* Calculated Balance Preview Box (READ ONLY) */}
+              <div className="p-3 bg-teal-50 dark:bg-teal-950/60 rounded-xl border border-teal-200/80 dark:border-teal-800/80 space-y-1.5 text-xs">
+                <div className="flex items-center justify-between font-bold text-teal-950 dark:text-teal-200">
+                  <span>Balance Calculation Preview:</span>
+                  <span className="text-[10px] uppercase font-mono px-1.5 py-0.2 rounded bg-teal-200 dark:bg-teal-800 text-teal-900 dark:text-teal-100">
+                    Read-Only
+                  </span>
+                </div>
+
+                <div className="space-y-0.5 text-slate-600 dark:text-slate-400 font-mono text-[11px]">
+                  <div className="flex justify-between">
+                    <span>Previous Balance:</span>
+                    <span>{formatINR(prevBalForAdd)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>+ Current Order:</span>
+                    <span>{formatINR(addOrderNum)}</span>
+                  </div>
+                  <div className="flex justify-between text-teal-700 dark:text-teal-400 font-semibold">
+                    <span>+ Current Commission:</span>
+                    <span>{formatINR(addComNum)}</span>
+                  </div>
+                  <div className="flex justify-between text-rose-600 dark:text-rose-400 font-semibold">
+                    <span>- Current Paid:</span>
+                    <span>{formatINR(addPaidNum)}</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-teal-200 dark:border-teal-800 pt-1.5 flex justify-between items-center font-bold">
+                  <span className="text-teal-950 dark:text-teal-200 font-sans">
+                    Resulting Running Balance:
+                  </span>
+                  <span
+                    className={`font-mono text-base ${
+                      addCalculatedBalance < 0
+                        ? "text-rose-600 dark:text-rose-400"
+                        : "text-emerald-700 dark:text-emerald-400"
+                    }`}
+                  >
+                    {formatINR(addCalculatedBalance)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Notes (Optional)
                 </label>
                 <input
-                  type="number"
-                  step="any"
-                  placeholder="0"
-                  value={recCom}
-                  onChange={(e) => setRecCom(e.target.value)}
-                  className="w-full text-xs font-medium border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  type="text"
+                  placeholder="e.g. Batch ref, settlement notes..."
+                  value={addNotes}
+                  onChange={(e) => setAddNotes(e.target.value)}
+                  className="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Paid / Funded (INR)
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  placeholder="0"
-                  value={recPaid}
-                  onChange={(e) => setRecPaid(e.target.value)}
-                  className="w-full text-xs font-medium border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
+              {/* Modal Actions */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  disabled={addSubmitting}
+                  className="px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={addSubmitting}
+                  className="px-5 py-2 text-xs font-bold bg-[#0F766E] hover:bg-[#0D9488] text-white rounded-lg transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {addSubmitting ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Save Transaction</span>
+                  )}
+                </button>
               </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Notes</label>
-              <input
-                type="text"
-                placeholder="Funding slip / reference"
-                value={recNotes}
-                onChange={(e) => setRecNotes(e.target.value)}
-                className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm"
-              >
-                {submitting ? "Saving..." : "Save Record"}
-              </button>
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
       )}
 
-      {/* Edit Bank Record Modal */}
+      {/* EDIT TRANSACTION MODAL */}
       {editRecord && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <form
-            onSubmit={handleUpdateRecord}
-            className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4 border border-slate-200 animate-in fade-in zoom-in duration-150"
-          >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Edit3 className="w-4 h-4 text-emerald-600" />
-                <span>Edit Bank Ledger Record</span>
-              </h3>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in duration-150 my-8">
+            <div className="bg-gradient-to-r from-teal-700 to-teal-800 px-6 py-4 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-teal-200" />
+                <h3 className="text-base font-bold">
+                  Edit Transaction ({editRecord.account_name})
+                </h3>
+              </div>
               <button
                 type="button"
                 onClick={() => setEditRecord(null)}
-                className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+                className="text-teal-200 hover:text-white text-lg font-bold p-1 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
             {editError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs font-medium flex items-center gap-2">
+              <div className="mx-6 mt-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
                 <span>{editError}</span>
               </div>
             )}
 
-            <div className="p-2.5 bg-slate-50 rounded border border-slate-200 text-xs flex justify-between">
-              <span className="text-slate-500 font-semibold">Account:</span>
-              <span className="font-bold text-slate-900">{editRecord.account_name}</span>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Date</label>
-              <input
-                type="date"
-                required
-                value={editDate}
-                onChange={(e) => setEditDate(e.target.value)}
-                className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Order Amount (INR)
-              </label>
-              <input
-                type="number"
-                step="any"
-                value={editOrder}
-                onChange={(e) => setEditOrder(e.target.value)}
-                className="w-full text-sm font-medium border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
+            <form onSubmit={handleUpdateTransaction} className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Commission (INR)
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  value={editCom}
-                  onChange={(e) => setEditCom(e.target.value)}
-                  className="w-full text-xs font-medium border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Date *
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-mono font-semibold">DD-MM-YYYY</span>
+                </div>
+                <div className="relative">
+                  <input
+                    ref={editDateRef}
+                    type="date"
+                    required
+                    value={editDateVal}
+                    onChange={(e) => setEditDateVal(e.target.value)}
+                    className="w-full text-xs font-medium border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 pr-10 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => openDatePicker(editDateRef)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 p-1 cursor-pointer transition-colors"
+                  >
+                    <Calendar className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Paid / Funded (INR)
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Order Amount (INR)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-sm">₹</span>
+                  <input
+                    type="number"
+                    step="any"
+                    value={editOrder}
+                    onChange={(e) => setEditOrder(e.target.value)}
+                    className="w-full text-sm font-bold pl-8 pr-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Commission (COM) (INR)
+                  </label>
+                  <span className="text-[10px] text-teal-700 dark:text-teal-400 font-semibold">
+                    Added to balance
+                  </span>
+                </div>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-sm">₹</span>
+                  <input
+                    type="number"
+                    step="any"
+                    value={editCom}
+                    onChange={(e) => setEditCom(e.target.value)}
+                    className="w-full text-sm font-bold pl-8 pr-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Paid Amount (INR)
+                  </label>
+                  <span className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold">
+                    Deducted from balance
+                  </span>
+                </div>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-sm">₹</span>
+                  <input
+                    type="number"
+                    step="any"
+                    value={editPaid}
+                    onChange={(e) => setEditPaid(e.target.value)}
+                    className="w-full text-sm font-bold pl-8 pr-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Notes (Optional)
                 </label>
                 <input
-                  type="number"
-                  step="any"
-                  value={editPaid}
-                  onChange={(e) => setEditPaid(e.target.value)}
-                  className="w-full text-xs font-medium border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  type="text"
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  className="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                 />
+              </div>
+
+              {/* Recalculation Notice */}
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-lg border border-amber-200 dark:border-amber-800/60 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2">
+                <Info className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                <span>
+                  <strong>Automatic Cumulative Recalculation:</strong> Saving changes will automatically update this transaction and all subsequent running balances for <strong>{editRecord.account_name}</strong>.
+                </span>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setEditRecord(null)}
+                  disabled={editSubmitting}
+                  className="px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSubmitting}
+                  className="px-5 py-2 text-xs font-bold bg-[#0F766E] hover:bg-[#0D9488] text-white rounded-lg transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {editSubmitting ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Recalculating...</span>
+                    </>
+                  ) : (
+                    <span>Update & Recalculate</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE TRANSACTION CONFIRMATION MODAL */}
+      {deleteTarget && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-800 p-6 space-y-4 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  Delete Ledger Entry?
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {deleteTarget.record_date} • {deleteTarget.account_name}
+                </p>
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Notes</label>
-              <input
-                type="text"
-                placeholder="Funding slip / reference"
-                value={editNotes}
-                onChange={(e) => setEditNotes(e.target.value)}
-                className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
+            {deleteError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{deleteError}</span>
+              </div>
+            )}
+
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl text-xs space-y-1.5 border border-slate-200 dark:border-slate-700 font-mono">
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-sans">Order:</span>
+                <span>{formatINR(deleteTarget.order_inr)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-sans">Commission:</span>
+                <span>{formatINR(deleteTarget.commission_inr)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-sans">Paid:</span>
+                <span>{formatINR(deleteTarget.paid_inr)}</span>
+              </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              Are you sure? Once deleted, all subsequent balances for <strong>{deleteTarget.account_name}</strong> will be automatically recalculated.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => setEditRecord(null)}
-                className="px-4 py-2 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-50"
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleteSubmitting}
+                className="px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
-                type="submit"
-                disabled={editSubmitting}
-                className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 disabled:opacity-50 shadow-sm"
+                type="button"
+                onClick={handleDeleteTransaction}
+                disabled={deleteSubmitting}
+                className="px-5 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
-                {editSubmitting ? "Updating..." : "Update Record"}
+                {deleteSubmitting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Recalculating...</span>
+                  </>
+                ) : (
+                  <span>Delete & Recalculate</span>
+                )}
               </button>
             </div>
-          </form>
+          </div>
         </div>
       )}
 
-      {/* Delete Bank Record Confirmation Modal */}
-      {deleteRecordTarget && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-xl space-y-4 border border-rose-200 animate-in fade-in zoom-in duration-150">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-sm font-bold text-rose-700 flex items-center gap-2">
-                <Trash2 className="w-4 h-4 text-rose-600" />
-                <span>Delete Bank Ledger Record</span>
+      {/* NEW ACCOUNT MODAL */}
+      {showNewAccModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-800 p-6 space-y-4 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-teal-600" />
+                <span>Create Bank / Distributor Account</span>
               </h3>
               <button
-                onClick={() => setDeleteRecordTarget(null)}
-                className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+                type="button"
+                onClick={() => setShowNewAccModal(false)}
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            {deleteError ? (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs font-medium flex items-center gap-2">
+            {newAccError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
-                <span>{deleteError}</span>
-              </div>
-            ) : (
-              <div className="space-y-2 text-xs text-slate-600">
-                <p>
-                  Are you sure you want to delete this bank ledger entry for{" "}
-                  <strong className="text-slate-900">{deleteRecordTarget.account_name}</strong> on{" "}
-                  <strong className="text-slate-900">{deleteRecordTarget.record_date}</strong>?
-                </p>
-                <p className="text-emerald-700 bg-emerald-50 p-2 rounded border border-emerald-200 text-[11px]">
-                  The account's running balance will be recalculated automatically.
-                </p>
+                <span>{newAccError}</span>
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setDeleteRecordTarget(null)}
-                className="px-3.5 py-1.5 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteRecord}
-                disabled={deleteSubmitting}
-                className="px-3.5 py-1.5 bg-rose-600 text-white text-xs font-bold rounded-lg hover:bg-rose-700 disabled:opacity-50 shadow-sm"
-              >
-                {deleteSubmitting ? "Deleting..." : "Delete Record"}
-              </button>
-            </div>
+            <form onSubmit={handleCreateNewAccount} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Account Code *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. MK-2, TALLY, SALA"
+                  value={newAccCode}
+                  onChange={(e) => setNewAccCode(e.target.value)}
+                  className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 uppercase"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Account Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. MK (separate ledger) or USAIN"
+                  value={newAccName}
+                  onChange={(e) => setNewAccName(e.target.value)}
+                  className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Bank Name (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. HDFC Bank, SBI..."
+                  value={newAccBank}
+                  onChange={(e) => setNewAccBank(e.target.value)}
+                  className="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Account Number (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 50100..."
+                  value={newAccNumber}
+                  onChange={(e) => setNewAccNumber(e.target.value)}
+                  className="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowNewAccModal(false)}
+                  className="px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={newAccSubmitting}
+                  className="px-5 py-2 text-xs font-bold bg-[#0F766E] hover:bg-[#0D9488] text-white rounded-lg transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {newAccSubmitting ? "Creating..." : "Create Account"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -17,6 +17,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { ReceiptPrinterModal } from "@/components/animation/ReceiptPrinterModal";
+import { getTodayDateString } from "@/lib/date-utils";
 
 export default function CustomerDetailPage() {
   const params = useParams();
@@ -28,7 +29,7 @@ export default function CustomerDetailPage() {
 
   // Payment modal state
   const [showPayModal, setShowPayModal] = useState(false);
-  const [payDate, setPayDate] = useState(new Date().toISOString().slice(0, 10));
+  const [payDate, setPayDate] = useState(getTodayDateString());
   const [payAmount, setPayAmount] = useState("");
   const [payMethod, setPayMethod] = useState("CASH");
   const [payNotes, setPayNotes] = useState("");
@@ -93,6 +94,7 @@ export default function CustomerDetailPage() {
       });
       if (res.ok) {
         setShowPayModal(false);
+        setPayDate(getTodayDateString());
         setPayAmount("");
         setPayNotes("");
         fetchCustomerLedger();
@@ -195,7 +197,10 @@ export default function CustomerDetailPage() {
           </button>
 
           <button
-            onClick={() => setShowPayModal(true)}
+            onClick={() => {
+              setPayDate(getTodayDateString());
+              setShowPayModal(true);
+            }}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm"
           >
             <CreditCard className="w-3.5 h-3.5" />
