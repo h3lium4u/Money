@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, Fragment } from "react";
+import Link from "next/link";
 import { numberToIndianWords } from "@/lib/number-to-words";
 import { getTodayDateString } from "@/lib/date-utils";
 import {
@@ -490,17 +491,26 @@ export default function IndiaDistributionPage() {
           </p>
         </div>
 
-        <button
-          onClick={handleOpenTopAddModal}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm"
-        >
-          <PlusCircle className="w-4 h-4" />
-          <span>
-            {selectedTxn
-              ? `+ Add Split for ${selectedTxn.customer_name}`
-              : "+ Add Distribution Split"}
-          </span>
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/parties"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold rounded-lg hover:bg-teal-100 shadow-2xs transition-colors"
+          >
+            <span>INR Parties Period Split Matrix ➔</span>
+          </Link>
+
+          <button
+            onClick={handleOpenTopAddModal}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>
+              {selectedTxn
+                ? `+ Add Split for ${selectedTxn.customer_name}`
+                : "+ Add Distribution Split"}
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}

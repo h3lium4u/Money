@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
 import {
-  listBankDistripAccounts,
-  listBankDistripRecords,
-  createBankDistripRecord,
+  getBankDistributionSettlement,
+  saveBankDistributionEntry,
   updateBankDistripRecord,
   deleteBankDistripRecord,
   createBankDistripAccount,
+  recalculateBankDistripBalances,
+  getDistributorOrderForDate,
 } from "@/lib/repository";
 import { z } from "zod";
 
 const createRecordSchema = z.object({
   record_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format (YYYY-MM-DD)"),
   account_id: z.string().min(1, "Account ID is required"),
-  order_inr: z.number().default(0),
   commission_inr: z.number().default(0),
   paid_inr: z.number().default(0),
   notes: z.string().optional(),
@@ -29,7 +29,6 @@ const updateRecordSchema = z.object({
   id: z.string().min(1, "Record ID is required"),
   record_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format").optional(),
   account_id: z.string().optional(),
-  order_inr: z.number().optional(),
   commission_inr: z.number().optional(),
   paid_inr: z.number().optional(),
   notes: z.string().optional(),
@@ -38,16 +37,33 @@ const updateRecordSchema = z.object({
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
+    const action = searchParams.get("action");
+
+    if (action === "order") {
+      const accountId = searchParams.get("accountId");
+      const date = searchParams.get("date");
+      if (accountId && date) {
+        const order = await getDistributorOrderForDate(accountId, date);
+        return NextResponse.json({ order_inr: order });
+      }
+      return NextResponse.json({ order_inr: 0 });
+    }
+
     const accountId = searchParams.get("accountId") || undefined;
+    const from = searchParams.get("from") || undefined;
+    const to = searchParams.get("to") || undefined;
     const sort = (searchParams.get("sort") || "asc") as "asc" | "desc";
 
-    const accounts = await listBankDistripAccounts();
-    const records = await listBankDistripRecords(accountId, sort);
+    const settlementData = await getBankDistributionSettlement(accountId, {
+      from,
+      to,
+      sortOrder: sort,
+    });
 
-    return NextResponse.json({ accounts, records });
+    return NextResponse.json(settlementData);
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || "Failed to load bank distrip data" },
+      { error: error.message || "Failed to load bank distribution settlement data" },
       { status: 500 }
     );
   }
@@ -65,11 +81,13 @@ export async function POST(request: Request) {
     }
 
     const validated = createRecordSchema.parse(body);
-    const record = await createBankDistripRecord(validated);
-    return NextResponse.json(record, { status: 201 });
+    await saveBankDistributionEntry(validated);
+
+    const updated = await getBankDistributionSettlement(validated.account_id);
+    return NextResponse.json(updated, { status: 201 });
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || "Failed to create bank distrip record" },
+      { error: error.message || "Failed to save bank distribution settlement record" },
       { status: 400 }
     );
   }
@@ -80,11 +98,23 @@ export async function PUT(request: Request) {
     const body = await request.json();
     const validated = updateRecordSchema.parse(body);
 
-    const updated = await updateBankDistripRecord(validated.id, validated);
-    return NextResponse.json(updated);
+    if (validated.account_id && validated.record_date) {
+      await saveBankDistributionEntry({
+        account_id: validated.account_id,
+        record_date: validated.record_date,
+        commission_inr: validated.commission_inr ?? 0,
+        paid_inr: validated.paid_inr ?? 0,
+        notes: validated.notes,
+      });
+      const updated = await getBankDistributionSettlement(validated.account_id);
+      return NextResponse.json(updated);
+    } else {
+      const updated = await updateBankDistripRecord(validated.id, validated);
+      return NextResponse.json(updated);
+    }
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || "Failed to update bank distrip record" },
+      { error: error.message || "Failed to update bank distribution settlement record" },
       { status: 400 }
     );
   }
@@ -94,15 +124,19 @@ export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
+    const accountId = searchParams.get("accountId") || undefined;
     if (!id) {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
     }
 
     await deleteBankDistripRecord(id);
+    if (accountId) {
+      await recalculateBankDistripBalances(accountId);
+    }
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || "Failed to delete bank distrip record" },
+      { error: error.message || "Failed to delete bank distribution record" },
       { status: 400 }
     );
   }

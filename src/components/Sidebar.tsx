@@ -9,6 +9,7 @@ import {
   ArrowLeftRight,
   Users,
   Handshake,
+  ArrowRightLeft,
   Landmark,
   Wallet,
   FileSpreadsheet,
@@ -21,13 +22,13 @@ import { useTheme } from "@/context/ThemeContext";
 const navigation = [
   { name: "Dashboard",             href: "/dashboard",          icon: LayoutDashboard },
   { name: "New Remittance",        href: "/transactions/new",   icon: PlusCircle,      highlight: true },
-  { name: "Direct Transfer",       href: "/transactions/direct",icon: Zap,             highlight: true },
   { name: "All Transfers",         href: "/transactions",       icon: ArrowLeftRight },
   { name: "Customers",             href: "/customers",          icon: Users },
   { name: "Parties",               href: "/parties",            icon: Handshake },
+  { name: "Party Transfers",       href: "/party-transfers",    icon: ArrowRightLeft },
   { name: "Receivables",           href: "/receivables",        icon: Wallet },
   { name: "Distributors",          href: "/distributors",       icon: Split },
-  { name: "Bank Ledger",           href: "/bank-distrip",       icon: Landmark },
+  { name: "Bank Distribution Settlement", href: "/bank-distrip", icon: Landmark },
   { name: "Reports",               href: "/reports",            icon: FileSpreadsheet },
   { name: "Settings",              href: "/settings/system-health", icon: Settings },
 ];

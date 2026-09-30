@@ -28,23 +28,26 @@ async function wipeNeon() {
   try {
     await client.query("BEGIN");
 
-    console.log("Wiping distribution splits...");
+    console.log("1. Wiping distribution splits...");
     await client.query("DELETE FROM distribution_splits");
 
-    console.log("Wiping customer payments...");
+    console.log("2. Wiping customer payments...");
     await client.query("DELETE FROM customer_payments");
 
-    console.log("Wiping bank distrip records...");
+    console.log("3. Wiping bank distrip records...");
     await client.query("DELETE FROM bank_distrip_records");
 
-    console.log("Wiping transactions...");
+    console.log("4. Wiping distributor allocations (May dummy orders)...");
+    await client.query("DELETE FROM distributor_allocations");
+
+    console.log("5. Wiping transactions...");
     await client.query("DELETE FROM transactions");
 
-    console.log("Wiping audit logs...");
+    console.log("6. Wiping audit logs...");
     await client.query("DELETE FROM audit_logs");
 
-    console.log("Wiping test customers...");
-    await client.query("DELETE FROM customers");
+    console.log("7. Wiping test customers (preserving master IND parties)...");
+    await client.query("DELETE FROM customers WHERE entity_type != 'PARTY' OR entity_type IS NULL");
 
     try {
       await client.query("DELETE FROM expenses");

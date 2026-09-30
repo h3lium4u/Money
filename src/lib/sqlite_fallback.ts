@@ -132,4 +132,11 @@ function initSchema(db: DatabaseSync) {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
+
+  try {
+    db.exec(`ALTER TABLE customers ADD COLUMN entity_type TEXT DEFAULT 'CUSTOMER'`);
+  } catch {}
+  try {
+    db.exec(`ALTER TABLE transactions ADD COLUMN entity_type TEXT DEFAULT 'CUSTOMER'`);
+  } catch {}
 }

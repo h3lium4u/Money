@@ -25,9 +25,10 @@ export async function GET(request: Request) {
     const to = searchParams.get("to") || undefined;
     const customerId = searchParams.get("customerId") || undefined;
     const status = searchParams.get("status") || undefined;
+    const entityType = searchParams.get("entityType") || "CUSTOMER";
     const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : 100;
 
-    const data = await listTransactions({ from, to, customerId, status, limit });
+    const data = await listTransactions({ from, to, customerId, status, limit, entityType });
     return NextResponse.json(data);
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to list transactions" }, { status: 500 });

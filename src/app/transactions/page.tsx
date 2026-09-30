@@ -18,6 +18,11 @@ import {
   CreditCard,
   CheckCircle2,
   FileText,
+  Handshake,
+  Users,
+  ArrowLeftRight,
+  ChevronRight,
+  Zap,
 } from "lucide-react";
 import { numberToIndianWords } from "@/lib/number-to-words";
 import { generateTransactionReceipt } from "@/lib/pdf-generator";
@@ -103,7 +108,9 @@ export default function TransactionsPage() {
     setPayLoading(true);
     setPayError(null);
     try {
-      const res = await fetch(`/api/customers/${payingTxn.customer_id}/payments`, {
+      const endpoint = `/api/customers/${payingTxn.customer_id}/payments`;
+
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -186,6 +193,7 @@ export default function TransactionsPage() {
 
       if (selectedCustomer) params.set("customerId", selectedCustomer);
       if (statusFilter) params.set("status", statusFilter);
+      params.set("entityType", "CUSTOMER");
       params.set("limit", "100");
 
       const res = await fetch(`/api/transactions?${params.toString()}`);
@@ -354,12 +362,20 @@ export default function TransactionsPage() {
   const formatAED = (val?: number) =>
     `${(val || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED`;
 
+  const allCount = transactions.filter((t) => t.entity_type !== "PARTY").length;
+
   const filtered = transactions.filter((t) => {
+    // 1. Strictly exclude party transfers from All Transfers
+    if (t.entity_type === "PARTY") return false;
+
+    // 2. Search query filter
     if (!search) return true;
     const q = search.toLowerCase();
     return (
       t.transaction_number.toLowerCase().includes(q) ||
-      t.customer_name?.toLowerCase().includes(q)
+      t.customer_name?.toLowerCase().includes(q) ||
+      t.customer_code?.toLowerCase().includes(q) ||
+      (t.notes && t.notes.toLowerCase().includes(q))
     );
   });
 
@@ -368,28 +384,49 @@ export default function TransactionsPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Remittance Transfers</h2>
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">All Transfers</h2>
           <p className="text-xs text-slate-500">
-            View, edit, void, or delete Dubai ➔ India transfers with authoritative AED calculations.
+            Authoritative registry of Dubai retail customer remittance transfers.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <Link
             href="/transactions/new"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm transition-colors"
           >
             <PlusCircle className="w-4 h-4" />
-            <span>New Transfer</span>
+            <span>+ New Remittance</span>
           </Link>
           <Link
             href="/distributors"
-            className="inline-flex items-center gap-2 px-3.5 py-2 bg-white text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg hover:bg-slate-50 shadow-sm"
+            className="inline-flex items-center gap-2 px-3.5 py-2 bg-white text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg hover:bg-slate-50 shadow-sm transition-colors"
           >
             <Split className="w-4 h-4 text-emerald-600" />
             <span>India Distribution</span>
           </Link>
         </div>
+      </div>
+
+      {/* Info Banner linking to Party Transfers */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-50 border border-slate-200/80 p-3 rounded-xl shadow-2xs">
+        <div className="flex items-center gap-2 text-xs text-slate-700">
+          <Users className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span className="font-semibold text-slate-900">
+            Customer Remittances ({allCount} transfers)
+          </span>
+          <span className="text-slate-400 hidden sm:inline">•</span>
+          <span className="text-slate-500 text-[11px] hidden sm:inline">
+            Party transfers are kept separate under their own module
+          </span>
+        </div>
+        <Link
+          href="/party-transfers"
+          className="text-xs font-semibold text-teal-700 hover:text-teal-900 hover:underline inline-flex items-center gap-1 self-start sm:self-auto"
+        >
+          <span>Looking for Party Transfers? Open Party Transfers</span>
+          <ChevronRight className="w-3.5 h-3.5" />
+        </Link>
       </div>
 
       {/* Filter Bar */}
@@ -427,7 +464,7 @@ export default function TransactionsPage() {
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
-              placeholder="Search by ID or customer..."
+              placeholder="Search by ID, customer name, code, notes..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-slate-800"
@@ -440,10 +477,10 @@ export default function TransactionsPage() {
               onChange={(e) => setSelectedCustomer(e.target.value)}
               className="w-full text-xs font-medium border border-slate-300 rounded-lg p-2 text-slate-800"
             >
-              <option value="">All Customers</option>
+              <option value="">All Customers ({customers.length})</option>
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name}
+                  {c.name} {c.code ? `(${c.code})` : ""}
                 </option>
               ))}
             </select>
@@ -491,7 +528,7 @@ export default function TransactionsPage() {
                 <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3">Customer</th>
                 <th className="px-4 py-3">INR Order</th>
-                <th className="px-4 py-3">Customer Rate</th>
+                <th className="px-4 py-3">Rate</th>
                 <th className="px-4 py-3">AED Charged</th>
                 <th className="px-4 py-3">Net Profit</th>
                 <th className="px-4 py-3">India Distribution</th>
@@ -525,12 +562,15 @@ export default function TransactionsPage() {
                     </td>
                     <td className="px-4 py-3 text-slate-600">{t.transaction_date}</td>
                     <td className="px-4 py-3">
-                      <Link
-                        href={`/customers/${t.customer_id}`}
-                        className="font-bold text-slate-800 hover:text-emerald-600 hover:underline"
-                      >
-                        {t.customer_name}
-                      </Link>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <Link
+                          href={`/customers/${t.customer_id}`}
+                          className="font-bold text-slate-800 hover:text-emerald-600 hover:underline flex items-center gap-1"
+                        >
+                          <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span>{t.customer_name}</span>
+                        </Link>
+                      </div>
                       {t.customer_code && (
                         <div className="text-[10px] text-slate-400 font-mono mt-0.5">
                           {t.customer_code}
@@ -723,7 +763,7 @@ export default function TransactionsPage() {
                   >
                     {customers.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.name}
+                        {c.name} {c.code ? `(${c.code})` : ""}
                       </option>
                     ))}
                   </select>

@@ -109,6 +109,50 @@ test("Bank Distrip Running Balance formula", () => {
   assert.equal(balance, 31500);
 });
 
+test("Bank Distribution Settlement - Excel MK Validation (3-May to 9-May)", () => {
+  // 3-May: Order 0, COM 0, Paid -56,530, Prev 0 -> BAL 56,530
+  let bal = calculateBankDistripBalance(0, 0, 0, -56530);
+  assert.equal(bal, 56530);
+
+  // 4-May: Order 2,014,700, COM 0, Paid 1,800,000, Prev 56,530 -> BAL 271,230
+  bal = calculateBankDistripBalance(bal, 2014700, 0, 1800000);
+  assert.equal(bal, 271230);
+
+  // 5-May: Order 1,395,200, COM 5,400, Paid 1,500,000, Prev 271,230 -> BAL 171,830
+  bal = calculateBankDistripBalance(bal, 1395200, 5400, 1500000);
+  assert.equal(bal, 171830);
+
+  // 6-May: Order 977,400, COM 4,500, Paid 1,100,000, Prev 171,830 -> BAL 53,730
+  bal = calculateBankDistripBalance(bal, 977400, 4500, 1100000);
+  assert.equal(bal, 53730);
+
+  // 7-May: Order 1,237,300, COM 3,300, Paid 1,200,000, Prev 53,730 -> BAL 94,330
+  bal = calculateBankDistripBalance(bal, 1237300, 3300, 1200000);
+  assert.equal(bal, 94330);
+
+  // 8-May: Order 1,480,400, COM 3,600, Paid 1,200,000, Prev 94,330 -> BAL 378,330
+  bal = calculateBankDistripBalance(bal, 1480400, 3600, 1200000);
+  assert.equal(bal, 378330);
+
+  // 9-May: Order 666,700, COM 3,600, Paid 0, Prev 378,330 -> BAL 1,048,630
+  bal = calculateBankDistripBalance(bal, 666700, 3600, 0);
+  assert.equal(bal, 1048630);
+});
+
+test("Bank Distribution Settlement - Excel SALA Validation (3-May to 5-May)", () => {
+  // 3-May: Order 69,600, COM 0, Paid 0, Prev 0 -> BAL 69,600
+  let bal = calculateBankDistripBalance(0, 69600, 0, 0);
+  assert.equal(bal, 69600);
+
+  // 4-May: Order 384,900, COM 0, Paid 600,000, Prev 69,600 -> BAL -145,500 (valid negative!)
+  bal = calculateBankDistripBalance(bal, 384900, 0, 600000);
+  assert.equal(bal, -145500);
+
+  // 5-May: Order 866,700, COM 0, Paid 500,000, Prev -145,500 -> BAL 221,200
+  bal = calculateBankDistripBalance(bal, 866700, 0, 500000);
+  assert.equal(bal, 221200);
+});
+
 test("Wholesale Liquidity Settlement calculation", () => {
   // INR: 1,700,000, Rate: 24.80 INR/AED, Paid: 50,000 AED, Prev Balance: 10,000 AED
   const settlement = calculateWholesaleSettlement(1700000, 24.80, 50000, 10000);

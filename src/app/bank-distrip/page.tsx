@@ -15,6 +15,14 @@ import {
   ArrowUpDown,
   Building2,
   Info,
+  Lock,
+  Calculator,
+  CheckCircle2,
+  DollarSign,
+  PieChart,
+  Search,
+  ArrowRight,
+  Filter,
 } from "lucide-react";
 import { getTodayDateString } from "@/lib/date-utils";
 
@@ -26,6 +34,11 @@ interface BankAccount {
   account_number?: string | null;
   status: string;
   current_balance?: number;
+  total_order?: number;
+  total_commission?: number;
+  total_paid?: number;
+  closing_balance?: number;
+  record_count?: number;
   created_at?: string;
 }
 
@@ -43,22 +56,50 @@ interface BankRecord {
   created_at: string;
 }
 
+interface DistributorSummary {
+  account_id: string;
+  account_code: string;
+  account_name: string;
+  total_order: number;
+  total_commission: number;
+  total_paid: number;
+  closing_balance: number;
+  record_count: number;
+}
+
+interface GrandTotals {
+  grand_order: number;
+  grand_commission: number;
+  grand_paid: number;
+  grand_balance: number;
+  distributor_summaries: DistributorSummary[];
+}
+
 export default function BankDistripPage() {
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [records, setRecords] = useState<BankRecord[]>([]);
+  const [activeAccountData, setActiveAccountData] = useState<BankAccount | null>(null);
+  const [grandTotals, setGrandTotals] = useState<GrandTotals | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedAccount, setSelectedAccount] = useState<string>("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [searchFilter, setSearchFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [activeTab, setActiveTab] = useState<"ledger" | "grand-total">("ledger");
 
   // Date picker refs
   const addDateRef = useRef<HTMLInputElement>(null);
   const editDateRef = useRef<HTMLInputElement>(null);
+  const fromDateRef = useRef<HTMLInputElement>(null);
+  const toDateRef = useRef<HTMLInputElement>(null);
 
   // Add Transaction Modal State
   const [showAddModal, setShowAddModal] = useState(false);
   const [addDate, setAddDate] = useState(getTodayDateString());
   const [addAccountId, setAddAccountId] = useState("");
-  const [addOrder, setAddOrder] = useState("");
+  const [addOrder, setAddOrder] = useState<number>(0);
+  const [loadingAddOrder, setLoadingAddOrder] = useState(false);
   const [addCom, setAddCom] = useState("");
   const [addPaid, setAddPaid] = useState("");
   const [addNotes, setAddNotes] = useState("");
@@ -68,7 +109,8 @@ export default function BankDistripPage() {
   // Edit Transaction Modal State
   const [editRecord, setEditRecord] = useState<BankRecord | null>(null);
   const [editDateVal, setEditDateVal] = useState("");
-  const [editOrder, setEditOrder] = useState("");
+  const [editOrder, setEditOrder] = useState<number>(0);
+  const [loadingEditOrder, setLoadingEditOrder] = useState(false);
   const [editCom, setEditCom] = useState("");
   const [editPaid, setEditPaid] = useState("");
   const [editNotes, setEditNotes] = useState("");
@@ -105,24 +147,49 @@ export default function BankDistripPage() {
 
   useEffect(() => {
     fetchBankData();
-  }, [selectedAccount, sortOrder]);
+  }, [selectedAccount, sortOrder, dateFrom, dateTo]);
+
+  // Fetch automatic order when date or account changes in Add modal
+  useEffect(() => {
+    if (showAddModal && addAccountId && addDate) {
+      fetchOrderForDate(addAccountId, addDate, (order) => setAddOrder(order));
+    }
+  }, [showAddModal, addAccountId, addDate]);
+
+  async function fetchOrderForDate(accountId: string, date: string, callback: (val: number) => void) {
+    try {
+      setLoadingAddOrder(true);
+      const res = await fetch(`/api/bank-distrip?action=order&accountId=${accountId}&date=${date}`);
+      if (res.ok) {
+        const json = await res.json();
+        callback(Number(json.order_inr || 0));
+      }
+    } catch (err) {
+      console.error("Failed to fetch order for date:", err);
+    } finally {
+      setLoadingAddOrder(false);
+    }
+  }
 
   async function fetchBankData() {
     setLoading(true);
     try {
       let url = `/api/bank-distrip?sort=${sortOrder}`;
       if (selectedAccount) url += `&accountId=${selectedAccount}`;
+      if (dateFrom) url += `&from=${dateFrom}`;
+      if (dateTo) url += `&to=${dateTo}`;
+
       const res = await fetch(url);
       const json = await res.json();
-      const validAccounts: BankAccount[] = Array.isArray(json.accounts)
-        ? json.accounts
-        : [];
-      const validRecords: BankRecord[] = Array.isArray(json.records)
-        ? json.records
-        : [];
+      const validAccounts: BankAccount[] = Array.isArray(json.accounts) ? json.accounts : [];
+      const validRecords: BankRecord[] = Array.isArray(json.records) ? json.records : [];
 
       setAccounts(validAccounts);
       setRecords(validRecords);
+      setActiveAccountData(json.activeAccount || null);
+      if (json.grandTotals) {
+        setGrandTotals(json.grandTotals);
+      }
 
       // Auto-select the first account if none is selected yet
       if (!selectedAccount && validAccounts.length > 0) {
@@ -140,47 +207,42 @@ export default function BankDistripPage() {
     }
   }
 
-  // Find the selected account object
-  const activeAccount = accounts.find((a) => a.id === selectedAccount);
+  // Active account
+  const activeAccount = accounts.find((a) => a.id === selectedAccount) || activeAccountData;
 
-  // Records for active account in chronological order for accurate totals & sequence
-  const activeRecords = records.filter(
-    (r) => !selectedAccount || r.account_id === selectedAccount
-  );
+  // Filtered records
+  const filteredRecords = records.filter((r) => {
+    if (searchFilter.trim()) {
+      const q = searchFilter.toLowerCase();
+      const matchDate = r.record_date.toLowerCase().includes(q);
+      const matchNotes = (r.notes || "").toLowerCase().includes(q);
+      const matchAccount = (r.account_code || "").toLowerCase().includes(q);
+      return matchDate || matchNotes || matchAccount;
+    }
+    return true;
+  });
 
-  // Totals calculated from records
-  const totalOrders = activeRecords.reduce((sum, r) => sum + (Number(r.order_inr) || 0), 0);
-  const totalCommission = activeRecords.reduce((sum, r) => sum + (Number(r.commission_inr) || 0), 0);
-  const totalPaid = activeRecords.reduce((sum, r) => sum + (Number(r.paid_inr) || 0), 0);
-
-  // The latest running balance for this account
-  // In chronological order, it is the balance of the last record; mathematically: totalOrders + totalCommission - totalPaid
-  const latestRunningBalance =
-    activeRecords.length > 0
-      ? sortOrder === "asc"
-        ? activeRecords[activeRecords.length - 1].balance_inr
-        : activeRecords[0].balance_inr
-      : (activeAccount?.current_balance || 0);
+  // Totals for active account
+  const totalOrders = activeAccount?.total_order ?? records.reduce((sum, r) => sum + (Number(r.order_inr) || 0), 0);
+  const totalCommission = activeAccount?.total_commission ?? records.reduce((sum, r) => sum + (Number(r.commission_inr) || 0), 0);
+  const totalPaid = activeAccount?.total_paid ?? records.reduce((sum, r) => sum + (Number(r.paid_inr) || 0), 0);
+  const closingBalance = activeAccount?.closing_balance ?? (records.length > 0 ? records[records.length - 1].balance_inr : 0);
 
   // Previous balance for Add Modal live preview
-  const prevBalForAdd =
-    activeRecords.length > 0
-      ? (sortOrder === "asc"
-          ? activeRecords[activeRecords.length - 1].balance_inr
-          : activeRecords[0].balance_inr)
-      : 0;
+  const prevBalForAdd = records.length > 0
+    ? (sortOrder === "asc" ? records[records.length - 1].balance_inr : records[0].balance_inr)
+    : 0;
 
-  const addOrderNum = parseFloat(addOrder) || 0;
   const addComNum = parseFloat(addCom) || 0;
   const addPaidNum = parseFloat(addPaid) || 0;
-  const addCalculatedBalance = prevBalForAdd + addOrderNum + addComNum - addPaidNum;
+  const addCalculatedBalance = prevBalForAdd + addOrder + addComNum - addPaidNum;
 
   // Open Edit Modal
   function openEditModal(record: BankRecord) {
     setEditRecord(record);
     setEditDateVal(record.record_date);
-    setEditOrder(String(record.order_inr || ""));
-    setEditCom(String(record.commission_inr || ""));
+    setEditOrder(Number(record.order_inr || 0));
+    setEditCom(record.commission_inr === 0 ? "0" : String(record.commission_inr || ""));
     setEditPaid(String(record.paid_inr || ""));
     setEditNotes(record.notes || "");
     setEditError(null);
@@ -204,7 +266,6 @@ export default function BankDistripPage() {
         body: JSON.stringify({
           account_id: targetAccId,
           record_date: addDate,
-          order_inr: parseFloat(addOrder) || 0,
           commission_inr: parseFloat(addCom) || 0,
           paid_inr: parseFloat(addPaid) || 0,
           notes: addNotes.trim() || undefined,
@@ -212,17 +273,16 @@ export default function BankDistripPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create transaction");
+      if (!res.ok) throw new Error(data.error || "Failed to create settlement entry");
 
       setShowAddModal(false);
       setAddDate(getTodayDateString());
-      setAddOrder("");
       setAddCom("");
       setAddPaid("");
       setAddNotes("");
       await fetchBankData();
     } catch (err: any) {
-      setAddError(err.message || "Failed to create transaction");
+      setAddError(err.message || "Failed to create settlement entry");
     } finally {
       setAddSubmitting(false);
     }
@@ -243,7 +303,6 @@ export default function BankDistripPage() {
           id: editRecord.id,
           account_id: editRecord.account_id,
           record_date: editDateVal,
-          order_inr: parseFloat(editOrder) || 0,
           commission_inr: parseFloat(editCom) || 0,
           paid_inr: parseFloat(editPaid) || 0,
           notes: editNotes.trim() || undefined,
@@ -251,12 +310,12 @@ export default function BankDistripPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to update transaction");
+      if (!res.ok) throw new Error(data.error || "Failed to update settlement entry");
 
       setEditRecord(null);
       await fetchBankData();
     } catch (err: any) {
-      setEditError(err.message || "Failed to update transaction");
+      setEditError(err.message || "Failed to update settlement entry");
     } finally {
       setEditSubmitting(false);
     }
@@ -269,17 +328,17 @@ export default function BankDistripPage() {
     setDeleteSubmitting(true);
     setDeleteError(null);
     try {
-      const res = await fetch(`/api/bank-distrip?id=${deleteTarget.id}`, {
+      const res = await fetch(`/api/bank-distrip?id=${deleteTarget.id}&accountId=${deleteTarget.account_id}`, {
         method: "DELETE",
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to delete transaction");
+      if (!res.ok) throw new Error(data.error || "Failed to delete settlement record");
 
       setDeleteTarget(null);
       await fetchBankData();
     } catch (err: any) {
-      setDeleteError(err.message || "Failed to delete transaction");
+      setDeleteError(err.message || "Failed to delete settlement record");
     } finally {
       setDeleteSubmitting(false);
     }
@@ -338,35 +397,78 @@ export default function BankDistripPage() {
     return isNegative ? `-₹ ${formatted}` : `₹ ${formatted}`;
   }
 
+  // Format date readable (e.g. 2026-05-03 -> 03-May-2026)
+  function formatDateReadable(dateStr: string) {
+    if (!dateStr) return "-";
+    const parts = dateStr.split("-");
+    if (parts.length === 3) {
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const mIdx = parseInt(parts[1], 10) - 1;
+      return `${parts[2]}-${months[mIdx] || parts[1]}-${parts[0]}`;
+    }
+    return dateStr;
+  }
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-teal-600 dark:bg-teal-500 text-white flex items-center justify-center shrink-0 shadow-sm">
-              <Landmark className="w-4 h-4" />
+            <div className="w-9 h-9 rounded-lg bg-[#0F766E] text-white flex items-center justify-center shrink-0 shadow-sm">
+              <Landmark className="w-5 h-5" />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-              BANK DISTRIP – Distributor Ledger
-            </h2>
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+                Bank Distribution Settlement
+              </h2>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  Authoritative Date-wise Settlement Ledger & Running Balances
+                </span>
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-teal-50 dark:bg-teal-950/80 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                  Excel Exact
+                </span>
+              </div>
+            </div>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Running balance ledger for bank & distributor accounts. Formula:{" "}
-            <code className="text-teal-700 dark:text-teal-400 font-mono font-bold bg-teal-50 dark:bg-teal-950/60 px-1.5 py-0.5 rounded">
-              Current Balance = Previous Balance + Order + Commission - Paid
-            </code>
-          </p>
         </div>
 
         <div className="flex items-center gap-2">
+          {/* View Mode Toggle */}
+          <div className="bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setActiveTab("ledger")}
+              className={`px-3 py-1.5 rounded-md transition-all ${
+                activeTab === "ledger"
+                  ? "bg-white dark:bg-slate-900 text-teal-700 dark:text-teal-400 shadow-2xs font-bold"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
+            >
+              Distributor Ledger
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("grand-total")}
+              className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 ${
+                activeTab === "grand-total"
+                  ? "bg-white dark:bg-slate-900 text-teal-700 dark:text-teal-400 shadow-2xs font-bold"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
+            >
+              <PieChart className="w-3.5 h-3.5" />
+              <span>Grand Total</span>
+            </button>
+          </div>
+
           <button
             type="button"
             onClick={() => setShowNewAccModal(true)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-2xs transition-colors cursor-pointer"
           >
             <Building2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-            <span>+ New Account</span>
+            <span className="hidden sm:inline">+ New Account</span>
           </button>
 
           <button
@@ -374,46 +476,67 @@ export default function BankDistripPage() {
             onClick={() => {
               setAddAccountId(selectedAccount || (accounts[0]?.id || ""));
               setAddDate(getTodayDateString());
+              setAddCom("");
+              setAddPaid("");
+              setAddNotes("");
               setAddError(null);
               setShowAddModal(true);
             }}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold bg-[#0F766E] hover:bg-[#0D9488] text-white shadow-sm transition-all cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
-            <span>+ Add Transaction</span>
+            <span>+ Record Settlement</span>
           </button>
         </div>
       </div>
 
-      {/* Account Selector Bar (Excel-Sheet Tabs / Dropdown) */}
-      <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* Logic Callout Banner */}
+      <div className="bg-gradient-to-r from-teal-50/80 via-emerald-50/50 to-teal-50/80 dark:from-teal-950/40 dark:via-emerald-950/20 dark:to-teal-950/40 border border-teal-200/80 dark:border-teal-800/60 rounded-xl p-3 sm:p-4 text-xs text-slate-700 dark:text-slate-300 shadow-2xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-start gap-2.5">
+            <Calculator className="w-4 h-4 text-teal-700 dark:text-teal-400 shrink-0 mt-0.5" />
+            <div>
+              <div className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <span>Excel Balance Formula:</span>
+                <code className="text-teal-800 dark:text-teal-300 font-mono font-bold bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800">
+                  CURRENT BAL = PREVIOUS BAL + CURRENT ORDER + CURRENT COM - CURRENT PAID
+                </code>
+              </div>
+              <p className="text-slate-600 dark:text-slate-400 mt-1">
+                <strong>ORDER</strong> is automatically linked from transaction splits and collection allocations (Read-Only). 
+                Enter <strong>COM</strong> and <strong>PAID</strong> (supports negative values like <code className="font-mono text-rose-600 dark:text-rose-400">-56,530</code>).
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-[11px] text-teal-800 dark:text-teal-300 bg-teal-100/60 dark:bg-teal-900/40 px-2.5 py-1 rounded-lg border border-teal-200 dark:border-teal-800 self-start md:self-auto shrink-0">
+            <Lock className="w-3 h-3" />
+            <span>Single Source of Truth for Orders</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Distributor Tabs / Selector */}
+      <div className="bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2.5">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-              Select Account / Distributor:
+              Distributor / India Party Accounts:
+            </span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+              ({accounts.length} registered)
             </span>
           </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-              className="text-xs font-semibold px-2.5 py-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800 rounded flex items-center gap-1 cursor-pointer transition-colors"
-              title="Toggle sequence order"
-            >
-              <ArrowUpDown className="w-3.5 h-3.5" />
-              <span>{sortOrder === "asc" ? "Chronological (Oldest First)" : "Reverse (Newest First)"}</span>
-            </button>
+          <div className="text-xs text-slate-500 dark:text-slate-400">
+            Click on any party below to inspect their independent running ledger
           </div>
         </div>
 
-        {/* Account Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+        {/* Distributor Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
           {accounts.map((acc) => {
-            const isSelected = selectedAccount === acc.id;
-            const bal = acc.current_balance || 0;
+            const isSelected = acc.id === selectedAccount;
+            const bal = acc.closing_balance ?? acc.current_balance ?? 0;
             const isNeg = bal < 0;
-
             return (
               <button
                 key={acc.id}
@@ -421,21 +544,22 @@ export default function BankDistripPage() {
                 onClick={() => {
                   setSelectedAccount(acc.id);
                   setAddAccountId(acc.id);
+                  if (activeTab === "grand-total") setActiveTab("ledger");
                 }}
-                className={`px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 border cursor-pointer ${
+                className={`flex items-center gap-2.5 px-3.5 py-2 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer border ${
                   isSelected
-                    ? "bg-[#0F766E] text-white border-[#0F766E] shadow-sm ring-2 ring-teal-500/30"
-                    : "bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-400"
+                    ? "bg-[#0F766E] text-white border-[#0F766E] shadow-sm font-bold"
+                    : "bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
                 }`}
               >
-                <span>{acc.account_name}</span>
+                <span>{acc.account_code || acc.account_name}</span>
                 <span
-                  className={`text-[11px] font-mono px-1.5 py-0.2 rounded ${
+                  className={`px-1.5 py-0.5 rounded text-[11px] font-mono ${
                     isSelected
                       ? "bg-teal-800/80 text-teal-100"
                       : isNeg
-                      ? "bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300"
-                      : "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300"
+                      ? "bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300"
+                      : "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
                   }`}
                 >
                   {formatINR(bal)}
@@ -446,461 +570,727 @@ export default function BankDistripPage() {
         </div>
       </div>
 
-      {/* Account Totals & Current Balance Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Current Balance */}
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Current Running Balance
-            </span>
-            {latestRunningBalance >= 0 ? (
-              <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            ) : (
-              <TrendingDown className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-            )}
-          </div>
-          <div
-            className={`text-2xl font-extrabold font-mono tracking-tight ${
-              latestRunningBalance < 0
-                ? "text-rose-600 dark:text-rose-400"
-                : "text-emerald-700 dark:text-emerald-400"
-            }`}
-          >
-            {formatINR(latestRunningBalance)}
-          </div>
-          <p className="text-[11px] text-slate-400 dark:text-slate-500">
-            {activeAccount?.account_name || "Account"} latest cumulative balance
-          </p>
-        </div>
+      {/* GRAND TOTAL MATRIX SECTION */}
+      {activeTab === "grand-total" ? (
+        <div className="space-y-6">
+          {/* Grand Total KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
+                <span>GRAND ORDER</span>
+                <Layers className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+              </div>
+              <div className="text-xl font-bold font-mono text-slate-900 dark:text-slate-100 mt-2">
+                {formatINR(grandTotals?.grand_order || 0)}
+              </div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                Sum of all parties' order amounts
+              </div>
+            </div>
 
-        {/* Order Total */}
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Order Total
-            </span>
-            <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-mono px-1.5 py-0.5 rounded">
-              SUM
-            </span>
-          </div>
-          <div className="text-2xl font-bold font-mono text-slate-900 dark:text-slate-100 tracking-tight">
-            {formatINR(totalOrders)}
-          </div>
-          <p className="text-[11px] text-slate-400 dark:text-slate-500">
-            Total of all order disbursements
-          </p>
-        </div>
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
+                <span>GRAND COM</span>
+                <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div className="text-xl font-bold font-mono text-slate-900 dark:text-slate-100 mt-2">
+                {formatINR(grandTotals?.grand_commission || 0)}
+              </div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                Sum of all parties' commission
+              </div>
+            </div>
 
-        {/* Commission Total */}
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Commission Total (COM)
-            </span>
-            <span className="text-[10px] bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 font-bold px-1.5 py-0.5 rounded">
-              + ADDED
-            </span>
-          </div>
-          <div className="text-2xl font-bold font-mono text-teal-700 dark:text-teal-400 tracking-tight">
-            {formatINR(totalCommission)}
-          </div>
-          <p className="text-[11px] text-slate-400 dark:text-slate-500">
-            Added to running balance (never deducted)
-          </p>
-        </div>
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
+                <span>GRAND PAID</span>
+                <TrendingDown className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+              </div>
+              <div className="text-xl font-bold font-mono text-slate-900 dark:text-slate-100 mt-2">
+                {formatINR(grandTotals?.grand_paid || 0)}
+              </div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                Sum of all payments made to parties
+              </div>
+            </div>
 
-        {/* Paid Total */}
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Paid Total
-            </span>
-            <span className="text-[10px] bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 font-bold px-1.5 py-0.5 rounded">
-              - DEDUCTED
-            </span>
+            <div className="bg-gradient-to-br from-teal-900 to-slate-900 text-white p-4 rounded-xl border border-teal-800 shadow-md">
+              <div className="flex items-center justify-between text-xs text-teal-200 font-medium">
+                <span>GRAND CLOSING BAL</span>
+                <Landmark className="w-4 h-4 text-teal-300" />
+              </div>
+              <div className="text-xl font-bold font-mono text-white mt-2">
+                {formatINR(grandTotals?.grand_balance || 0)}
+              </div>
+              <div className="text-[11px] text-teal-200/90 mt-1">
+                Sum of party closing balances (Excel Rule #9)
+              </div>
+            </div>
           </div>
-          <div className="text-2xl font-bold font-mono text-slate-900 dark:text-slate-100 tracking-tight">
-            {formatINR(totalPaid)}
-          </div>
-          <p className="text-[11px] text-slate-400 dark:text-slate-500">
-            Total funding / settlements paid out
-          </p>
-        </div>
-      </div>
 
-      {/* Main Ledger Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-2">
-              <span>Ledger:</span>
-              <span className="text-teal-700 dark:text-teal-400 font-extrabold">
-                {activeAccount?.account_name || "All Accounts"}
+          {/* Grand Total Comparison Matrix Table */}
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  Distributors Grand Total Summary Matrix
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Comparison across MK, SALA, SARABU / USAIN, ISMAIL, NNG, and all configured distributors
+                </p>
+              </div>
+              <span className="text-xs text-teal-700 dark:text-teal-300 font-semibold bg-teal-50 dark:bg-teal-950 px-2.5 py-1 rounded-lg border border-teal-200 dark:border-teal-800">
+                {grandTotals?.distributor_summaries.length || accounts.length} Parties Active
               </span>
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Cumulative balance sequence: <code className="font-mono">BAL(row) = BAL(prev) + ORDER + COM - PAID</code>
-            </p>
-          </div>
+            </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              {activeRecords.length} Transactions recorded
-            </span>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-700 uppercase tracking-wider text-[11px]">
-              <tr>
-                <th className="py-3 px-4">Date</th>
-                <th className="py-3 px-4 text-right">Order</th>
-                <th className="py-3 px-4 text-right">COM</th>
-                <th className="py-3 px-4 text-right">Paid</th>
-                <th className="py-3 px-4 text-right">Balance</th>
-                <th className="py-3 px-4 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400 text-xs">
-                    <div className="flex items-center justify-center gap-2">
-                      <RefreshCw className="w-4 h-4 animate-spin text-teal-600" />
-                      <span>Loading ledger transactions...</span>
-                    </div>
-                  </td>
-                </tr>
-              ) : activeRecords.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400 text-xs space-y-2">
-                    <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">
-                      No transactions recorded for {activeAccount?.account_name || "this account"} yet.
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      Click <strong className="text-teal-600">"+ Add Transaction"</strong> above to record your first entry.
-                    </p>
-                  </td>
-                </tr>
-              ) : (
-                activeRecords.map((r, idx) => {
-                  const bal = Number(r.balance_inr || 0);
-                  const isNeg = bal < 0;
-
-                  return (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800 font-semibold uppercase tracking-wider text-[11px]">
+                    <th className="py-3 px-4">Party / Distributor</th>
+                    <th className="py-3 px-4 text-right">Total Order (INR)</th>
+                    <th className="py-3 px-4 text-right">Total COM (INR)</th>
+                    <th className="py-3 px-4 text-right">Total Paid (INR)</th>
+                    <th className="py-3 px-4 text-right">Closing Balance (INR)</th>
+                    <th className="py-3 px-4 text-center">Records</th>
+                    <th className="py-3 px-4 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {(grandTotals?.distributor_summaries || accounts.map(a => ({
+                    account_id: a.id,
+                    account_code: a.account_code,
+                    account_name: a.account_name,
+                    total_order: a.total_order || 0,
+                    total_commission: a.total_commission || 0,
+                    total_paid: a.total_paid || 0,
+                    closing_balance: a.closing_balance || 0,
+                    record_count: a.record_count || 0,
+                  }))).map((item) => (
                     <tr
-                      key={r.id}
-                      className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
+                      key={item.account_id}
+                      className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors"
                     >
-                      <td className="py-3 px-4 font-mono font-medium text-slate-700 dark:text-slate-300">
-                        {r.record_date}
-                      </td>
-
-                      <td className="py-3 px-4 text-right font-mono font-semibold text-slate-900 dark:text-slate-100">
-                        {r.order_inr > 0 ? formatINR(r.order_inr) : "-"}
-                      </td>
-
-                      <td className="py-3 px-4 text-right font-mono text-teal-700 dark:text-teal-400 font-semibold">
-                        {r.commission_inr > 0 ? formatINR(r.commission_inr) : "-"}
-                      </td>
-
-                      <td className="py-3 px-4 text-right font-mono text-slate-800 dark:text-slate-200 font-semibold">
-                        {r.paid_inr > 0 ? formatINR(r.paid_inr) : "-"}
-                      </td>
-
-                      <td
-                        className={`py-3 px-4 text-right font-mono font-bold text-sm ${
-                          isNeg
-                            ? "text-rose-600 dark:text-rose-400"
-                            : "text-emerald-700 dark:text-emerald-400"
-                        }`}
-                      >
-                        {formatINR(bal)}
-                      </td>
-
-                      <td className="py-3 px-4 text-center">
-                        <div className="flex items-center justify-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(r)}
-                            title="Edit transaction"
-                            className="p-1.5 text-slate-500 hover:text-teal-700 hover:bg-teal-50 dark:hover:bg-teal-950/60 rounded border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDeleteTarget(r)}
-                            title="Delete transaction"
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 rounded border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-teal-500"></span>
+                          <span>{item.account_code}</span>
+                          <span className="text-[11px] text-slate-400 font-normal">
+                            ({item.account_name})
+                          </span>
                         </div>
                       </td>
+                      <td className="py-3 px-4 text-right font-mono text-slate-700 dark:text-slate-300">
+                        {formatINR(item.total_order)}
+                      </td>
+                      <td className="py-3 px-4 text-right font-mono text-slate-700 dark:text-slate-300">
+                        {formatINR(item.total_commission)}
+                      </td>
+                      <td className="py-3 px-4 text-right font-mono text-slate-700 dark:text-slate-300">
+                        {formatINR(item.total_paid)}
+                      </td>
+                      <td className="py-3 px-4 text-right font-mono font-bold">
+                        <span
+                          className={`px-2 py-0.5 rounded ${
+                            item.closing_balance < 0
+                              ? "bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
+                              : "bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                          }`}
+                        >
+                          {formatINR(item.closing_balance)}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-center text-slate-500 dark:text-slate-400 font-mono">
+                        {item.record_count}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedAccount(item.account_id);
+                            setActiveTab("ledger");
+                          }}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-semibold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950 hover:bg-teal-100 dark:hover:bg-teal-900 transition-colors"
+                        >
+                          <span>View Ledger</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </button>
+                      </td>
                     </tr>
-                  );
-                })
-              )}
-            </tbody>
-
-            {/* Total Row matching Excel sheet */}
-            {activeRecords.length > 0 && (
-              <tfoot className="bg-slate-100/90 dark:bg-slate-800 border-t-2 border-slate-300 dark:border-slate-700 font-bold text-xs">
-                <tr>
-                  <td className="py-3.5 px-4 font-extrabold uppercase text-slate-900 dark:text-slate-100 tracking-wider">
-                    ACCOUNT TOTALS
-                  </td>
-                  <td className="py-3.5 px-4 text-right font-mono font-extrabold text-slate-900 dark:text-slate-100">
-                    {formatINR(totalOrders)}
-                  </td>
-                  <td className="py-3.5 px-4 text-right font-mono font-extrabold text-teal-700 dark:text-teal-400">
-                    {formatINR(totalCommission)}
-                  </td>
-                  <td className="py-3.5 px-4 text-right font-mono font-extrabold text-slate-900 dark:text-slate-100">
-                    {formatINR(totalPaid)}
-                  </td>
-                  <td
-                    className={`py-3.5 px-4 text-right font-mono font-extrabold text-sm ${
-                      latestRunningBalance < 0
-                        ? "text-rose-600 dark:text-rose-400"
-                        : "text-emerald-700 dark:text-emerald-400"
-                    }`}
-                  >
-                    {formatINR(latestRunningBalance)}
-                  </td>
-                  <td className="py-3.5 px-4 text-center text-slate-400 font-normal">
-                    –
-                  </td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-slate-100 dark:bg-slate-800/90 font-bold border-t-2 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+                    <td className="py-3.5 px-4 text-xs tracking-wider uppercase">
+                      GRAND TOTAL
+                    </td>
+                    <td className="py-3.5 px-4 text-right font-mono text-xs">
+                      {formatINR(grandTotals?.grand_order || 0)}
+                    </td>
+                    <td className="py-3.5 px-4 text-right font-mono text-xs">
+                      {formatINR(grandTotals?.grand_commission || 0)}
+                    </td>
+                    <td className="py-3.5 px-4 text-right font-mono text-xs">
+                      {formatINR(grandTotals?.grand_paid || 0)}
+                    </td>
+                    <td className="py-3.5 px-4 text-right font-mono text-xs text-teal-700 dark:text-teal-300">
+                      {formatINR(grandTotals?.grand_balance || 0)}
+                    </td>
+                    <td colSpan={2} className="py-3.5 px-4 text-right text-[11px] text-slate-500 font-normal italic">
+                      * Grand BAL = Sum of party closing balances
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        /* DISTRIBUTOR LEDGER SECTION */
+        <div className="space-y-6">
+          {/* Active Distributor KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Total Order (Auto) */}
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
+                <span className="flex items-center gap-1.5">
+                  <span>TOTAL ORDER</span>
+                  <span className="px-1.5 py-0.2 rounded text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono">
+                    Auto
+                  </span>
+                </span>
+                <Layers className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+              </div>
+              <div className="text-xl font-bold font-mono text-slate-900 dark:text-slate-100 mt-2">
+                {formatINR(totalOrders)}
+              </div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+                <Lock className="w-3 h-3 text-slate-400" />
+                <span>Derived from splits & allocations</span>
+              </div>
+            </div>
 
-      {/* ADD TRANSACTION MODAL */}
+            {/* Total Commission */}
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
+                <span className="flex items-center gap-1.5">
+                  <span>TOTAL COM</span>
+                  <span className="px-1.5 py-0.2 rounded text-[10px] bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 font-mono">
+                    Manual
+                  </span>
+                </span>
+                <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div className="text-xl font-bold font-mono text-slate-900 dark:text-slate-100 mt-2">
+                {formatINR(totalCommission)}
+              </div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                Total commission entered for {activeAccount?.account_code || "party"}
+              </div>
+            </div>
+
+            {/* Total Paid */}
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
+                <span className="flex items-center gap-1.5">
+                  <span>TOTAL PAID</span>
+                  <span className="px-1.5 py-0.2 rounded text-[10px] bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 font-mono">
+                    Manual
+                  </span>
+                </span>
+                <TrendingDown className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+              </div>
+              <div className="text-xl font-bold font-mono text-slate-900 dark:text-slate-100 mt-2">
+                {formatINR(totalPaid)}
+              </div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                Net paid amounts (supports negatives)
+              </div>
+            </div>
+
+            {/* Closing Balance */}
+            <div className="bg-gradient-to-br from-teal-900 to-slate-900 text-white p-4 rounded-xl border border-teal-800 shadow-md">
+              <div className="flex items-center justify-between text-xs text-teal-200 font-medium">
+                <span className="tracking-wide">CLOSING BALANCE</span>
+                <Landmark className="w-4 h-4 text-teal-300" />
+              </div>
+              <div className="text-xl font-bold font-mono text-white mt-2">
+                {formatINR(closingBalance)}
+              </div>
+              <div className="text-[11px] text-teal-200/90 mt-1 flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-teal-400" />
+                <span>Latest chronological settlement balance</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Filter & Controls Bar */}
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              {/* Search input */}
+              <div className="relative flex-1 max-w-sm">
+                <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Filter records by date or notes..."
+                  value={searchFilter}
+                  onChange={(e) => setSearchFilter(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                />
+              </div>
+
+              {/* Date Filters & Sort */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
+                  <span className="text-slate-500 text-[11px]">From:</span>
+                  <input
+                    ref={fromDateRef}
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="bg-transparent text-slate-800 dark:text-slate-200 text-xs focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => openDatePicker(fromDateRef)}
+                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-500"
+                  >
+                    <Calendar className="w-3 h-3" />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
+                  <span className="text-slate-500 text-[11px]">To:</span>
+                  <input
+                    ref={toDateRef}
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="bg-transparent text-slate-800 dark:text-slate-200 text-xs focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => openDatePicker(toDateRef)}
+                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-500"
+                  >
+                    <Calendar className="w-3 h-3" />
+                  </button>
+                </div>
+
+                {(dateFrom || dateTo) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDateFrom("");
+                      setDateTo("");
+                    }}
+                    className="px-2 py-1 text-[11px] text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded"
+                  >
+                    Clear Dates
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  title="Toggle Chronological / Reverse Sort"
+                >
+                  <ArrowUpDown className="w-3.5 h-3.5" />
+                  <span>{sortOrder === "asc" ? "Oldest First (Ledger)" : "Newest First"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={fetchBankData}
+                  disabled={loading}
+                  className="p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  title="Refresh Data"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Date-wise Ledger Table */}
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <span>{activeAccount?.account_code || "Selected Party"} Date-wise Settlement Ledger</span>
+                  <span className="text-xs text-slate-400 font-normal">
+                    ({activeAccount?.account_name || ""})
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Formula: Current Balance = Previous Balance + Order + COM - Paid
+                </p>
+              </div>
+              <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
+                {filteredRecords.length} records found
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800 font-semibold uppercase tracking-wider text-[11px]">
+                    <th className="py-3 px-4">Date</th>
+                    <th className="py-3 px-4 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <span>ORDER (INR)</span>
+                        <span title="Read Only: From System Allocations & Splits">
+                          <Lock className="w-3 h-3 text-slate-400" />
+                        </span>
+                      </div>
+                    </th>
+                    <th className="py-3 px-4 text-right">COM (INR)</th>
+                    <th className="py-3 px-4 text-right">PAID (INR)</th>
+                    <th className="py-3 px-4 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <span>RUNNING BAL (INR)</span>
+                        <Calculator className="w-3 h-3 text-teal-600 dark:text-teal-400" />
+                      </div>
+                    </th>
+                    <th className="py-3 px-4">Notes</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {loading ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-slate-500">
+                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-teal-600" />
+                        <span>Loading settlement records...</span>
+                      </td>
+                    </tr>
+                  ) : filteredRecords.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-slate-500 dark:text-slate-400">
+                        No settlement records recorded for this party yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredRecords.map((r, idx) => {
+                      const isPaidNeg = r.paid_inr < 0;
+                      const isBalNeg = r.balance_inr < 0;
+                      return (
+                        <tr
+                          key={r.id || idx}
+                          className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors group"
+                        >
+                          {/* Date */}
+                          <td className="py-3 px-4 font-mono font-medium text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                            {formatDateReadable(r.record_date)}
+                          </td>
+
+                          {/* ORDER (INR) - Read-only badge */}
+                          <td className="py-3 px-4 text-right font-mono text-slate-800 dark:text-slate-200">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {r.order_inr > 0 ? (
+                                <span className="font-semibold">{formatINR(r.order_inr)}</span>
+                              ) : (
+                                <span className="text-slate-400">₹ 0.00</span>
+                              )}
+                              <span className="text-[10px] text-slate-400 font-sans" title="Auto-fetched">🔒</span>
+                            </div>
+                          </td>
+
+                          {/* COM (INR) */}
+                          <td className="py-3 px-4 text-right font-mono text-slate-800 dark:text-slate-200">
+                            {r.commission_inr !== 0 ? (
+                              <span className="text-teal-700 dark:text-teal-400 font-medium">
+                                {formatINR(r.commission_inr)}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400">₹ 0.00</span>
+                            )}
+                          </td>
+
+                          {/* PAID (INR) - Handles negative values */}
+                          <td className="py-3 px-4 text-right font-mono">
+                            {r.paid_inr !== 0 ? (
+                              <span
+                                className={`font-medium ${
+                                  isPaidNeg
+                                    ? "text-rose-600 dark:text-rose-400 font-bold"
+                                    : "text-slate-800 dark:text-slate-200"
+                                }`}
+                              >
+                                {formatINR(r.paid_inr)}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400">₹ 0.00</span>
+                            )}
+                          </td>
+
+                          {/* RUNNING BAL (INR) */}
+                          <td className="py-3 px-4 text-right font-mono font-bold whitespace-nowrap">
+                            <span
+                              className={`px-2 py-0.5 rounded ${
+                                isBalNeg
+                                  ? "bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
+                                  : "bg-teal-50 text-teal-800 dark:bg-teal-950 dark:text-teal-300"
+                              }`}
+                            >
+                              {formatINR(r.balance_inr)}
+                            </span>
+                          </td>
+
+                          {/* Notes */}
+                          <td className="py-3 px-4 text-slate-500 dark:text-slate-400 max-w-xs truncate">
+                            {r.notes || "-"}
+                          </td>
+
+                          {/* Actions */}
+                          <td className="py-3 px-4 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => openEditModal(r)}
+                                className="p-1 text-slate-500 hover:text-teal-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
+                                title="Edit Commission or Paid"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeleteTarget(r)}
+                                className="p-1 text-slate-500 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
+                                title="Delete Record"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+                {filteredRecords.length > 0 && (
+                  <tfoot>
+                    <tr className="bg-slate-100 dark:bg-slate-800/90 font-bold border-t-2 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+                      <td className="py-3.5 px-4 text-xs tracking-wider uppercase">
+                        TOTAL ({activeAccount?.account_code || "PARTY"})
+                      </td>
+                      <td className="py-3.5 px-4 text-right font-mono text-xs">
+                        {formatINR(totalOrders)}
+                      </td>
+                      <td className="py-3.5 px-4 text-right font-mono text-xs">
+                        {formatINR(totalCommission)}
+                      </td>
+                      <td className="py-3.5 px-4 text-right font-mono text-xs">
+                        {formatINR(totalPaid)}
+                      </td>
+                      <td className="py-3.5 px-4 text-right font-mono text-xs">
+                        <div className="flex flex-col items-end">
+                          <span className="text-teal-700 dark:text-teal-300 text-sm font-bold">
+                            {formatINR(closingBalance)}
+                          </span>
+                          <span className="text-[10px] text-slate-500 font-normal">
+                            (Final Closing Balance)
+                          </span>
+                        </div>
+                      </td>
+                      <td colSpan={2} className="py-3.5 px-4 text-right text-[11px] text-slate-500 font-normal italic">
+                        * BAL represents the closing balance, not sum of daily balances
+                      </td>
+                    </tr>
+                  </tfoot>
+                )}
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD SETTLEMENT ENTRY MODAL */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in duration-150 my-8">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-teal-700 to-teal-800 px-6 py-4 text-white flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Landmark className="w-5 h-5 text-teal-200" />
-                <h3 className="text-base font-bold">Add Ledger Transaction</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <PlusCircle className="w-5 h-5 text-teal-600" />
+                  <span>Record Settlement Entry</span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Enter Commission and Payment for India Distributor
+                </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                className="text-teal-200 hover:text-white text-lg font-bold p-1 cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-sm font-bold p-1"
               >
                 ✕
               </button>
             </div>
 
             {addError && (
-              <div className="mx-6 mt-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+              <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>{addError}</span>
               </div>
             )}
 
-            <form onSubmit={handleAddTransaction} className="p-6 space-y-4">
-              {/* Account Selection */}
+            <form onSubmit={handleAddTransaction} className="space-y-4 text-xs">
+              {/* Distributor selection */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                  Account / Distributor *
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Distributor / India Party *
                 </label>
                 <select
                   value={addAccountId}
                   onChange={(e) => setAddAccountId(e.target.value)}
                   required
-                  className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
                 >
-                  <option value="">Select Account</option>
                   {accounts.map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.account_name} ({a.account_code})
+                      {a.account_code} - {a.account_name} (Closing: {formatINR(a.closing_balance || a.current_balance || 0)})
                     </option>
                   ))}
                 </select>
               </div>
 
-              {/* Date Input */}
+              {/* Date selection (default today) */}
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                    Date *
-                  </label>
-                  <span className="text-[10px] text-slate-400 font-mono font-semibold">DD-MM-YYYY</span>
-                </div>
-                <div className="relative">
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Record Date *
+                </label>
+                <div className="flex items-center gap-1.5">
                   <input
                     ref={addDateRef}
                     type="date"
-                    required
                     value={addDate}
                     onChange={(e) => setAddDate(e.target.value)}
-                    className="w-full text-xs font-medium border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 pr-10 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
+                    required
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
                   />
                   <button
                     type="button"
                     onClick={() => openDatePicker(addDateRef)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 p-1 cursor-pointer transition-colors"
-                    title="Choose from calendar"
+                    className="p-2 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400"
                   >
                     <Calendar className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
-              {/* Order Amount */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                  Order Amount (INR)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-sm">₹</span>
-                  <input
-                    type="number"
-                    step="any"
-                    placeholder="e.g. 384900"
-                    value={addOrder}
-                    onChange={(e) => setAddOrder(e.target.value)}
-                    className="w-full text-sm font-bold pl-8 pr-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs"
-                  />
-                </div>
-              </div>
-
-              {/* Commission (COM) */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                    Commission (COM) (INR)
-                  </label>
-                  <span className="text-[10px] text-teal-700 dark:text-teal-400 font-semibold">
-                    Added to balance
+              {/* ORDER (INR) - AUTOMATIC & READ ONLY */}
+              <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Auto-Linked Order (INR)</span>
+                  </span>
+                  <span className="text-[10px] font-semibold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800">
+                    READ ONLY
                   </span>
                 </div>
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-sm">₹</span>
+                <div className="text-base font-bold font-mono text-slate-900 dark:text-slate-100">
+                  {loadingAddOrder ? (
+                    <span className="text-xs text-slate-400 flex items-center gap-1">
+                      <RefreshCw className="w-3 h-3 animate-spin" /> Fetching order for date...
+                    </span>
+                  ) : (
+                    formatINR(addOrder)
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Automatically populated from remittance splits & distributor allocations. Never entered manually.
+                </p>
+              </div>
+
+              {/* COMMISSION & PAID INPUTS */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Commission / COM (INR)
+                  </label>
                   <input
                     type="number"
                     step="any"
-                    placeholder="e.g. 5000 (optional, default 0)"
+                    placeholder="0"
                     value={addCom}
                     onChange={(e) => setAddCom(e.target.value)}
-                    className="w-full text-sm font-bold pl-8 pr-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-teal-500"
                   />
-                </div>
-              </div>
-
-              {/* Paid Amount */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                    Paid / Funded Amount (INR)
-                  </label>
-                  <span className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold">
-                    Deducted from balance
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">
+                    Default 0 if no commission
                   </span>
                 </div>
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-sm">₹</span>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Paid / PAID (INR) *
+                  </label>
                   <input
                     type="number"
                     step="any"
-                    placeholder="e.g. 600000"
+                    placeholder="e.g. 1800000 or -56530"
                     value={addPaid}
                     onChange={(e) => setAddPaid(e.target.value)}
-                    className="w-full text-sm font-bold pl-8 pr-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs"
+                    required
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-teal-500"
                   />
-                </div>
-              </div>
-
-              {/* Calculated Balance Preview Box (READ ONLY) */}
-              <div className="p-3 bg-teal-50 dark:bg-teal-950/60 rounded-xl border border-teal-200/80 dark:border-teal-800/80 space-y-1.5 text-xs">
-                <div className="flex items-center justify-between font-bold text-teal-950 dark:text-teal-200">
-                  <span>Balance Calculation Preview:</span>
-                  <span className="text-[10px] uppercase font-mono px-1.5 py-0.2 rounded bg-teal-200 dark:bg-teal-800 text-teal-900 dark:text-teal-100">
-                    Read-Only
-                  </span>
-                </div>
-
-                <div className="space-y-0.5 text-slate-600 dark:text-slate-400 font-mono text-[11px]">
-                  <div className="flex justify-between">
-                    <span>Previous Balance:</span>
-                    <span>{formatINR(prevBalForAdd)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>+ Current Order:</span>
-                    <span>{formatINR(addOrderNum)}</span>
-                  </div>
-                  <div className="flex justify-between text-teal-700 dark:text-teal-400 font-semibold">
-                    <span>+ Current Commission:</span>
-                    <span>{formatINR(addComNum)}</span>
-                  </div>
-                  <div className="flex justify-between text-rose-600 dark:text-rose-400 font-semibold">
-                    <span>- Current Paid:</span>
-                    <span>{formatINR(addPaidNum)}</span>
-                  </div>
-                </div>
-
-                <div className="border-t border-teal-200 dark:border-teal-800 pt-1.5 flex justify-between items-center font-bold">
-                  <span className="text-teal-950 dark:text-teal-200 font-sans">
-                    Resulting Running Balance:
-                  </span>
-                  <span
-                    className={`font-mono text-base ${
-                      addCalculatedBalance < 0
-                        ? "text-rose-600 dark:text-rose-400"
-                        : "text-emerald-700 dark:text-emerald-400"
-                    }`}
-                  >
-                    {formatINR(addCalculatedBalance)}
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">
+                    Supports negative (e.g. -56,530)
                   </span>
                 </div>
               </div>
 
               {/* Notes */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                  Notes (Optional)
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Notes / Reference (Optional)
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Batch ref, settlement notes..."
+                  placeholder="e.g. Bank transfer ref, settlement slip..."
                   value={addNotes}
                   onChange={(e) => setAddNotes(e.target.value)}
-                  className="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
                 />
               </div>
 
+              {/* LIVE BALANCE PREVIEW */}
+              <div className="p-3 bg-teal-50/70 dark:bg-teal-950/40 rounded-xl border border-teal-200 dark:border-teal-800 space-y-1.5 text-[11px]">
+                <div className="font-bold text-teal-900 dark:text-teal-200 flex items-center justify-between">
+                  <span>Balance Calculation Preview:</span>
+                  <span className="font-mono text-xs">{formatINR(addCalculatedBalance)}</span>
+                </div>
+                <div className="text-slate-600 dark:text-slate-400 font-mono space-y-0.5">
+                  <div>Prev Bal: {formatINR(prevBalForAdd)}</div>
+                  <div>+ Order: {formatINR(addOrder)}</div>
+                  <div>+ Commission: {formatINR(addComNum)}</div>
+                  <div>- Paid: {formatINR(addPaidNum)}</div>
+                  <div className="border-t border-teal-200 dark:border-teal-800 pt-0.5 font-bold text-teal-800 dark:text-teal-300">
+                    = Resulting Bal: {formatINR(addCalculatedBalance)}
+                  </div>
+                </div>
+              </div>
+
               {/* Modal Actions */}
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  disabled={addSubmitting}
-                  className="px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={addSubmitting}
-                  className="px-5 py-2 text-xs font-bold bg-[#0F766E] hover:bg-[#0D9488] text-white rounded-lg transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold bg-[#0F766E] hover:bg-[#0D9488] text-white shadow-sm cursor-pointer disabled:opacity-50"
                 >
-                  {addSubmitting ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    <span>Save Transaction</span>
-                  )}
+                  {addSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <PlusCircle className="w-4 h-4" />}
+                  <span>Save Settlement</span>
                 </button>
               </div>
             </form>
@@ -908,161 +1298,149 @@ export default function BankDistripPage() {
         </div>
       )}
 
-      {/* EDIT TRANSACTION MODAL */}
+      {/* EDIT SETTLEMENT ENTRY MODAL */}
       {editRecord && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in duration-150 my-8">
-            <div className="bg-gradient-to-r from-teal-700 to-teal-800 px-6 py-4 text-white flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Edit3 className="w-5 h-5 text-teal-200" />
-                <h3 className="text-base font-bold">
-                  Edit Transaction ({editRecord.account_name})
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <Edit3 className="w-5 h-5 text-teal-600" />
+                  <span>Edit Settlement Entry</span>
                 </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Update Commission & Paid for {editRecord.account_code || "Distributor"}
+                </p>
               </div>
               <button
                 type="button"
                 onClick={() => setEditRecord(null)}
-                className="text-teal-200 hover:text-white text-lg font-bold p-1 cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-sm font-bold p-1"
               >
                 ✕
               </button>
             </div>
 
             {editError && (
-              <div className="mx-6 mt-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+              <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>{editError}</span>
               </div>
             )}
 
-            <form onSubmit={handleUpdateTransaction} className="p-6 space-y-4">
+            <form onSubmit={handleUpdateTransaction} className="space-y-4 text-xs">
+              {/* Date */}
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                    Date *
-                  </label>
-                  <span className="text-[10px] text-slate-400 font-mono font-semibold">DD-MM-YYYY</span>
-                </div>
-                <div className="relative">
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Record Date
+                </label>
+                <div className="flex items-center gap-1.5">
                   <input
                     ref={editDateRef}
                     type="date"
-                    required
                     value={editDateVal}
                     onChange={(e) => setEditDateVal(e.target.value)}
-                    className="w-full text-xs font-medium border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 pr-10 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
+                    required
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
                   />
                   <button
                     type="button"
                     onClick={() => openDatePicker(editDateRef)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 p-1 cursor-pointer transition-colors"
+                    className="p-2 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400"
                   >
                     <Calendar className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                  Order Amount (INR)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-sm">₹</span>
-                  <input
-                    type="number"
-                    step="any"
-                    value={editOrder}
-                    onChange={(e) => setEditOrder(e.target.value)}
-                    className="w-full text-sm font-bold pl-8 pr-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                    Commission (COM) (INR)
-                  </label>
-                  <span className="text-[10px] text-teal-700 dark:text-teal-400 font-semibold">
-                    Added to balance
+              {/* ORDER (INR) - READ ONLY */}
+              <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Auto-Linked Order (INR)</span>
+                  </span>
+                  <span className="text-[10px] font-semibold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800">
+                    READ ONLY
                   </span>
                 </div>
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-sm">₹</span>
+                <div className="text-base font-bold font-mono text-slate-900 dark:text-slate-100">
+                  {formatINR(editOrder)}
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Order amount cannot be manually edited here. It reflects the distributor's split & allocation totals.
+                </p>
+              </div>
+
+              {/* Commission & Paid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Commission / COM (INR)
+                  </label>
                   <input
                     type="number"
                     step="any"
                     value={editCom}
                     onChange={(e) => setEditCom(e.target.value)}
-                    className="w-full text-sm font-bold pl-8 pr-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-teal-500"
                   />
                 </div>
-              </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                    Paid Amount (INR)
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Paid / PAID (INR) *
                   </label>
-                  <span className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold">
-                    Deducted from balance
-                  </span>
-                </div>
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-sm">₹</span>
                   <input
                     type="number"
                     step="any"
                     value={editPaid}
                     onChange={(e) => setEditPaid(e.target.value)}
-                    className="w-full text-sm font-bold pl-8 pr-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs"
+                    required
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-teal-500"
                   />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">
+                    Supports negative (e.g. -56,530)
+                  </span>
                 </div>
               </div>
 
               {/* Notes */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                  Notes (Optional)
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Notes
                 </label>
                 <input
                   type="text"
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
-                  className="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
                 />
               </div>
 
-              {/* Recalculation Notice */}
-              <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-lg border border-amber-200 dark:border-amber-800/60 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2">
-                <Info className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-300 text-[11px] flex items-start gap-2">
+                <Info className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>
-                  <strong>Automatic Cumulative Recalculation:</strong> Saving changes will automatically update this transaction and all subsequent running balances for <strong>{editRecord.account_name}</strong>.
+                  Modifying COM or PAID will immediately recalculate the balance for this date and all subsequent running balances for this distributor.
                 </span>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+              {/* Modal Actions */}
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setEditRecord(null)}
-                  disabled={editSubmitting}
-                  className="px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={editSubmitting}
-                  className="px-5 py-2 text-xs font-bold bg-[#0F766E] hover:bg-[#0D9488] text-white rounded-lg transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold bg-[#0F766E] hover:bg-[#0D9488] text-white shadow-sm cursor-pointer disabled:opacity-50"
                 >
-                  {editSubmitting ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      <span>Recalculating...</span>
-                    </>
-                  ) : (
-                    <span>Update & Recalculate</span>
-                  )}
+                  {editSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                  <span>Update Settlement</span>
                 </button>
               </div>
             </form>
@@ -1070,56 +1448,39 @@ export default function BankDistripPage() {
         </div>
       )}
 
-      {/* DELETE TRANSACTION CONFIRMATION MODAL */}
+      {/* DELETE CONFIRMATION MODAL */}
       {deleteTarget && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-800 p-6 space-y-4 animate-in fade-in zoom-in duration-150">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
-                <Trash2 className="w-5 h-5" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex items-center gap-3 text-rose-600">
+              <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-950 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  Delete Ledger Entry?
+                  Delete Settlement Record?
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {deleteTarget.record_date} • {deleteTarget.account_name}
+                  Date: {formatDateReadable(deleteTarget.record_date)} | Paid: {formatINR(deleteTarget.paid_inr)}
                 </p>
               </div>
             </div>
 
             {deleteError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
-                <span>{deleteError}</span>
+              <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300">
+                {deleteError}
               </div>
             )}
 
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl text-xs space-y-1.5 border border-slate-200 dark:border-slate-700 font-mono">
-              <div className="flex justify-between">
-                <span className="text-slate-500 font-sans">Order:</span>
-                <span>{formatINR(deleteTarget.order_inr)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500 font-sans">Commission:</span>
-                <span>{formatINR(deleteTarget.commission_inr)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500 font-sans">Paid:</span>
-                <span>{formatINR(deleteTarget.paid_inr)}</span>
-              </div>
-            </div>
-
             <p className="text-xs text-slate-600 dark:text-slate-400">
-              Are you sure? Once deleted, all subsequent balances for <strong>{deleteTarget.account_name}</strong> will be automatically recalculated.
+              Are you sure you want to remove this settlement entry? All subsequent running balances for this distributor will automatically recalculate.
             </p>
 
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setDeleteTarget(null)}
-                disabled={deleteSubmitting}
-                className="px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-xs"
               >
                 Cancel
               </button>
@@ -1127,16 +1488,10 @@ export default function BankDistripPage() {
                 type="button"
                 onClick={handleDeleteTransaction}
                 disabled={deleteSubmitting}
-                className="px-5 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold bg-rose-600 hover:bg-rose-700 text-white text-xs shadow-sm cursor-pointer disabled:opacity-50"
               >
-                {deleteSubmitting ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Recalculating...</span>
-                  </>
-                ) : (
-                  <span>Delete & Recalculate</span>
-                )}
+                {deleteSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                <span>Confirm Delete</span>
               </button>
             </div>
           </div>
@@ -1145,98 +1500,104 @@ export default function BankDistripPage() {
 
       {/* NEW ACCOUNT MODAL */}
       {showNewAccModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-800 p-6 space-y-4 animate-in fade-in zoom-in duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-teal-600" />
-                <span>Create Bank / Distributor Account</span>
-              </h3>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-teal-600" />
+                  <span>Register Distributor Account</span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Create a new bank or India distributor settlement ledger
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => setShowNewAccModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-lg font-bold cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-sm font-bold p-1"
               >
                 ✕
               </button>
             </div>
 
             {newAccError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+              <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>{newAccError}</span>
               </div>
             )}
 
-            <form onSubmit={handleCreateNewAccount} className="space-y-4">
+            <form onSubmit={handleCreateNewAccount} className="space-y-4 text-xs">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                  Account Code *
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Account Code (Short ID) *
                 </label>
                 <input
                   type="text"
-                  required
-                  placeholder="e.g. MK-2, TALLY, SALA"
+                  placeholder="e.g. MK, SALA, SARABU, NNG"
                   value={newAccCode}
-                  onChange={(e) => setNewAccCode(e.target.value)}
-                  className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 uppercase"
+                  onChange={(e) => setNewAccCode(e.target.value.toUpperCase())}
+                  required
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-bold focus:outline-none focus:ring-1 focus:ring-teal-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                  Account Name *
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Distributor Name *
                 </label>
                 <input
                   type="text"
-                  required
-                  placeholder="e.g. MK (separate ledger) or USAIN"
+                  placeholder="e.g. MK India Distribution"
                   value={newAccName}
                   onChange={(e) => setNewAccName(e.target.value)}
-                  className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  required
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Bank Name (Optional)
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. HDFC Bank, SBI..."
+                  placeholder="e.g. HDFC Bank, ICICI..."
                   value={newAccBank}
                   onChange={(e) => setNewAccBank(e.target.value)}
-                  className="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Account Number (Optional)
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. 50100..."
+                  placeholder="e.g. 50100234891"
                   value={newAccNumber}
                   onChange={(e) => setNewAccNumber(e.target.value)}
-                  className="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowNewAccModal(false)}
-                  className="px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={newAccSubmitting}
-                  className="px-5 py-2 text-xs font-bold bg-[#0F766E] hover:bg-[#0D9488] text-white rounded-lg transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold bg-[#0F766E] hover:bg-[#0D9488] text-white shadow-sm cursor-pointer disabled:opacity-50"
                 >
-                  {newAccSubmitting ? "Creating..." : "Create Account"}
+                  {newAccSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Building2 className="w-4 h-4" />}
+                  <span>Register Account</span>
                 </button>
               </div>
             </form>

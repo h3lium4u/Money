@@ -205,14 +205,6 @@ export default function PartyDetailPage() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <Link
-            href={`/transactions/direct?partyId=${party.id}`}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold bg-[#0F766E] hover:bg-[#0D9488] text-white shadow-sm cursor-pointer transition-all"
-            title="Create Direct Party Transfer"
-          >
-            <Zap className="w-3.5 h-3.5" />
-            <span>+ Direct Transfer</span>
-          </Link>
 
           <button
             type="button"

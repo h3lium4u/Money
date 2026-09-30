@@ -169,13 +169,22 @@ html.dark .divide-slate-200 {
   border-color: #1E293B !important;
 }
 
+html.dark thead,
+html.dark thead tr,
+html.dark thead th,
 html.dark thead.bg-slate-50 {
   background-color: #0D131F !important;
   color: #94A3B8 !important;
   border-color: #1E293B !important;
 }
 
-html.dark tr.hover\:bg-slate-50\/80:hover {
+html.dark [class*="bg-slate-50"],
+html.dark [class*="bg-slate-100"] {
+  background-color: #0F172A !important;
+}
+
+html.dark tr.hover\:bg-slate-50\/80:hover,
+html.dark tr.hover\:bg-teal-50\/30:hover {
   background-color: rgba(255, 255, 255, 0.04) !important;
 }
 
