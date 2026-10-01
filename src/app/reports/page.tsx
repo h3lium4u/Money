@@ -129,7 +129,7 @@ export default function ReportsPage() {
 
           <a
             href={`/api/reports/export-excel${fromDate && toDate ? `?from=${fromDate}&to=${toDate}` : ""}`}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition-all"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-teal-700 text-white hover:bg-teal-800 shadow-sm transition-all"
             title="Download complete Master Excel Workbook containing all sheets, customer IDs, and financial breakdowns"
           >
             <FileSpreadsheet className="w-4 h-4" />
@@ -142,7 +142,7 @@ export default function ReportsPage() {
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 no-print">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-xs font-bold text-slate-700 uppercase tracking-wider mr-2 flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5 text-emerald-600" /> Period:
+            <Clock className="w-3.5 h-3.5 text-teal-700" /> Period:
           </span>
           {[
             { id: "all", label: "All Time" },
@@ -157,7 +157,7 @@ export default function ReportsPage() {
               onClick={() => setPeriod(item.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 period === item.id
-                  ? "bg-emerald-600 text-white shadow-sm"
+                  ? "bg-teal-700 text-white shadow-sm"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
@@ -225,28 +225,56 @@ export default function ReportsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="space-y-1">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total INR Sent</span>
-            <p className="text-xl font-bold text-slate-900">{loading ? "..." : formatINR(kpis?.totalInrProcessed)}</p>
-            <p className="text-[11px] text-slate-400">{kpis?.transactionCount || 0} Transfers</p>
+            {loading ? (
+              <div className="h-7 w-32 bg-slate-200 animate-pulse rounded my-1" />
+            ) : (
+              <p className="text-xl font-bold text-slate-900">{formatINR(kpis?.totalInrProcessed)}</p>
+            )}
+            {loading ? (
+              <div className="h-3.5 w-16 bg-slate-200 animate-pulse rounded" />
+            ) : (
+              <p className="text-[11px] text-slate-400">{kpis?.transactionCount || 0} Transfers</p>
+            )}
           </div>
 
           <div className="space-y-1">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total AED</span>
-            <p className="text-xl font-bold text-slate-900">{loading ? "..." : formatAED(kpis?.totalAedCharged)}</p>
-            <p className="text-[11px] text-emerald-600 font-semibold">Collected: {formatAED(kpis?.totalAedCollected)}</p>
+            {loading ? (
+              <div className="h-7 w-28 bg-slate-200 animate-pulse rounded my-1" />
+            ) : (
+              <p className="text-xl font-bold text-slate-900">{formatAED(kpis?.totalAedCharged)}</p>
+            )}
+            {loading ? (
+              <div className="h-3.5 w-24 bg-slate-200 animate-pulse rounded" />
+            ) : (
+              <p className="text-[11px] text-teal-700 font-semibold">Collected: {formatAED(kpis?.totalAedCollected)}</p>
+            )}
           </div>
 
           <div className="space-y-1">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Delivery Fee Share (20%)</span>
-            <p className="text-xl font-bold text-slate-900">{loading ? "..." : formatAED(kpis?.deliveryChargesAed)}</p>
+            {loading ? (
+              <div className="h-7 w-24 bg-slate-200 animate-pulse rounded my-1" />
+            ) : (
+              <p className="text-xl font-bold text-slate-900">{formatAED(kpis?.deliveryChargesAed)}</p>
+            )}
             <p className="text-[11px] text-slate-400">Share from profit</p>
           </div>
 
           <div className="space-y-1">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Net Profit</span>
-            <p className={`text-xl font-bold ${kpis?.netProfitAed >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-              {loading ? "..." : formatAED(kpis?.netProfitAed)}
-            </p>
-            <p className="text-[11px] text-slate-400">Gross: {formatAED(kpis?.grossProfitAed)}</p>
+            {loading ? (
+              <div className="h-7 w-28 bg-slate-200 animate-pulse rounded my-1" />
+            ) : (
+              <p className={`text-xl font-bold ${kpis?.netProfitAed >= 0 ? "text-teal-700" : "text-rose-600"}`}>
+                {formatAED(kpis?.netProfitAed)}
+              </p>
+            )}
+            {loading ? (
+              <div className="h-3.5 w-20 bg-slate-200 animate-pulse rounded" />
+            ) : (
+              <p className="text-[11px] text-slate-400">Gross: {formatAED(kpis?.grossProfitAed)}</p>
+            )}
           </div>
         </div>
       </div>
@@ -260,25 +288,25 @@ export default function ReportsPage() {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+            <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 text-[10px] uppercase tracking-wider">
               <tr>
-                <th className="py-3 px-4">Date</th>
-                <th className="py-3 px-4 text-center">Transfers</th>
-                <th className="py-3 px-4 text-right">INR Sent</th>
-                <th className="py-3 px-4 text-right">Customer Pays (AED)</th>
-                <th className="py-3 px-4 text-right">Net Profit</th>
+                <th className="py-2.5 px-3">Date</th>
+                <th className="py-2.5 px-3 text-center">Transfers</th>
+                <th className="py-2.5 px-3 text-right">INR Sent</th>
+                <th className="py-2.5 px-3 text-right">Customer Pays (AED)</th>
+                <th className="py-2.5 px-3 text-right">Net Profit</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 font-medium">
               {dailyRows.map((r, i) => (
                 <tr key={i} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-3 px-4 font-medium text-slate-900">{r.date}</td>
-                  <td className="py-3 px-4 text-center font-mono text-slate-600">{r.count}</td>
-                  <td className="py-3 px-4 text-right font-medium text-slate-900">{formatINR(r.inrVolume)}</td>
-                  <td className="py-3 px-4 text-right font-medium text-slate-900">{formatAED(r.aedVolume)}</td>
+                  <td className="py-2.5 px-3 font-medium text-slate-900 whitespace-nowrap">{r.date}</td>
+                  <td className="py-2.5 px-3 text-center font-mono text-slate-600">{r.count}</td>
+                  <td className="py-2.5 px-3 text-right font-medium text-slate-900 whitespace-nowrap">{formatINR(r.inrVolume)}</td>
+                  <td className="py-2.5 px-3 text-right font-medium text-slate-900 whitespace-nowrap">{formatAED(r.aedVolume)}</td>
                   <td
-                    className={`py-3 px-4 text-right font-bold ${
-                      r.netProfit >= 0 ? "text-emerald-600" : "text-rose-600"
+                    className={`py-2.5 px-3 text-right font-bold whitespace-nowrap ${
+                      r.netProfit >= 0 ? "text-teal-700" : "text-rose-600"
                     }`}
                   >
                     {formatAED(r.netProfit)}

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { ReceiptPrinterModal } from "@/components/animation/ReceiptPrinterModal";
 import { getTodayDateString } from "@/lib/date-utils";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 export default function PartyDetailPage() {
   const params = useParams();
@@ -155,8 +156,16 @@ export default function PartyDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-6xl mx-auto py-12 text-center text-slate-400 text-xs">
-        Loading party financial statement...
+      <div className="space-y-6 max-w-6xl mx-auto pb-12 animate-pulse">
+        <div className="h-4 w-48 bg-slate-200 dark:bg-slate-700 rounded" />
+        <div className="h-24 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="h-20 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800" />
+          <div className="h-20 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800" />
+          <div className="h-20 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800" />
+          <div className="h-20 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800" />
+        </div>
+        <div className="h-64 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800" />
       </div>
     );
   }
@@ -177,6 +186,11 @@ export default function PartyDetailPage() {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
+      <Breadcrumbs items={[
+        { label: "Dashboard", href: "/dashboard" },
+        { label: "Parties", href: "/parties" },
+        { label: party?.name || "Party Detail" },
+      ]} />
       {/* Top Breadcrumb & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -230,7 +244,7 @@ export default function PartyDetailPage() {
               setPayDate(getTodayDateString());
               setShowPayModal(true);
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-teal-700 text-white hover:bg-teal-800 shadow-sm cursor-pointer"
           >
             <CreditCard className="w-3.5 h-3.5" />
             <span>Record Settlement</span>
@@ -262,7 +276,7 @@ export default function PartyDetailPage() {
           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
             Total Settlements Paid (AED)
           </span>
-          <p className="text-xl font-mono font-bold text-emerald-700 dark:text-emerald-400 mt-1">
+          <p className="text-xl font-mono font-bold text-teal-700 dark:text-teal-400 mt-1">
             {Number(party.total_paid || 0).toFixed(2)} AED
           </p>
         </div>
@@ -317,7 +331,7 @@ export default function PartyDetailPage() {
                           className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                             isTxn
                               ? "bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950 dark:text-blue-300"
-                              : "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300"
+                              : "bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-950 dark:text-teal-300"
                           }`}
                         >
                           {isTxn ? "TRANSFER" : "SETTLEMENT"}
@@ -333,7 +347,7 @@ export default function PartyDetailPage() {
                       <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">
                         {e.debit_aed ? Number(e.debit_aed).toFixed(2) : "-"}
                       </td>
-                      <td className="py-3 px-4 font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                      <td className="py-3 px-4 font-mono font-bold text-teal-700 dark:text-teal-400">
                         {e.credit_aed ? Number(e.credit_aed).toFixed(2) : "-"}
                       </td>
                       <td className="py-3 px-4 font-mono font-bold text-rose-700 dark:text-rose-400">
@@ -365,7 +379,7 @@ export default function PartyDetailPage() {
           <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-emerald-600" />
+                <CreditCard className="w-5 h-5 text-teal-700" />
                 <span>Record Party Settlement</span>
               </h3>
               <button
@@ -396,7 +410,7 @@ export default function PartyDetailPage() {
                     required
                     value={payDate}
                     onChange={(e) => setPayDate(e.target.value)}
-                    className="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
 
@@ -405,7 +419,7 @@ export default function PartyDetailPage() {
                   <select
                     value={payMethod}
                     onChange={(e) => setPayMethod(e.target.value)}
-                    className="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
                   >
                     <option value="CASH">CASH (Physical)</option>
                     <option value="BANK_TRANSFER">BANK TRANSFER</option>
@@ -423,7 +437,7 @@ export default function PartyDetailPage() {
                   placeholder="0.00"
                   value={payAmount}
                   onChange={(e) => setPayAmount(e.target.value)}
-                  className="w-full text-sm font-mono font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full text-sm font-mono font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
 
@@ -449,7 +463,7 @@ export default function PartyDetailPage() {
                 <button
                   type="submit"
                   disabled={isSubmittingPay}
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors cursor-pointer disabled:opacity-50"
                 >
                   {isSubmittingPay ? "Saving..." : "Record Settlement"}
                 </button>

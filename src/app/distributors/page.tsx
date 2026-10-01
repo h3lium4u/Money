@@ -465,7 +465,7 @@ export default function IndiaDistributionPage() {
     filterStatus !== "all";
 
   const colorClasses: Record<string, { bg: string; border: string; text: string; badge: string }> = {
-    emerald: { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-900", badge: "bg-emerald-100 text-emerald-800 border-emerald-300" },
+    emerald: { bg: "bg-teal-50", border: "border-teal-200", text: "text-teal-900", badge: "bg-teal-100 text-teal-800 border-teal-300" },
     blue: { bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-900", badge: "bg-blue-100 text-blue-800 border-blue-300" },
     violet: { bg: "bg-violet-50", border: "border-violet-200", text: "text-violet-900", badge: "bg-violet-100 text-violet-800 border-violet-300" },
     amber: { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-900", badge: "bg-amber-100 text-amber-800 border-amber-300" },
@@ -482,7 +482,7 @@ export default function IndiaDistributionPage() {
         <div>
           <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
             <span>Distribution Partners & Splits</span>
-            <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-mono font-bold">
+            <span className="text-xs bg-teal-100 text-teal-800 px-2 py-0.5 rounded font-mono font-bold">
               Separate from Dubai Accounting
             </span>
           </h2>
@@ -501,7 +501,7 @@ export default function IndiaDistributionPage() {
 
           <button
             onClick={handleOpenTopAddModal}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-teal-700 text-white text-xs font-bold rounded-lg hover:bg-teal-800 shadow-sm"
           >
             <PlusCircle className="w-4 h-4" />
             <span>
@@ -519,7 +519,7 @@ export default function IndiaDistributionPage() {
           onClick={() => setActiveTab("splits")}
           className={`pb-3 px-3 text-xs font-bold transition-all border-b-2 ${
             activeTab === "splits"
-              ? "border-emerald-600 text-emerald-600"
+              ? "border-teal-700 text-teal-700"
               : "border-transparent text-slate-500 hover:text-slate-900"
           }`}
         >
@@ -529,7 +529,7 @@ export default function IndiaDistributionPage() {
           onClick={() => setActiveTab("partners")}
           className={`pb-3 px-3 text-xs font-bold transition-all border-b-2 ${
             activeTab === "partners"
-              ? "border-emerald-600 text-emerald-600"
+              ? "border-teal-700 text-teal-700"
               : "border-transparent text-slate-500 hover:text-slate-900"
           }`}
         >
@@ -554,7 +554,7 @@ export default function IndiaDistributionPage() {
       {activeTab === "splits" && (
         <div className="space-y-4">
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 flex items-start gap-3">
-            <Split className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+            <Split className="w-5 h-5 text-teal-700 shrink-0 mt-0.5" />
             <div>
               <p className="font-bold text-slate-900">One Customer Transaction ➔ Multiple India Distributions</p>
               <p className="text-slate-500 mt-0.5">
@@ -568,7 +568,7 @@ export default function IndiaDistributionPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
               <div>
                 <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                  <User className="w-4 h-4 text-emerald-600" />
+                  <User className="w-4 h-4 text-teal-700" />
                   <span>Customer Orders & Remaining Allocation</span>
                 </h3>
                 <p className="text-[11px] text-slate-500">
@@ -601,7 +601,7 @@ export default function IndiaDistributionPage() {
                       onClick={() => handleSelectTxn(t.id)}
                       className={`cursor-pointer p-3 rounded-lg border text-left transition-all ${
                         isSelected
-                          ? "bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/20 shadow-sm"
+                          ? "bg-teal-50 border-teal-500 ring-2 ring-teal-500/20 shadow-sm"
                           : "bg-slate-50/70 hover:bg-white border-slate-200 hover:border-slate-300"
                       }`}
                     >
@@ -615,7 +615,7 @@ export default function IndiaDistributionPage() {
                         <span
                           className={`text-[10px] font-bold px-1.5 py-0.2 rounded border shrink-0 ${
                             isComplete
-                              ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                              ? "bg-teal-100 text-teal-800 border-teal-300"
                               : "bg-amber-100 text-amber-900 border-amber-300"
                           }`}
                         >
@@ -635,7 +635,7 @@ export default function IndiaDistributionPage() {
                               e.stopPropagation();
                               openAddModalForTxn(t);
                             }}
-                            className="text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-2 py-0.5 rounded shadow-sm"
+                            className="text-[10px] font-bold text-white bg-teal-700 hover:bg-teal-800 px-2 py-0.5 rounded shadow-sm"
                           >
                             + Split
                           </button>
@@ -650,14 +650,14 @@ export default function IndiaDistributionPage() {
 
           {/* ACTIVE SELECTED CUSTOMER BANNER */}
           {selectedTxn && (
-            <div className="p-4 bg-emerald-50 border-2 border-emerald-400 rounded-xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 animate-in fade-in duration-150">
+            <div className="p-4 bg-teal-50 border-2 border-teal-400 rounded-xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 animate-in fade-in duration-150">
               <div className="space-y-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] uppercase tracking-wider font-extrabold text-emerald-950 bg-emerald-200 px-2 py-0.5 rounded">
+                  <span className="text-[10px] uppercase tracking-wider font-extrabold text-teal-950 bg-teal-200 px-2 py-0.5 rounded">
                     Selected Customer
                   </span>
                   <span className="text-base font-extrabold text-slate-900">{selectedTxn.customer_name}</span>
-                  <span className="font-mono text-xs font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-emerald-300">
+                  <span className="font-mono text-xs font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-teal-300">
                     {selectedTxn.transaction_number}
                   </span>
                 </div>
@@ -670,14 +670,14 @@ export default function IndiaDistributionPage() {
                       className={
                         (selectedTxn.remaining_inr || 0) > 0
                           ? "text-amber-800 font-extrabold text-sm"
-                          : "text-emerald-700 font-bold"
+                          : "text-teal-700 font-bold"
                       }
                     >
                       {formatINR(selectedTxn.remaining_inr)}
                     </strong>
                   </span>
                   {(selectedTxn.remaining_inr || 0) > 0 && numberToIndianWords(selectedTxn.remaining_inr) && (
-                    <span className="text-[11px] text-emerald-900 bg-white px-2 py-0.5 rounded border border-emerald-200 font-medium">
+                    <span className="text-[11px] text-teal-900 bg-white px-2 py-0.5 rounded border border-teal-200 font-medium">
                       ({numberToIndianWords(selectedTxn.remaining_inr)})
                     </span>
                   )}
@@ -689,7 +689,7 @@ export default function IndiaDistributionPage() {
                   <button
                     type="button"
                     onClick={() => openAddModalForTxn(selectedTxn)}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-lg shadow-sm"
                   >
                     <PlusCircle className="w-4 h-4" />
                     <span>+ Add Split for {selectedTxn.customer_name} ({formatINR(selectedTxn.remaining_inr)})</span>
@@ -722,7 +722,7 @@ export default function IndiaDistributionPage() {
                   placeholder="Search customer, distributor, txn…"
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-slate-50"
+                  className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 bg-slate-50"
                 />
               </div>
 
@@ -730,7 +730,7 @@ export default function IndiaDistributionPage() {
               <select
                 value={filterDistributor}
                 onChange={(e) => setFilterDistributor(e.target.value)}
-                className="px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-slate-50 text-slate-700"
+                className="px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 bg-slate-50 text-slate-700"
               >
                 <option value="all">All Distributors</option>
                 {confirmedIndiaParties.map((p) => (
@@ -742,7 +742,7 @@ export default function IndiaDistributionPage() {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-slate-50 text-slate-700"
+                className="px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 bg-slate-50 text-slate-700"
               >
                 <option value="all">All Statuses</option>
                 <option value="ALLOCATED">Allocated</option>
@@ -783,7 +783,7 @@ export default function IndiaDistributionPage() {
                 {" "}{groupByDistributor ? "splits" : "customer transactions"} (<strong className="text-slate-800">{splits.length}</strong> splits total)
               </span>
               {activeFilters && (
-                <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.5 rounded font-bold">
+                <span className="bg-teal-100 text-teal-800 border border-teal-300 px-1.5 py-0.5 rounded font-bold">
                   Filtered
                 </span>
               )}
@@ -791,12 +791,12 @@ export default function IndiaDistributionPage() {
                 <>
                   <span className="text-slate-300">|</span>
                   <span>
-                    Customer: <strong className="text-emerald-700">{selectedTxn?.customer_name}</strong>
+                    Customer: <strong className="text-teal-700">{selectedTxn?.customer_name}</strong>
                   </span>
                   <button
                     type="button"
                     onClick={() => setSelectedTxnId(null)}
-                    className="text-emerald-700 font-bold hover:underline"
+                    className="text-teal-700 font-bold hover:underline"
                   >
                     View all →
                   </button>
@@ -810,8 +810,21 @@ export default function IndiaDistributionPage() {
             {groupByDistributor ? (
               /* ── GROUPED VIEW ── */
               displayedSplits.length === 0 ? (
-                <div className="px-4 py-10 text-center text-slate-400 text-xs">
-                  {activeFilters ? "No records match the current filters." : "No distribution splits recorded yet."}
+                <div className="px-6 py-16 flex flex-col items-center gap-3 text-center">
+                  <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                    <Split className="w-7 h-7 text-slate-400 dark:text-slate-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">No distribution splits found</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Try adjusting your filters or add a new split</p>
+                  </div>
+                  <button
+                    onClick={handleOpenTopAddModal}
+                    className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 transition"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" />
+                    Add Split
+                  </button>
                 </div>
               ) : (
                 <div className="divide-y divide-slate-200">
@@ -841,15 +854,12 @@ export default function IndiaDistributionPage() {
                         <table className="w-full text-left text-xs">
                           <thead className="bg-slate-50/70 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-100">
                             <tr>
-                              <th className="px-4 py-2">Split Date</th>
-                              <th className="px-4 py-2">Txn</th>
-                              <th className="px-4 py-2">Customer</th>
-                              <th className="px-4 py-2">INR Allocated</th>
-                              <th className="px-4 py-2">Rate</th>
-                              <th className="px-4 py-2">AED</th>
-                              <th className="px-4 py-2">Status</th>
-                              <th className="px-4 py-2">Notes</th>
-                              <th className="px-4 py-2 text-center">Actions</th>
+                              <th className="px-3 py-2">Txn / Date</th>
+                              <th className="px-3 py-2">Customer</th>
+                              <th className="px-3 py-2">INR Allocated</th>
+                              <th className="px-3 py-2">AED / Rate</th>
+                              <th className="px-3 py-2">Status & Notes</th>
+                              <th className="px-3 py-2 text-center">Actions</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-50 font-medium">
@@ -861,31 +871,35 @@ export default function IndiaDistributionPage() {
                               return (
                                 <tr
                                   key={s.id}
-                                  className={`hover:bg-slate-50/60 transition-colors ${isCustomerSelected ? "bg-emerald-50/30" : ""}`}
+                                  className={`hover:bg-slate-50/60 transition-colors ${isCustomerSelected ? "bg-teal-50/30" : ""}`}
                                 >
-                                  <td className="px-4 py-2.5 text-slate-600">{s.split_date}</td>
-                                  <td className="px-4 py-2.5 font-mono font-bold text-slate-800 text-[11px]">{s.transaction_number}</td>
-                                  <td className="px-4 py-2.5">
+                                  <td className="px-3 py-2 whitespace-nowrap">
+                                    <div className="font-mono font-bold text-slate-800 text-[11px]">{s.transaction_number}</div>
+                                    <div className="text-[10px] text-slate-500">{s.split_date}</div>
+                                  </td>
+                                  <td className="px-3 py-2">
                                     <button
                                       type="button"
                                       onClick={() => handleSelectTxn(rowTxn?.id || s.transaction_id)}
                                       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold transition-all ${
                                         isCustomerSelected
-                                          ? "bg-emerald-600 text-white"
-                                          : "text-slate-800 bg-slate-100 hover:bg-emerald-100 hover:text-emerald-900 border border-slate-200"
+                                          ? "bg-teal-700 text-white"
+                                          : "text-slate-800 bg-slate-100 hover:bg-teal-100 hover:text-teal-900 border border-slate-200"
                                       }`}
                                     >
-                                      <User className="w-3 h-3" />
-                                      <span>{s.customer_name}</span>
+                                      <User className="w-3 h-3 shrink-0" />
+                                      <span className="truncate max-w-[120px]">{s.customer_name}</span>
                                       {s.customer_code && (
-                                        <span className="text-[10px] font-mono opacity-70 ml-0.5">({s.customer_code})</span>
+                                        <span className="text-[10px] font-mono opacity-70">({s.customer_code})</span>
                                       )}
                                     </button>
                                   </td>
-                                  <td className="px-4 py-2.5 font-bold text-slate-900">{formatINR(s.inr_amount)}</td>
-                                  <td className="px-4 py-2.5 font-mono text-slate-600">{s.wholesale_rate?.toFixed(2) ?? "-"}</td>
-                                  <td className="px-4 py-2.5 text-slate-700">{s.aed_equivalent ? formatAED(s.aed_equivalent) : "-"}</td>
-                                  <td className="px-4 py-2.5">
+                                  <td className="px-3 py-2 font-bold text-slate-900 whitespace-nowrap">{formatINR(s.inr_amount)}</td>
+                                  <td className="px-3 py-2 whitespace-nowrap">
+                                    <div className="text-slate-700 font-semibold">{s.aed_equivalent ? formatAED(s.aed_equivalent) : "-"}</div>
+                                    <div className="text-[10px] font-mono text-slate-500">Rate: {s.wholesale_rate?.toFixed(2) ?? "-"}</div>
+                                  </td>
+                                  <td className="px-3 py-2">
                                     <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
                                       s.status === "COMPLETED"
                                         ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
@@ -893,13 +907,17 @@ export default function IndiaDistributionPage() {
                                     }`}>
                                       {s.status}
                                     </span>
+                                    {s.notes && (
+                                      <div className="text-[10px] text-slate-500 max-w-[120px] truncate mt-0.5" title={s.notes}>
+                                        {s.notes}
+                                      </div>
+                                    )}
                                   </td>
-                                  <td className="px-4 py-2.5 text-slate-500 max-w-xs truncate">{s.notes || "-"}</td>
-                                  <td className="px-4 py-2.5 text-center">
+                                  <td className="px-3 py-2 text-center whitespace-nowrap">
                                     <div className="flex items-center justify-center gap-1.5">
                                       {rowTxn && (rowTxn.remaining_inr || 0) > 0 && (
                                         <button type="button" onClick={() => openAddModalForTxn(rowTxn)}
-                                          className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 rounded border border-emerald-300">
+                                          className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-teal-800 bg-teal-100 hover:bg-teal-200 rounded border border-teal-300">
                                           <PlusCircle className="w-3 h-3" />+ Split
                                         </button>
                                       )}
@@ -930,46 +948,54 @@ export default function IndiaDistributionPage() {
                   <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200 text-[10px]">
                     <tr>
                       <th
-                        className="px-4 py-3 cursor-pointer select-none hover:text-slate-800"
+                        className="px-3 py-2.5 cursor-pointer select-none hover:text-slate-800"
                         onClick={() => handleSortClick("date")}
                       >
-                        Split Date <SortIcon field="date" />
+                        Txn ID / Date <SortIcon field="date" />
                       </th>
-                      <th className="px-4 py-3">Remittance Txn</th>
                       <th
-                        className="px-4 py-3 cursor-pointer select-none hover:text-slate-800"
+                        className="px-3 py-2.5 cursor-pointer select-none hover:text-slate-800"
                         onClick={() => handleSortClick("customer")}
                       >
                         Customer <SortIcon field="customer" />
                       </th>
                       <th
-                        className="px-4 py-3 cursor-pointer select-none hover:text-slate-800"
+                        className="px-3 py-2.5 cursor-pointer select-none hover:text-slate-800"
                         onClick={() => handleSortClick("distributor")}
                       >
                         India Distributor(s) <SortIcon field="distributor" />
                       </th>
                       <th
-                        className="px-4 py-3 cursor-pointer select-none hover:text-slate-800"
+                        className="px-3 py-2.5 cursor-pointer select-none hover:text-slate-800"
                         onClick={() => handleSortClick("amount")}
                       >
-                        INR Allocated <SortIcon field="amount" />
+                        INR Allocation <SortIcon field="amount" />
                       </th>
-                      <th className="px-4 py-3">Wholesale Rate</th>
-                      <th className="px-4 py-3">AED Equivalent</th>
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3">Notes</th>
-                      <th className="px-4 py-3 text-center">Actions</th>
+                      <th className="px-3 py-2.5">AED / Rate</th>
+                      <th className="px-3 py-2.5">Status & Notes</th>
+                      <th className="px-3 py-2.5 text-center">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-medium">
                     {displayedTxnRows.length === 0 ? (
                       <tr>
-                        <td colSpan={10} className="px-4 py-8 text-center text-slate-400">
-                          {activeFilters
-                            ? "No records match the current filters."
-                            : selectedTxnId
-                            ? `No splits recorded yet for ${selectedTxn?.customer_name}. Click "+ Add Split for ${selectedTxn?.customer_name}" above to allocate.`
-                            : "No distribution splits recorded yet."}
+                        <td colSpan={7} className="px-6 py-16 text-center">
+                          <div className="flex flex-col items-center gap-3">
+                            <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                              <Split className="w-7 h-7 text-slate-400 dark:text-slate-500" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">No distribution splits found</p>
+                              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Try adjusting your filters or add a new split</p>
+                            </div>
+                            <button
+                              onClick={handleOpenTopAddModal}
+                              className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 transition"
+                            >
+                              <PlusCircle className="w-3.5 h-3.5" />
+                              Add Split
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ) : (
@@ -982,46 +1008,39 @@ export default function IndiaDistributionPage() {
                             <tr
                               className={`transition-colors ${
                                 row.is_fully_allocated
-                                  ? "bg-emerald-50/20 hover:bg-emerald-50/40"
+                                  ? "bg-teal-50/20 hover:bg-teal-50/40"
                                   : isCustomerSelected
-                                  ? "bg-emerald-50/50 hover:bg-emerald-50/70"
+                                  ? "bg-teal-50/50 hover:bg-teal-50/70"
                                   : "hover:bg-slate-50/80"
                               }`}
                             >
-                              {/* 1. Date */}
-                              <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
-                                {row.transaction_date}
-                              </td>
-
-                              {/* 2. Remittance Txn */}
-                              <td className="px-4 py-3 whitespace-nowrap">
+                              {/* 1. Txn ID / Date */}
+                              <td className="px-3 py-2.5 whitespace-nowrap">
                                 <div className="font-mono font-bold text-slate-900">{row.transaction_number}</div>
-                                <div className="text-[10px] text-slate-500">
-                                  Order: {formatINR(row.order_inr)}
-                                </div>
+                                <div className="text-[10px] text-slate-500">{row.transaction_date}</div>
                               </td>
 
-                              {/* 3. Customer */}
-                              <td className="px-4 py-3 whitespace-nowrap">
+                              {/* 2. Customer */}
+                              <td className="px-3 py-2.5">
                                 <button
                                   type="button"
                                   onClick={() => handleSelectTxn(row.id)}
                                   title={`Click to select ${row.customer_name} & view remaining split`}
                                   className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-bold transition-all ${
                                     isCustomerSelected
-                                      ? "bg-emerald-600 text-white shadow-sm"
-                                      : "text-slate-800 bg-slate-100 hover:bg-emerald-100 hover:text-emerald-900 border border-slate-200"
+                                      ? "bg-teal-700 text-white shadow-2xs"
+                                      : "text-slate-800 bg-slate-100 hover:bg-teal-100 hover:text-teal-900 border border-slate-200"
                                   }`}
                                 >
-                                  <User className="w-3 h-3" />
-                                  <span>{row.customer_name}</span>
+                                  <User className="w-3 h-3 shrink-0" />
+                                  <span className="truncate max-w-[120px]">{row.customer_name}</span>
                                   {row.customer_code && (
                                     <span className="text-[10px] font-mono opacity-70 ml-0.5">({row.customer_code})</span>
                                   )}
                                 </button>
                                 {row.is_fully_allocated ? (
                                   <div className="text-[10px] text-emerald-700 font-extrabold mt-0.5 flex items-center gap-0.5">
-                                    <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                                    <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
                                     <span>Fully Allocated</span>
                                   </div>
                                 ) : (
@@ -1031,20 +1050,20 @@ export default function IndiaDistributionPage() {
                                 )}
                               </td>
 
-                              {/* 4. India Distributor(s) - COMBINED in one single line */}
-                              <td className="px-4 py-3">
+                              {/* 3. India Distributor(s) */}
+                              <td className="px-3 py-2.5">
                                 {row.distributors.length === 0 ? (
                                   <span className="text-slate-400 italic text-xs">Unallocated</span>
                                 ) : (
-                                  <div className="flex flex-wrap items-center gap-1.5">
+                                  <div className="flex flex-wrap items-center gap-1">
                                     {row.distributors.map((d, dIdx) => (
                                       <span
                                         key={d.id + dIdx}
-                                        className="inline-flex items-center gap-1 font-bold text-xs px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs"
+                                        className="inline-flex items-center gap-1 font-bold text-[11px] px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs"
                                         title={`${d.name}: Allocated ${formatINR(d.inr_amount)} (${formatAED(d.aed_equivalent)})`}
                                       >
                                         <span>{d.name}</span>
-                                        <span className="text-[10px] text-emerald-600 font-mono font-medium">
+                                        <span className="text-[10px] text-teal-700 font-mono font-medium">
                                           ({formatINR(d.inr_amount)})
                                         </span>
                                       </span>
@@ -1053,60 +1072,54 @@ export default function IndiaDistributionPage() {
                                 )}
                               </td>
 
-                              {/* 5. INR Allocated */}
-                              <td className="px-4 py-3 whitespace-nowrap">
+                              {/* 4. INR Allocation */}
+                              <td className="px-3 py-2.5 whitespace-nowrap">
                                 <div className="font-bold text-slate-900">{formatINR(row.total_allocated_inr)}</div>
+                                <div className="text-[10px] text-slate-500">
+                                  {row.is_fully_allocated ? "100% of " : "of "}{formatINR(row.order_inr)}
+                                </div>
+                              </td>
+
+                              {/* 5. AED / Rate */}
+                              <td className="px-3 py-2.5 whitespace-nowrap">
+                                <div className="font-bold text-slate-700">{row.total_aed_equivalent ? formatAED(row.total_aed_equivalent) : "-"}</div>
+                                <div className="text-[10px] text-slate-500 font-mono">
+                                  Rate: {row.wholesale_rate ? row.wholesale_rate.toFixed(2) : "-"}
+                                </div>
+                              </td>
+
+                              {/* 6. Status & Notes */}
+                              <td className="px-3 py-2.5">
                                 {row.is_fully_allocated ? (
-                                  <div className="text-[10px] text-emerald-700 font-bold">100% Split</div>
-                                ) : (
-                                  <div className="text-[10px] text-slate-500">
-                                    of {formatINR(row.order_inr)}
-                                  </div>
-                                )}
-                              </td>
-
-                              {/* 6. Wholesale Rate */}
-                              <td className="px-4 py-3 font-mono text-slate-600 whitespace-nowrap">
-                                {row.wholesale_rate ? row.wholesale_rate.toFixed(2) : "-"}
-                              </td>
-
-                              {/* 7. AED Equivalent */}
-                              <td className="px-4 py-3 text-slate-700 whitespace-nowrap">
-                                {row.total_aed_equivalent ? formatAED(row.total_aed_equivalent) : "-"}
-                              </td>
-
-                              {/* 8. Status - GREEN when fully allocated */}
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                {row.is_fully_allocated ? (
-                                  <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
-                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
+                                    <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
                                     <span>FULLY ALLOCATED</span>
                                   </span>
                                 ) : row.total_allocated_inr > 0 ? (
                                   <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
-                                    <span>PARTIAL ({row.splits.length} split{row.splits.length !== 1 ? "s" : ""})</span>
+                                    <span>PARTIAL ({row.splits.length})</span>
                                   </span>
                                 ) : (
                                   <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
                                     <span>UNALLOCATED</span>
                                   </span>
                                 )}
+                                {row.notes && (
+                                  <div className="text-[10px] text-slate-500 truncate max-w-[130px] mt-0.5" title={row.notes}>
+                                    {row.notes}
+                                  </div>
+                                )}
                               </td>
 
-                              {/* 9. Notes */}
-                              <td className="px-4 py-3 text-slate-500 max-w-xs truncate" title={row.notes}>
-                                {row.notes || "-"}
-                              </td>
-
-                              {/* 10. Actions */}
-                              <td className="px-4 py-3 text-center whitespace-nowrap">
+                              {/* 7. Actions */}
+                              <td className="px-3 py-2.5 text-center whitespace-nowrap">
                                 <div className="flex items-center justify-center gap-1.5">
                                   {row.remaining_inr > 0 && (
                                     <button
                                       type="button"
                                       onClick={() => openAddModalForTxn(row.raw_txn)}
                                       title={`Split remaining ${formatINR(row.remaining_inr)} with another distributor`}
-                                      className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-2xs transition-colors"
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-white bg-teal-700 hover:bg-teal-800 rounded shadow-2xs transition-colors"
                                     >
                                       <PlusCircle className="w-3 h-3" />
                                       <span>+ Split</span>
@@ -1132,8 +1145,8 @@ export default function IndiaDistributionPage() {
                             {/* Expandable Individual Splits Sub-Table */}
                             {isExpanded && (
                               <tr className="bg-slate-50/70 border-b border-slate-200">
-                                <td colSpan={10} className="px-6 py-3">
-                                  <div className="bg-white rounded-lg border border-slate-200 p-3 shadow-xs space-y-2">
+                                <td colSpan={7} className="px-4 py-3">
+                                  <div className="bg-white rounded-lg border border-slate-200 p-3 shadow-2xs space-y-2">
                                     <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 text-xs">
                                       <div className="font-bold text-slate-800 flex items-center gap-2">
                                         <span>Split Breakdown for {row.customer_name} ({row.transaction_number})</span>
@@ -1145,7 +1158,7 @@ export default function IndiaDistributionPage() {
                                         <button
                                           type="button"
                                           onClick={() => openAddModalForTxn(row.raw_txn)}
-                                          className="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200"
+                                          className="text-[10px] font-bold text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded border border-teal-200"
                                         >
                                           + Add Split ({formatINR(row.remaining_inr)} unallocated)
                                         </button>
@@ -1156,33 +1169,37 @@ export default function IndiaDistributionPage() {
                                         <tr>
                                           <th className="px-3 py-1.5">Split Date</th>
                                           <th className="px-3 py-1.5">Distributor</th>
-                                          <th className="px-3 py-1.5">Allocated (INR)</th>
-                                          <th className="px-3 py-1.5">Wholesale Rate</th>
+                                          <th className="px-3 py-1.5">Allocated INR / Rate</th>
                                           <th className="px-3 py-1.5">AED Equivalent</th>
-                                          <th className="px-3 py-1.5">Status</th>
-                                          <th className="px-3 py-1.5">Notes</th>
+                                          <th className="px-3 py-1.5">Status & Notes</th>
                                           <th className="px-3 py-1.5 text-center">Actions</th>
                                         </tr>
                                       </thead>
                                       <tbody className="divide-y divide-slate-100 font-medium">
                                         {row.splits.map((s: any) => (
                                           <tr key={s.id} className="hover:bg-slate-50/80">
-                                            <td className="px-3 py-2 text-slate-600">{s.split_date}</td>
+                                            <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{s.split_date}</td>
                                             <td className="px-3 py-2">
-                                              <span className="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                              <span className="font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200 text-[11px]">
                                                 {s.distributor_code || s.distributor_name}
                                               </span>
                                             </td>
-                                            <td className="px-3 py-2 font-bold text-slate-900">{formatINR(s.inr_amount)}</td>
-                                            <td className="px-3 py-2 font-mono text-slate-600">{s.wholesale_rate ? s.wholesale_rate.toFixed(2) : "-"}</td>
-                                            <td className="px-3 py-2 text-slate-700">{s.aed_equivalent ? formatAED(s.aed_equivalent) : "-"}</td>
+                                            <td className="px-3 py-2 whitespace-nowrap">
+                                              <div className="font-bold text-slate-900">{formatINR(s.inr_amount)}</div>
+                                              <div className="text-[10px] text-slate-500 font-mono">Rate: {s.wholesale_rate ? s.wholesale_rate.toFixed(2) : "-"}</div>
+                                            </td>
+                                            <td className="px-3 py-2 text-slate-700 whitespace-nowrap font-medium">{s.aed_equivalent ? formatAED(s.aed_equivalent) : "-"}</td>
                                             <td className="px-3 py-2">
                                               <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
                                                 {s.status}
                                               </span>
+                                              {s.notes && (
+                                                <div className="text-[10px] text-slate-500 max-w-[130px] truncate mt-0.5" title={s.notes}>
+                                                  {s.notes}
+                                                </div>
+                                              )}
                                             </td>
-                                            <td className="px-3 py-2 text-slate-500 max-w-xs truncate">{s.notes || "-"}</td>
-                                            <td className="px-3 py-2 text-center">
+                                            <td className="px-3 py-2 text-center whitespace-nowrap">
                                               <div className="flex items-center justify-center gap-1">
                                                 <button
                                                   type="button"
@@ -1225,11 +1242,11 @@ export default function IndiaDistributionPage() {
       {/* TAB 2: IND DISTRIBUTION PARTIES */}
       {activeTab === "partners" && (
         <div className="space-y-4">
-          <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-3 text-xs text-emerald-900">
-            <Layers className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+          <div className="p-3.5 bg-teal-50 border border-teal-200 rounded-xl flex items-start gap-3 text-xs text-teal-900">
+            <Layers className="w-5 h-5 text-teal-700 shrink-0 mt-0.5" />
             <div>
-              <p className="font-extrabold text-emerald-950">IND Distribution Group — India-side Parties</p>
-              <p className="text-emerald-800 mt-0.5 leading-relaxed">
+              <p className="font-extrabold text-teal-950">IND Distribution Group — India-side Parties</p>
+              <p className="text-teal-800 mt-0.5 leading-relaxed">
                 These are the India-side distributors. Dubai customer INR orders are split and allocated to these parties.
                 <strong className="ml-1">SARABU (IND)</strong> is separate from <strong>SARABU (AED)</strong> — different accounts, different balances.
               </p>
@@ -1243,7 +1260,7 @@ export default function IndiaDistributionPage() {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <h4 className="text-base font-bold text-slate-900">{p.name}</h4>
-                      <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded">
+                      <span className="text-[10px] font-extrabold bg-teal-100 text-teal-800 border border-teal-300 px-2 py-0.5 rounded">
                         IND
                       </span>
                     </div>
@@ -1263,7 +1280,7 @@ export default function IndiaDistributionPage() {
                   </div>
                   <div className="flex justify-between text-slate-500 pt-1 border-t border-slate-100">
                     <span>Pending Balance:</span>
-                    <span className={`font-bold ${(p.splits_balance_inr || 0) > 0 ? "text-amber-700" : "text-emerald-700"}`}>
+                    <span className={`font-bold ${(p.splits_balance_inr || 0) > 0 ? "text-amber-700" : "text-teal-700"}`}>
                       {formatINR(p.splits_balance_inr)}
                     </span>
                   </div>
@@ -1336,7 +1353,7 @@ export default function IndiaDistributionPage() {
           {aedParties.length > 0 && (
             <div className="bg-slate-900 text-white rounded-xl p-4 flex items-center justify-between text-sm font-bold">
               <span className="uppercase tracking-wider text-slate-300 text-xs">TOTAL (Calculated)</span>
-              <span className="text-lg font-extrabold text-emerald-400">
+              <span className="text-lg font-extrabold text-teal-400">
                 Auto-Calculated · Not a manual entry
               </span>
             </div>
@@ -1359,7 +1376,7 @@ export default function IndiaDistributionPage() {
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in duration-150">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Split className="w-5 h-5 text-emerald-600" />
+                <Split className="w-5 h-5 text-teal-700" />
                 <span>Add Distribution Split for {selectedModalTxn.customer_name}</span>
               </h3>
               <button
@@ -1378,19 +1395,19 @@ export default function IndiaDistributionPage() {
             )}
 
             {/* PRE-LOCKED CUSTOMER CONTEXT CARD */}
-            <div className="p-3.5 bg-emerald-50/90 rounded-xl border border-emerald-200 space-y-2">
+            <div className="p-3.5 bg-teal-50/90 rounded-xl border border-teal-200 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <User className="w-4 h-4 text-emerald-700" />
+                  <User className="w-4 h-4 text-teal-700" />
                   <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Customer:</span>
-                  <span className="text-sm font-extrabold text-emerald-950">{selectedModalTxn.customer_name}</span>
+                  <span className="text-sm font-extrabold text-teal-950">{selectedModalTxn.customer_name}</span>
                 </div>
-                <span className="font-mono text-xs font-bold bg-white text-slate-800 px-2 py-0.5 rounded border border-emerald-300">
+                <span className="font-mono text-xs font-bold bg-white text-slate-800 px-2 py-0.5 rounded border border-teal-300">
                   {selectedModalTxn.transaction_number}
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 text-xs pt-1.5 border-t border-emerald-200/70">
+              <div className="grid grid-cols-3 gap-2 text-xs pt-1.5 border-t border-teal-200/70">
                 <div>
                   <span className="text-slate-500 block text-[10px] uppercase font-bold">Total Order</span>
                   <span className="font-extrabold text-slate-900">{formatINR(selectedModalTxn.inr_amount)}</span>
@@ -1409,7 +1426,7 @@ export default function IndiaDistributionPage() {
             {/* Optional Customer Switcher if needed */}
             {transactions.length > 1 && (
               <details className="text-xs text-slate-600 group">
-                <summary className="cursor-pointer text-emerald-700 font-semibold hover:underline flex items-center gap-1">
+                <summary className="cursor-pointer text-teal-700 font-semibold hover:underline flex items-center gap-1">
                   <span>Switch to a different customer order</span>
                 </summary>
                 <div className="mt-2 p-2 bg-slate-50 rounded border border-slate-200">
@@ -1445,7 +1462,7 @@ export default function IndiaDistributionPage() {
                 <select
                   value={modalDistId}
                   onChange={(e) => setModalDistId(e.target.value)}
-                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 >
                   {confirmedIndiaParties.map((d) => (
                     <option key={d.id} value={d.id}>
@@ -1480,7 +1497,7 @@ export default function IndiaDistributionPage() {
                       <button
                         type="button"
                         onClick={() => setModalAmount(String(selectedModalTxn.remaining_inr))}
-                        className="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 underline"
+                        className="text-[10px] font-bold text-teal-700 hover:text-teal-800 underline"
                       >
                         Use Max (₹{selectedModalTxn.remaining_inr})
                       </button>
@@ -1495,7 +1512,7 @@ export default function IndiaDistributionPage() {
                       placeholder="Amount"
                       value={modalAmount}
                       onChange={(e) => setModalAmount(e.target.value)}
-                      className="w-full text-xs font-bold pl-6 pr-2 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full text-xs font-bold pl-6 pr-2 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
                     />
                   </div>
                 </div>
@@ -1503,8 +1520,8 @@ export default function IndiaDistributionPage() {
 
               {/* Words side-by-side */}
               {numberToIndianWords(modalAmount) && (
-                <div className="p-2 bg-emerald-50/90 border border-emerald-200 rounded-lg flex items-center gap-1.5 text-xs text-emerald-950 animate-in fade-in duration-100">
-                  <span className="font-bold text-[10px] tracking-wider uppercase bg-emerald-200 text-emerald-950 px-1.5 py-0.5 rounded font-mono shrink-0">
+                <div className="p-2 bg-teal-50/90 border border-teal-200 rounded-lg flex items-center gap-1.5 text-xs text-teal-950 animate-in fade-in duration-100">
+                  <span className="font-bold text-[10px] tracking-wider uppercase bg-teal-200 text-teal-950 px-1.5 py-0.5 rounded font-mono shrink-0">
                     In Words:
                   </span>
                   <span className="font-semibold">{numberToIndianWords(modalAmount)}</span>
@@ -1553,7 +1570,7 @@ export default function IndiaDistributionPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 shadow-sm"
+                  className="px-4 py-2 bg-teal-700 text-white rounded-lg text-xs font-bold hover:bg-teal-800 disabled:opacity-50 shadow-sm"
                 >
                   {submitting ? "Saving Split..." : `Confirm Split for ${selectedModalTxn.customer_name}`}
                 </button>
@@ -1569,7 +1586,7 @@ export default function IndiaDistributionPage() {
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in duration-150">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Edit3 className="w-5 h-5 text-emerald-600" />
+                <Edit3 className="w-5 h-5 text-teal-700" />
                 <span>Edit Distribution Split for {editSplit.customer_name}</span>
               </h3>
               <button
@@ -1608,7 +1625,7 @@ export default function IndiaDistributionPage() {
                 <select
                   value={editDistId}
                   onChange={(e) => setEditDistId(e.target.value)}
-                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 >
                   {confirmedIndiaParties.map((d) => (
                     <option key={d.id} value={d.id}>
@@ -1644,15 +1661,15 @@ export default function IndiaDistributionPage() {
                       required
                       value={editAmount}
                       onChange={(e) => setEditAmount(e.target.value)}
-                      className="w-full text-xs font-bold pl-6 pr-2 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full text-xs font-bold pl-6 pr-2 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
                     />
                   </div>
                 </div>
               </div>
 
               {numberToIndianWords(editAmount) && (
-                <div className="p-2 bg-emerald-50/90 border border-emerald-200 rounded-lg flex items-center gap-1.5 text-xs text-emerald-950 animate-in fade-in duration-100">
-                  <span className="font-bold text-[10px] tracking-wider uppercase bg-emerald-200 text-emerald-950 px-1.5 py-0.5 rounded font-mono shrink-0">
+                <div className="p-2 bg-teal-50/90 border border-teal-200 rounded-lg flex items-center gap-1.5 text-xs text-teal-950 animate-in fade-in duration-100">
+                  <span className="font-bold text-[10px] tracking-wider uppercase bg-teal-200 text-teal-950 px-1.5 py-0.5 rounded font-mono shrink-0">
                     In Words:
                   </span>
                   <span className="font-semibold">{numberToIndianWords(editAmount)}</span>
@@ -1697,7 +1714,7 @@ export default function IndiaDistributionPage() {
                 <button
                   type="submit"
                   disabled={editSubmitting}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 shadow-sm"
+                  className="px-4 py-2 bg-teal-700 text-white rounded-lg text-xs font-bold hover:bg-teal-800 disabled:opacity-50 shadow-sm"
                 >
                   {editSubmitting ? "Updating..." : "Save Changes"}
                 </button>
@@ -1736,7 +1753,7 @@ export default function IndiaDistributionPage() {
                   <strong className="text-slate-900">{formatINR(deleteSplitTarget.inr_amount)}</strong> allocated to{" "}
                   <strong className="text-slate-900">{deleteSplitTarget.distributor_code}</strong>?
                 </p>
-                <p className="text-emerald-700 bg-emerald-50 p-2.5 rounded border border-emerald-200">
+                <p className="text-teal-700 bg-teal-50 p-2.5 rounded border border-teal-200">
                   Deleting this will release the allocated amount back to remittance <strong>{deleteSplitTarget.transaction_number}</strong>.
                 </p>
               </div>

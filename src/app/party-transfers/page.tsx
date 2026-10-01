@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
+import { FadeIn, PageTransition, StaggerContainer, StaggerItem } from "@/components/AnimatedLayout";
+import { toast } from "sonner";
 import {
   Handshake,
   Search,
@@ -23,6 +26,8 @@ import {
   TrendingUp,
   Layers,
   Sparkles,
+  Wallet,
+  CheckCircle,
 } from "lucide-react";
 import { generateTransactionReceipt } from "@/lib/pdf-generator";
 import {
@@ -71,16 +76,41 @@ interface PartyTransaction {
   created_at: string;
 }
 
-export default function PartyTransfersPage() {
-  const [transfers, setTransfers] = useState<PartyTransaction[]>([]);
-  const [parties, setParties] = useState<Party[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [selectedParty, setSelectedParty] = useState("ALL");
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [dateFilter, setDateFilter] = useState("ALL"); // ALL, TODAY, YESTERDAY, WEEK, MONTH
-  const [customFrom, setCustomFrom] = useState("");
-  const [customTo, setCustomTo] = useState("");
+// In-memory client cache for instant (0ms) tab switching and navigation
+let clientPartyTransfersCache: {
+  transfers: PartyTransaction[];
+  parties: Party[];
+} | null = null;
+
+function PartyTransfersContent() {
+  const [transfers, setTransfers] = useState<PartyTransaction[]>(() => clientPartyTransfersCache?.transfers || []);
+  const [parties, setParties] = useState<Party[]>(() => clientPartyTransfersCache?.parties || []);
+  const [loading, setLoading] = useState(() => !clientPartyTransfersCache);
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const [search, setSearch] = useState(searchParams.get("q") || "");
+  const [selectedParty, setSelectedParty] = useState(searchParams.get("party") || "ALL");
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "ALL");
+  const [paymentFilter, setPaymentFilter] = useState(searchParams.get("payment") || "ALL");
+  const [dateFilter, setDateFilter] = useState(searchParams.get("period") || "ALL");
+  const [customFrom, setCustomFrom] = useState(searchParams.get("from") || "");
+  const [customTo, setCustomTo] = useState(searchParams.get("to") || "");
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (search) params.set("q", search);
+    if (selectedParty && selectedParty !== "ALL") params.set("party", selectedParty);
+    if (statusFilter && statusFilter !== "ALL") params.set("status", statusFilter);
+    if (paymentFilter && paymentFilter !== "ALL") params.set("payment", paymentFilter);
+    if (dateFilter && dateFilter !== "ALL") params.set("period", dateFilter);
+    if (customFrom) params.set("from", customFrom);
+    if (customTo) params.set("to", customTo);
+
+    const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+    window.history.replaceState({}, '', newUrl);
+  }, [search, selectedParty, statusFilter, paymentFilter, dateFilter, customFrom, customTo]);
 
   // Modal states
   const [showNewModal, setShowNewModal] = useState(false);
@@ -139,17 +169,21 @@ export default function PartyTransfersPage() {
     return Number(val).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " AED";
   };
 
-  async function loadData() {
-    setLoading(true);
+  async function loadData(isBackground = false) {
+    if (!isBackground && !clientPartyTransfersCache) {
+      setLoading(true);
+    }
     try {
-      const [txnRes, partiesRes] = await Promise.all([
-        fetch("/api/transactions?entityType=PARTY&limit=250"),
-        fetch("/api/parties"),
-      ]);
-      const txns = await txnRes.json();
-      const prts = await partiesRes.json();
-      setTransfers(Array.isArray(txns) ? txns : []);
-      const partyList = Array.isArray(prts) ? prts : [];
+      const res = await fetch("/api/party-transfers");
+      if (!res.ok) throw new Error("Failed to load party transfers data");
+      const data = await res.json();
+      const txns = Array.isArray(data.transfers) ? data.transfers : [];
+      const partyList = Array.isArray(data.parties) ? data.parties : [];
+      
+      // Cache data in memory
+      clientPartyTransfersCache = { transfers: txns, parties: partyList };
+
+      setTransfers(txns);
       setParties(partyList);
       if (partyList.length > 0 && !newPartyId) {
         setNewPartyId(partyList[0].id);
@@ -165,7 +199,9 @@ export default function PartyTransfersPage() {
   }
 
   useEffect(() => {
-    loadData();
+    // If we have client cache, load in background so user sees data in 0ms!
+    const hasCache = !!clientPartyTransfersCache;
+    loadData(hasCache);
   }, []);
 
   // Helper calculations for INR Cost & Profit
@@ -265,8 +301,10 @@ export default function PartyTransfersPage() {
       setShowAddPartyField(false);
       setExtraPartyName("");
       setExtraPartyCode("");
+      toast.success("Party created successfully");
     } catch (err: any) {
       alert(err.message || "Failed to add party");
+      toast.error(err.message || "Failed to add party");
     } finally {
       setSavingExtraParty(false);
     }
@@ -326,8 +364,10 @@ export default function PartyTransfersPage() {
       setNewDate(getTodayDateString());
       setNewInrAmounts(["", "", ""]);
       await loadData();
+      toast.success("Party transfer created successfully");
     } catch (err: any) {
       setNewError(err.message || "Failed to save party transfer");
+      toast.error(err.message || "Failed to save party transfer");
       setShowConfirmNew(false);
     } finally {
       setSavingNew(false);
@@ -373,8 +413,10 @@ export default function PartyTransfersPage() {
       }
       setPayingTxn(null);
       await loadData();
+      toast.success("Payment recorded successfully");
     } catch (err: any) {
       setPayError(err.message || "Failed to record payment");
+      toast.error(err.message || "Failed to record payment");
     } finally {
       setPayLoading(false);
     }
@@ -422,8 +464,10 @@ export default function PartyTransfersPage() {
       if (!res.ok) throw new Error(data.error || "Failed to update transfer");
       setEditingTxn(null);
       await loadData();
+      toast.success("Transfer updated successfully");
     } catch (err: any) {
       setEditError(err.message || "Failed to save edit");
+      toast.error(err.message || "Failed to save edit");
     } finally {
       setIsUpdating(false);
     }
@@ -446,8 +490,10 @@ export default function PartyTransfersPage() {
       }
       setVoidingTxn(null);
       await loadData();
+      toast.success("Transfer voided successfully");
     } catch (err: any) {
       setVoidError(err.message || "Failed to void transaction");
+      toast.error(err.message || "Failed to void transaction");
     } finally {
       setIsVoiding(false);
     }
@@ -468,8 +514,10 @@ export default function PartyTransfersPage() {
       }
       setDeletingTxn(null);
       await loadData();
+      toast.success("Transfer deleted permanently");
     } catch (err: any) {
       setDeleteError(err.message || "Failed to delete transaction");
+      toast.error(err.message || "Failed to delete transaction");
     } finally {
       setIsDeleting(false);
     }
@@ -496,21 +544,24 @@ export default function PartyTransfersPage() {
   );
   const monthInrTotal = monthTransfers.reduce((sum, t) => sum + (t.inr_amount || 0), 0);
 
-  const totalInrBilledAll = transfers
-    .filter((t) => t.status === "CONFIRMED")
-    .reduce((sum, t) => sum + (t.inr_amount || 0), 0);
+  const confirmedTransfers = transfers.filter((t) => t.status === "CONFIRMED");
 
-  const totalNetProfitInrAll = transfers
-    .filter((t) => t.status === "CONFIRMED")
-    .reduce((sum, t) => sum + getTransferNetProfitInr(t), 0);
+  const totalInrBilledAll = confirmedTransfers.reduce((sum, t) => sum + (t.inr_amount || 0), 0);
 
-  const totalAedCharged = transfers
-    .filter((t) => t.status === "CONFIRMED")
-    .reduce((sum, t) => sum + (t.aed_amount || 0), 0);
+  const totalNetProfitInrAll = confirmedTransfers.reduce((sum, t) => sum + getTransferNetProfitInr(t), 0);
 
-  const totalOutstandingDueAed = transfers
-    .filter((t) => t.status === "CONFIRMED")
-    .reduce((sum, t) => sum + (t.pending_aed ?? t.aed_amount ?? 0), 0);
+  const totalAedCharged = confirmedTransfers.reduce((sum, t) => sum + (t.aed_amount || 0), 0);
+
+  const totalPaidAedAll = confirmedTransfers.reduce((sum, t) => sum + (t.paid_aed || 0), 0);
+
+  const totalOutstandingDueAed = confirmedTransfers.reduce(
+    (sum, t) => sum + (t.pending_aed !== undefined ? t.pending_aed : Math.max(0, (t.aed_amount || 0) - (t.paid_aed || 0))),
+    0
+  );
+
+  const pendingDueTxnsCount = confirmedTransfers.filter(
+    (t) => (t.pending_aed !== undefined ? t.pending_aed : Math.max(0, (t.aed_amount || 0) - (t.paid_aed || 0))) > 0.01
+  ).length;
 
   // Filtering
   const filteredTransfers = transfers.filter((t) => {
@@ -534,6 +585,17 @@ export default function PartyTransfersPage() {
       return false;
     }
 
+    // Payment status filter
+    const totalBilled = t.aed_amount || 0;
+    const paidAmt = t.paid_aed || 0;
+    const dueAmt = t.pending_aed !== undefined ? t.pending_aed : Math.max(0, totalBilled - paidAmt);
+    if (paymentFilter === "PENDING_DUE" && dueAmt <= 0.01) {
+      return false;
+    }
+    if (paymentFilter === "SETTLED" && dueAmt > 0.01) {
+      return false;
+    }
+
     // Date Presets
     const txnDate = t.transaction_date?.slice(0, 10);
     if (dateFilter === "TODAY" && txnDate !== todayStr) return false;
@@ -547,6 +609,7 @@ export default function PartyTransfersPage() {
   });
 
   return (
+    <PageTransition>
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* Top Banner & Header */}
       <div className="bg-gradient-to-r from-teal-900 via-teal-800 to-slate-900 text-white rounded-2xl p-6 sm:p-7 shadow-lg relative overflow-hidden border border-teal-700/50">
@@ -571,14 +634,14 @@ export default function PartyTransfersPage() {
                 setShowNewModal(true);
                 setNewDate(getTodayDateString());
               }}
-              className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+              className="px-4 py-2.5 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95"
             >
               <PlusCircle className="w-4 h-4" />
               <span>+ New Party Transfer</span>
             </button>
 
             <button
-              onClick={loadData}
+              onClick={() => loadData(false)}
               disabled={loading}
               className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold backdrop-blur-xs transition flex items-center justify-center cursor-pointer"
               title="Refresh Transfer Data"
@@ -590,70 +653,152 @@ export default function PartyTransfersPage() {
       </div>
 
       {/* Metrics Bar */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
-        {/* Card 1: Today */}
-        <div className="bg-white p-4 rounded-xl border border-teal-200/80 shadow-2xs">
+      <FadeIn delay={0.1}>
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3.5">
+        {/* Card 1: Remaining Due (Prominent Alert Card) */}
+        <div className="bg-amber-50/70 dark:bg-amber-950/30 p-4 rounded-xl border border-amber-300 dark:border-amber-700/80 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-teal-800 uppercase tracking-wider">Today&apos;s Transfers</span>
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-50 text-teal-700">
-              {todayTransfers.length} txns
+            <span className="text-[11px] font-bold text-amber-900 dark:text-amber-200 uppercase tracking-wider flex items-center gap-1.5">
+              <Wallet className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              Remaining Due
             </span>
+            {loading ? (
+              <div className="h-4 w-16 rounded bg-amber-200/80 dark:bg-amber-900 animate-pulse" />
+            ) : (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-200/80 dark:bg-amber-900 text-amber-900 dark:text-amber-100">
+                {pendingDueTxnsCount} pending
+              </span>
+            )}
           </div>
-          <div className="mt-2 font-mono font-bold text-lg text-slate-900 truncate">
-            {formatINR(todayInrTotal)}
+          {loading ? (
+            <div className="h-7 w-28 rounded bg-amber-200/50 dark:bg-amber-900/50 animate-pulse mt-2" />
+          ) : (
+            <div className="mt-2 font-mono font-bold text-lg text-amber-900 dark:text-amber-100 truncate">
+              {formatAED(totalOutstandingDueAed)}
+            </div>
+          )}
+          <div className="text-[10px] text-amber-800/80 dark:text-amber-300/80 mt-0.5 font-medium">
+            Due to be paid across party transfers
           </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">Recorded on {todayStr}</div>
         </div>
 
-        {/* Card 2: Yesterday */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+        {/* Card 2: Total Collected / Paid */}
+        <div className="bg-teal-50/50 dark:bg-emerald-950/30 p-4 rounded-xl border border-teal-300 dark:border-teal-700/80 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Previous Day</span>
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
-              {yesterdayTransfers.length} txns
+            <span className="text-[11px] font-bold text-emerald-900 dark:text-emerald-200 uppercase tracking-wider flex items-center gap-1.5">
+              <CheckCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              Total Collected
             </span>
+            {loading ? (
+              <div className="h-4 w-12 rounded bg-emerald-200/80 dark:bg-emerald-900 animate-pulse" />
+            ) : (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200">
+                {totalAedCharged > 0 ? Math.round((totalPaidAedAll / totalAedCharged) * 100) : 0}% paid
+              </span>
+            )}
           </div>
-          <div className="mt-2 font-mono font-bold text-lg text-slate-900 truncate">
-            {formatINR(yesterdayInrTotal)}
-          </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">Recorded on {yesterdayStr}</div>
+          {loading ? (
+            <div className="h-7 w-28 rounded bg-emerald-200/50 dark:bg-emerald-900/50 animate-pulse mt-2" />
+          ) : (
+            <div className="mt-2 font-mono font-bold text-lg text-teal-900 dark:text-teal-100 truncate">
+              {formatAED(totalPaidAedAll)}
+            </div>
+          )}
+          {loading ? (
+            <div className="h-3 w-32 rounded bg-emerald-200/50 dark:bg-emerald-900/50 animate-pulse mt-1" />
+          ) : (
+            <div className="text-[10px] text-teal-800/80 dark:text-teal-300/80 mt-0.5 font-medium">
+              Paid out of {formatAED(totalAedCharged)}
+            </div>
+          )}
         </div>
 
-        {/* Card 3: This Month */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+        {/* Card 3: Total Net Profit in INR */}
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-teal-200 dark:border-emerald-800 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">This Month</span>
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
-              {monthTransfers.length} txns
-            </span>
+            <span className="text-[11px] font-bold text-teal-800 dark:text-teal-300 uppercase tracking-wider">Net Profit (INR)</span>
+            <TrendingUp className="w-3.5 h-3.5 text-teal-600 dark:text-emerald-400" />
           </div>
-          <div className="mt-2 font-mono font-bold text-lg text-slate-900 truncate">
-            {formatINR(monthInrTotal)}
-          </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">Since {monthStartStr}</div>
+          {loading ? (
+            <div className="h-7 w-28 rounded bg-slate-200 dark:bg-slate-700 animate-pulse mt-2" />
+          ) : (
+            <div className="mt-2 font-mono font-bold text-lg text-teal-900 dark:text-teal-100 truncate">
+              {formatINR(totalNetProfitInrAll)}
+            </div>
+          )}
+          <div className="text-[10px] text-teal-700/80 dark:text-emerald-400/80 mt-0.5">Across confirmed transfers</div>
         </div>
 
         {/* Card 4: Total INR Billed */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
-          <div className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">INR Billed (All)</div>
-          <div className="mt-2 font-mono font-bold text-lg text-slate-900 truncate">
-            {formatINR(totalInrBilledAll)}
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Total INR Volume</span>
+            <Coins className="w-3.5 h-3.5 text-slate-400" />
           </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">{transfers.length} total party transfers</div>
+          {loading ? (
+            <div className="h-7 w-28 rounded bg-slate-200 dark:bg-slate-700 animate-pulse mt-2" />
+          ) : (
+            <div className="mt-2 font-mono font-bold text-lg text-slate-900 dark:text-slate-100 truncate">
+              {formatINR(totalInrBilledAll)}
+            </div>
+          )}
+          {loading ? (
+            <div className="h-3 w-24 rounded bg-slate-200 dark:bg-slate-700 animate-pulse mt-1" />
+          ) : (
+            <div className="text-[10px] text-slate-400 mt-0.5">{transfers.length} total party transfers</div>
+          )}
         </div>
 
-        {/* Card 5: Total Net Profit in INR */}
-        <div className="bg-white p-4 rounded-xl border border-emerald-200 bg-emerald-50/30 shadow-2xs">
-          <div className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Total Net Profit (INR)</div>
-          <div className="mt-2 font-mono font-bold text-lg text-emerald-900 truncate">
-            {formatINR(totalNetProfitInrAll)}
+        {/* Card 5: Today's Transfers */}
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Today&apos;s Transfers</span>
+            {loading ? (
+              <div className="h-4 w-12 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            ) : (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                {todayTransfers.length} txns
+              </span>
+            )}
           </div>
-          <div className="text-[10px] text-emerald-700/80 mt-0.5">Across all confirmed party transfers</div>
+          {loading ? (
+            <div className="h-7 w-28 rounded bg-slate-200 dark:bg-slate-700 animate-pulse mt-2" />
+          ) : (
+            <div className="mt-2 font-mono font-bold text-lg text-slate-900 dark:text-slate-100 truncate">
+              {formatINR(todayInrTotal)}
+            </div>
+          )}
+          <div className="text-[10px] text-slate-400 mt-0.5">Recorded on {todayStr}</div>
+        </div>
+
+        {/* Card 6: This Month */}
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">This Month</span>
+            {loading ? (
+              <div className="h-4 w-12 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            ) : (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                {monthTransfers.length} txns
+              </span>
+            )}
+          </div>
+          {loading ? (
+            <div className="h-7 w-28 rounded bg-slate-200 dark:bg-slate-700 animate-pulse mt-2" />
+          ) : (
+            <div className="mt-2 font-mono font-bold text-lg text-slate-900 dark:text-slate-100 truncate">
+              {formatINR(monthInrTotal)}
+            </div>
+          )}
+          <div className="text-[10px] text-slate-400 mt-0.5">Since {monthStartStr}</div>
         </div>
       </div>
 
+      </FadeIn>
+
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">
+      <FadeIn delay={0.15}>
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-3">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           {/* Search Box */}
           <div className="relative flex-1 max-w-md">
@@ -663,7 +808,7 @@ export default function PartyTransfersPage() {
               placeholder="Search by TXN ID, Party name (AWAFI, NF2...), amount..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-teal-500"
+              className="w-full pl-9 pr-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-teal-500"
             />
             {search && (
               <button
@@ -675,16 +820,16 @@ export default function PartyTransfersPage() {
             )}
           </div>
 
-          {/* Party Filter Selector */}
+          {/* Filter Selectors */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 text-xs text-slate-600 font-bold">
+            <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 font-bold">
               <Filter className="w-3.5 h-3.5 text-slate-400" />
-              <span>Party:</span>
+              <span>Filter:</span>
             </div>
             <select
               value={selectedParty}
               onChange={(e) => setSelectedParty(e.target.value)}
-              className="border border-slate-300 rounded-lg text-xs font-bold text-slate-800 py-1.5 px-2.5 bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-500"
+              className="border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 py-1.5 px-2.5 bg-white dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-teal-500"
             >
               <option value="ALL">All Parties ({parties.length})</option>
               {parties.map((p) => (
@@ -695,9 +840,19 @@ export default function PartyTransfersPage() {
             </select>
 
             <select
+              value={paymentFilter}
+              onChange={(e) => setPaymentFilter(e.target.value)}
+              className="border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 py-1.5 px-2.5 bg-white dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-teal-500"
+            >
+              <option value="ALL">All Payment States</option>
+              <option value="PENDING_DUE">Pending Due ({pendingDueTxnsCount})</option>
+              <option value="SETTLED">100% Settled</option>
+            </select>
+
+            <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-slate-300 rounded-lg text-xs font-bold text-slate-800 py-1.5 px-2.5 bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-500"
+              className="border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 py-1.5 px-2.5 bg-white dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-teal-500"
             >
               <option value="ALL">All Statuses</option>
               <option value="CONFIRMED">CONFIRMED</option>
@@ -773,16 +928,18 @@ export default function PartyTransfersPage() {
           </div>
         </div>
       </div>
+      </FadeIn>
 
       {/* Main Party Transfers Table */}
+      <FadeIn delay={0.2}>
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden">
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/60 dark:bg-slate-800/40">
           <div className="flex items-center gap-2">
-            <ArrowRightLeft className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+            <ArrowRightLeft className="w-4 h-4 text-teal-600 dark:text-emerald-400" />
             <h2 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">
               Party Transfers Registry
             </h2>
-            <span className="text-[11px] font-bold text-teal-800 dark:text-teal-300 bg-teal-100 dark:bg-teal-950/70 border border-teal-200/50 dark:border-teal-800/60 px-2 py-0.5 rounded-full">
+            <span className="text-[11px] font-bold text-teal-800 dark:text-teal-300 bg-teal-100 dark:bg-emerald-950/70 border border-teal-200/50 dark:border-emerald-800/60 px-2 py-0.5 rounded-full">
               {filteredTransfers.length} records
             </span>
           </div>
@@ -796,50 +953,55 @@ export default function PartyTransfersPage() {
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-800 text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                <th className="px-4 py-3">TXN ID</th>
-                <th className="px-4 py-3">Date</th>
-                <th className="px-4 py-3">IND Party</th>
-                <th className="px-4 py-3">INR Order</th>
-                <th className="px-4 py-3">Rate</th>
-                <th className="px-4 py-3">INR Cost</th>
-                <th className="px-4 py-3">Net Profit (INR)</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-3 py-3 w-[15%]">TXN ID / Date</th>
+                <th className="px-3 py-3 w-[12%]">IND Party</th>
+                <th className="px-3 py-3 w-[13%]">INR Order / Rate</th>
+                <th className="px-3 py-3 w-[13%]">INR Cost</th>
+                <th className="px-3 py-3 w-[13%]">Net Profit (INR)</th>
+                <th className="px-3 py-3 w-[18%]">Payment & Status</th>
+                <th className="px-3 py-3 text-right w-[16%]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-slate-400 dark:text-slate-500">
+                  <td colSpan={7} className="py-12 text-center text-slate-400 dark:text-slate-500">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto text-teal-600 mb-2" />
                     <span>Loading party transfers...</span>
                   </td>
                 </tr>
               ) : filteredTransfers.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-slate-400 dark:text-slate-500">
-                    <div className="max-w-xs mx-auto space-y-2">
-                      <Handshake className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" />
-                      <p className="font-bold text-slate-700 dark:text-slate-200">No party transfers found</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        No party transfers match your current filter criteria.
-                      </p>
+                  <td colSpan={7} className="px-6 py-16 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                        <Handshake className="w-7 h-7 text-slate-400 dark:text-slate-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">No party transfers found</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Try adjusting your filters or create a new party transfer</p>
+                      </div>
                       <button
                         onClick={() => {
                           setShowNewModal(true);
                           setNewDate(getTodayDateString());
                         }}
-                        className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 text-white rounded-lg font-bold text-xs hover:bg-teal-700 cursor-pointer shadow-sm"
+                        className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 transition"
                       >
                         <PlusCircle className="w-3.5 h-3.5" />
-                        <span>Create First Party Transfer</span>
+                        New Party Transfer
                       </button>
                     </div>
                   </td>
                 </tr>
               ) : (
                 filteredTransfers.map((t) => {
-                  const isPaid = (t.paid_aed || 0) >= (t.aed_amount || 0);
+                  const totalBilledAed = t.aed_amount || 0;
+                  const paidAed = t.paid_aed || 0;
+                  const pendingDueAed = t.pending_aed !== undefined ? t.pending_aed : Math.max(0, totalBilledAed - paidAed);
+                  const isFullySettled = totalBilledAed > 0 && pendingDueAed <= 0.01;
+                  const isPartiallyPaid = paidAed > 0 && pendingDueAed > 0.01;
+                  const paidPercent = totalBilledAed > 0 ? Math.min(100, Math.round((paidAed / totalBilledAed) * 100)) : 0;
                   const isVoided = t.status === "VOIDED";
 
                   return (
@@ -849,106 +1011,155 @@ export default function PartyTransfersPage() {
                         isVoided ? "bg-slate-50/80 dark:bg-slate-900/40 opacity-70" : ""
                       }`}
                     >
-                      {/* TXN ID */}
-                      <td className="px-4 py-3 font-mono font-bold text-slate-900 dark:text-slate-100">
-                        <div className="flex items-center gap-1.5">
-                          <span>{t.transaction_number}</span>
+                      {/* TXN ID & Date */}
+                      <td className="px-3 py-2.5 font-mono">
+                        <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">
+                          {t.transaction_number}
                         </div>
-                        {t.notes && (
-                          <div className="text-[10px] text-slate-400 dark:text-slate-500 max-w-xs truncate" title={t.notes}>
-                            {t.notes}
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Date */}
-                      <td className="px-4 py-3 font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                        {t.transaction_date?.slice(0, 10)}
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
+                          <span>{t.transaction_date?.slice(0, 10)}</span>
+                          {t.notes && (
+                            <>
+                              <span>·</span>
+                              <span className="truncate max-w-[120px]" title={t.notes}>{t.notes}</span>
+                            </>
+                          )}
+                        </div>
                       </td>
 
                       {/* IND Party */}
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1.5 flex-wrap">
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-1.5">
                           <Link
                             href={`/parties/${t.customer_id}`}
-                            className="font-bold text-teal-700 dark:text-teal-400 hover:text-teal-600 dark:hover:text-teal-300 hover:underline flex items-center gap-1"
+                            className="font-bold text-teal-700 dark:text-emerald-400 hover:text-teal-600 dark:hover:text-teal-300 hover:underline flex items-center gap-1 text-xs"
                           >
-                            <Handshake className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
-                            <span>{t.customer_name}</span>
+                            <Handshake className="w-3.5 h-3.5 text-teal-600 dark:text-emerald-400 shrink-0" />
+                            <span className="truncate max-w-[110px]">{t.customer_name}</span>
                           </Link>
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800 tracking-wider">
-                            IND PARTY
-                          </span>
                         </div>
-                        {t.customer_code && (
-                          <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">
-                            {t.customer_code}
-                          </div>
-                        )}
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <span className="inline-flex items-center px-1 py-0.2 rounded text-[9px] font-bold bg-teal-50 dark:bg-emerald-950 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-emerald-800">
+                            IND
+                          </span>
+                          {t.customer_code && (
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
+                              {t.customer_code}
+                            </span>
+                          )}
+                        </div>
                       </td>
 
-                      {/* INR Order */}
-                      <td className="px-4 py-3 font-bold text-slate-900 dark:text-slate-100 font-mono whitespace-nowrap">
-                        {formatINR(t.inr_amount)}
-                      </td>
-
-                      {/* Rate */}
-                      <td className="px-4 py-3 font-mono text-slate-600 dark:text-slate-400">
-                        {t.customer_rate?.toFixed(4)}
+                      {/* INR Order & Rate */}
+                      <td className="px-3 py-2.5 font-mono">
+                        <div className="font-bold text-slate-900 dark:text-slate-100 text-xs whitespace-nowrap">
+                          {formatINR(t.inr_amount)}
+                        </div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                          Rate: {t.customer_rate?.toFixed(4)}
+                        </div>
                       </td>
 
                       {/* INR Cost */}
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="font-bold text-slate-900 dark:text-slate-100 font-mono">
+                      <td className="px-3 py-2.5 font-mono whitespace-nowrap">
+                        <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">
                           {formatINR(getTransferCostInr(t))}
                         </div>
-                        <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">
-                          Base Cost: {formatAED(t.cost_aed)}
+                        <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+                          Cost: {formatAED(t.cost_aed)}
                         </div>
                       </td>
 
                       {/* Net Profit (INR) */}
-                      <td className="px-4 py-3 font-bold font-mono whitespace-nowrap">
-                        <div className={getTransferNetProfitInr(t) >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}>
+                      <td className="px-3 py-2.5 font-mono whitespace-nowrap">
+                        <div className={`font-bold text-xs ${getTransferNetProfitInr(t) >= 0 ? "text-teal-700 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
                           {formatINR(getTransferNetProfitInr(t))}
                         </div>
-                        <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">
+                        <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
                           Profit: {formatAED(t.net_profit_aed)}
                         </div>
                       </td>
 
-                      {/* Status */}
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                            t.status === "CONFIRMED"
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                              : "bg-rose-50 text-rose-700 border border-rose-200"
-                          }`}
-                        >
-                          {t.status}
-                        </span>
+                      {/* Payment & Status Column */}
+                      <td className="px-3 py-2.5">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span
+                              className={`inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider ${
+                                t.status === "CONFIRMED"
+                                  ? isFullySettled
+                                    ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
+                                    : isPartiallyPaid
+                                    ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
+                                    : "bg-teal-50 dark:bg-emerald-950/40 text-teal-700 dark:text-emerald-400 border border-teal-200 dark:border-emerald-800"
+                                  : "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800"
+                              }`}
+                            >
+                              {t.status}
+                            </span>
+                            {isFullySettled ? (
+                              <span className="font-bold text-emerald-700 dark:text-emerald-400 font-mono text-[11px] flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Settled
+                              </span>
+                            ) : isPartiallyPaid ? (
+                              <span className="font-bold text-amber-700 dark:text-amber-300 font-mono text-[11px]">
+                                Due: {formatAED(pendingDueAed)}
+                              </span>
+                            ) : (
+                              <span className="font-bold text-rose-600 dark:text-rose-400 font-mono text-[11px]">
+                                Due: {formatAED(pendingDueAed)}
+                              </span>
+                            )}
+                          </div>
+
+                          {isPartiallyPaid && (
+                            <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden max-w-[130px]">
+                              <div
+                                className="bg-amber-500 h-full rounded-full transition-all"
+                                style={{ width: `${paidPercent}%` }}
+                              />
+                            </div>
+                          )}
+
+                          <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
+                            {isFullySettled
+                              ? `Paid: ${formatAED(paidAed)}`
+                              : isPartiallyPaid
+                              ? `Paid ${formatAED(paidAed)} (${paidPercent}%)`
+                              : `Unpaid · ${formatAED(totalBilledAed)}`}
+                          </div>
+                        </div>
                       </td>
 
                       {/* Actions */}
-                      <td className="px-4 py-3 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1">
                           {/* Pay Button */}
-                          {!isVoided && !isPaid && (
+                          {!isVoided && (
                             <button
                               onClick={() => handleOpenPay(t)}
-                              className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded font-bold text-[11px] flex items-center gap-1 cursor-pointer transition shadow-2xs"
-                              title="Record Payment in AED"
+                              className={`px-2 py-1 rounded font-bold text-[10px] flex items-center gap-1 cursor-pointer transition shadow-2xs ${
+                                isFullySettled
+                                  ? "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-700"
+                                  : isPartiallyPaid
+                                  ? "bg-amber-100 hover:bg-amber-200 dark:bg-amber-950 dark:hover:bg-amber-900 text-amber-900 dark:text-amber-100 border border-amber-300 dark:border-amber-700"
+                                  : "bg-teal-50 hover:bg-teal-100 dark:bg-emerald-950 dark:hover:bg-teal-900 text-teal-800 dark:text-emerald-200 border border-teal-300 dark:border-teal-700"
+                              }`}
+                              title={
+                                isFullySettled
+                                  ? "Transfer is paid in full (click to view details or add adjustment)"
+                                  : `Record payment (Remaining Due: ${formatAED(pendingDueAed)})`
+                              }
                             >
-                              <CreditCard className="w-3 h-3 text-emerald-600" />
-                              <span>+ Pay</span>
+                              <CreditCard className={`w-3 h-3 ${isFullySettled ? "text-slate-500" : isPartiallyPaid ? "text-amber-600" : "text-teal-600"}`} />
+                              <span>{isFullySettled ? "Settled" : `+ Pay`}</span>
                             </button>
                           )}
 
                           {/* Receipt */}
                           <button
                             onClick={() => generateTransactionReceipt(t)}
-                            className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition cursor-pointer"
+                            className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition cursor-pointer"
                             title="Download PDF Receipt"
                           >
                             <FileText className="w-3.5 h-3.5" />
@@ -958,7 +1169,7 @@ export default function PartyTransfersPage() {
                           {!isVoided && (
                             <button
                               onClick={() => handleOpenEdit(t)}
-                              className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition cursor-pointer"
+                              className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 rounded transition cursor-pointer"
                               title="Edit Transfer Rates/Amounts"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
@@ -973,7 +1184,7 @@ export default function PartyTransfersPage() {
                                 setVoidReason("");
                                 setVoidError(null);
                               }}
-                              className="p-1 text-slate-400 hover:text-amber-700 hover:bg-amber-50 rounded transition text-[11px] font-semibold cursor-pointer"
+                              className="px-1.5 py-0.5 text-slate-400 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-slate-800 rounded transition text-[10px] font-semibold cursor-pointer"
                               title="Void Transfer"
                             >
                               Void
@@ -986,7 +1197,7 @@ export default function PartyTransfersPage() {
                               setDeletingTxn(t);
                               setDeleteError(null);
                             }}
-                            className="p-1 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
+                            className="p-1 text-slate-300 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 rounded transition cursor-pointer"
                             title="Permanently Delete Transfer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -1001,6 +1212,7 @@ export default function PartyTransfersPage() {
           </table>
         </div>
       </div>
+      </FadeIn>
 
       {/* ========================================================================= */}
       {/* MODAL 1: NEW PARTY TRANSFER (With 3 Default INR Fields & Confirmation) */}
@@ -1225,7 +1437,7 @@ export default function PartyTransfersPage() {
                 </div>
                 <div className="flex justify-between pt-1 border-t border-teal-200">
                   <span className="font-bold text-teal-900">Net Profit (INR):</span>
-                  <span className={`font-mono font-bold ${calculatedNetProfitInr >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
+                  <span className={`font-mono font-bold ${calculatedNetProfitInr >= 0 ? "text-teal-700" : "text-rose-600"}`}>
                     {formatINR(calculatedNetProfitInr)}
                   </span>
                 </div>
@@ -1304,7 +1516,7 @@ export default function PartyTransfersPage() {
                 <span>INR Cost:</span>
                 <span className="font-mono">{formatINR(calculatedCostInr)}</span>
               </div>
-              <div className={`flex justify-between font-bold ${calculatedNetProfitInr >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
+              <div className={`flex justify-between font-bold ${calculatedNetProfitInr >= 0 ? "text-teal-700" : "text-rose-600"}`}>
                 <span>Net Profit (INR):</span>
                 <span className="font-mono">{formatINR(calculatedNetProfitInr)}</span>
               </div>
@@ -1323,7 +1535,7 @@ export default function PartyTransfersPage() {
                 type="button"
                 onClick={handleConfirmSaveTransfer}
                 disabled={savingNew}
-                className="px-5 py-2.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 transition shadow-sm disabled:opacity-50 cursor-pointer"
+                className="px-5 py-2.5 bg-teal-700 text-white rounded-lg text-xs font-bold hover:bg-teal-800 transition shadow-sm disabled:opacity-50 cursor-pointer"
               >
                 {savingNew ? "Saving Record..." : "Confirm & Save Transfer"}
               </button>
@@ -1340,7 +1552,7 @@ export default function PartyTransfersPage() {
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in duration-150">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-emerald-600" />
+                <CreditCard className="w-5 h-5 text-teal-700" />
                 <span>Record Party Settlement (AED)</span>
               </h3>
               <button
@@ -1374,7 +1586,7 @@ export default function PartyTransfersPage() {
                   <span className="text-slate-500">Total Billed:</span>
                   <span className="font-bold text-slate-900">{formatAED(payingTxn.aed_amount)}</span>
                 </div>
-                <div className="flex justify-between text-emerald-700">
+                <div className="flex justify-between text-teal-700">
                   <span>Already Paid:</span>
                   <span className="font-semibold">{formatAED(payingTxn.paid_aed || 0)}</span>
                 </div>
@@ -1425,7 +1637,7 @@ export default function PartyTransfersPage() {
                   placeholder="0.00"
                   value={payAmount}
                   onChange={(e) => setPayAmount(e.target.value)}
-                  className="w-full text-sm font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-emerald-500 font-mono"
+                  className="w-full text-sm font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-teal-500 font-mono"
                 />
               </div>
 
@@ -1453,7 +1665,7 @@ export default function PartyTransfersPage() {
                 <button
                   type="submit"
                   disabled={payLoading}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 cursor-pointer"
+                  className="px-4 py-2 bg-teal-700 text-white rounded-lg text-xs font-bold hover:bg-teal-800 disabled:opacity-50 cursor-pointer"
                 >
                   {payLoading ? "Recording..." : "Save Payment Receipt"}
                 </button>
@@ -1574,7 +1786,7 @@ export default function PartyTransfersPage() {
                     </div>
                     <div className="flex justify-between pt-1 border-t border-teal-200">
                       <span className="font-bold text-teal-900">Net Profit (INR):</span>
-                      <span className={`font-mono font-bold ${editNetProfitInr >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
+                      <span className={`font-mono font-bold ${editNetProfitInr >= 0 ? "text-teal-700" : "text-rose-600"}`}>
                         {formatINR(editNetProfitInr)}
                       </span>
                     </div>
@@ -1712,5 +1924,14 @@ export default function PartyTransfersPage() {
         </div>
       )}
     </div>
+    </PageTransition>
+  );
+}
+
+export default function PartyTransfersPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <PartyTransfersContent />
+    </Suspense>
   );
 }

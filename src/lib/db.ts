@@ -55,7 +55,7 @@ export async function query<T = any>(sql: string, params: any[] = []): Promise<T
         // retry once after a short pause.
         const msg = String(err?.message || "").toLowerCase();
         if (msg.includes("fetch failed") || msg.includes("timeout") || msg.includes("connection") || msg.includes("econnreset")) {
-          await new Promise((resolve) => setTimeout(resolve, 1500));
+          await new Promise((resolve) => setTimeout(resolve, 800));
           const rows = await sqlClient.query(sql, params);
           return rows as T[];
         }
@@ -97,7 +97,7 @@ export async function execute(sql: string, params: any[] = []): Promise<void> {
       } catch (err: any) {
         const msg = String(err?.message || "").toLowerCase();
         if (msg.includes("fetch failed") || msg.includes("timeout") || msg.includes("connection") || msg.includes("econnreset")) {
-          await new Promise((resolve) => setTimeout(resolve, 1500));
+          await new Promise((resolve) => setTimeout(resolve, 800));
           await sqlClient.query(sql, params);
           return;
         }
@@ -120,4 +120,21 @@ export async function execute(sql: string, params: any[] = []): Promise<void> {
     .replace(/NOW\(\)/gi, "datetime('now')");
 
   sqlite.prepare(sqliteSql).run(...params);
+}
+
+/**
+ * Pre-warms the Neon PostgreSQL connection by executing a lightweight query.
+ * Call this early in the application lifecycle to eliminate cold-start delays
+ * for subsequent user-facing queries.
+ */
+export async function warmUp(): Promise<void> {
+  if (!isNeonEnabled()) return;
+  try {
+    const sqlClient = getNeonHttp();
+    if (sqlClient) {
+      await sqlClient`SELECT 1`;
+    }
+  } catch {
+    // Silently ignore warm-up failures — subsequent queries will handle retries
+  }
 }

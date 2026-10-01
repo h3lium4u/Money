@@ -349,7 +349,25 @@ export async function listTransactions(filters?: {
   limit?: number;
   entityType?: string;
 }): Promise<TransactionRecord[]> {
-  let sql = `
+  const isPartyOnly = filters?.entityType === "PARTY";
+  let sql = isPartyOnly
+    ? `
+    SELECT 
+      t.*,
+      c.code as customer_code,
+      c.name as customer_name,
+      c.entity_type,
+      d.name as distributor_name,
+      '-' as distributor_names,
+      '-' as distributor_split_details,
+      0 as total_distributed_inr,
+      COALESCE((SELECT SUM(cp.amount_aed) FROM customer_payments cp WHERE cp.transaction_id = t.id), 0) as paid_aed
+    FROM transactions t
+    JOIN customers c ON c.id = t.customer_id
+    LEFT JOIN distributors d ON d.id = t.distributor_id
+    WHERE COALESCE(c.entity_type, 'CUSTOMER') = 'PARTY'
+  `
+    : `
     SELECT 
       t.*,
       c.code as customer_code,
@@ -393,7 +411,7 @@ export async function listTransactions(filters?: {
     params.push(filters.status);
     sql += ` AND t.status = $${params.length}`;
   }
-  if (filters?.entityType && filters.entityType !== "ALL") {
+  if (filters?.entityType && filters.entityType !== "ALL" && !isPartyOnly) {
     params.push(filters.entityType);
     sql += ` AND COALESCE(c.entity_type, 'CUSTOMER') = $${params.length}`;
   }
@@ -407,6 +425,43 @@ export async function listTransactions(filters?: {
 
   const rows = await query(sql, params);
   return rows.map(mapTransactionRecord);
+}
+
+// ---------------- PARTY TRANSFERS IN-MEMORY CACHE & COMBINED FETCHER ----------------
+let partyTransfersMemoryCache: {
+  timestamp: number;
+  data: {
+    transfers: TransactionRecord[];
+    parties: Customer[];
+  };
+} | null = null;
+
+export function invalidatePartyTransfersCache(): void {
+  partyTransfersMemoryCache = null;
+}
+
+export async function getPartyTransfersData(forceRefresh = false): Promise<{
+  transfers: TransactionRecord[];
+  parties: Customer[];
+}> {
+  const now = Date.now();
+  // Fast cache for 30 seconds unless invalidated by any mutation
+  if (!forceRefresh && partyTransfersMemoryCache && (now - partyTransfersMemoryCache.timestamp < 30000)) {
+    return partyTransfersMemoryCache.data;
+  }
+
+  // Parallel fetch using Promise.all on server
+  const [transfers, parties] = await Promise.all([
+    listTransactions({ entityType: "PARTY", limit: 250 }),
+    listParties(),
+  ]);
+
+  const result = { transfers, parties };
+  partyTransfersMemoryCache = {
+    timestamp: now,
+    data: result,
+  };
+  return result;
 }
 
 export async function getTransaction(id: string): Promise<TransactionRecord | null> {
@@ -524,6 +579,7 @@ export async function createTransaction(data: {
   `, [crypto.randomUUID(), id, JSON.stringify(calc)]);
 
   const created = await getTransaction(id);
+  invalidatePartyTransfersCache();
   return created!;
 }
 
@@ -542,6 +598,7 @@ export async function voidTransaction(id: string, reason: string): Promise<Trans
     VALUES ($1, 'TRANSACTION', $2, 'VOID', $3, $4)
   `, [crypto.randomUUID(), id, JSON.stringify(existing), reason || "User voided transaction"]);
 
+  invalidatePartyTransfersCache();
   const updated = await getTransaction(id);
   return updated!;
 }
@@ -780,6 +837,7 @@ export async function recordCustomerPayment(data: {
   `, [crypto.randomUUID(), id, JSON.stringify(data)]);
 
   const created = await queryOne(`SELECT * FROM customer_payments WHERE id = $1`, [id]);
+  invalidatePartyTransfersCache();
   return {
     ...created,
     payment_date: formatDate(created.payment_date),
@@ -1434,7 +1492,37 @@ export async function getDashboardKPIs(filters?: { from?: string; to?: string; t
     queryOne(`
       SELECT 
         COALESCE((SELECT SUM(aed_amount) FROM transactions WHERE status = 'CONFIRMED'), 0) - 
-        COALESCE((SELECT SUM(amount_aed) FROM customer_payments), 0) as outstanding
+        COALESCE((SELECT SUM(amount_aed) FROM customer_payments), 0) as outstanding,
+        COALESCE((
+          SELECT SUM(t.aed_amount) 
+          FROM transactions t 
+          JOIN customers c ON c.id = t.customer_id 
+          WHERE t.status = 'CONFIRMED' AND COALESCE(c.entity_type, 'CUSTOMER') = 'CUSTOMER'
+        ), 0) - 
+        COALESCE((
+          SELECT SUM(cp.amount_aed) 
+          FROM customer_payments cp 
+          JOIN customers c ON c.id = cp.customer_id 
+          WHERE COALESCE(c.entity_type, 'CUSTOMER') = 'CUSTOMER'
+        ), 0) as customer_outstanding,
+        COALESCE((
+          SELECT SUM(t.aed_amount) 
+          FROM transactions t 
+          JOIN customers c ON c.id = t.customer_id 
+          WHERE t.status = 'CONFIRMED' AND c.entity_type = 'PARTY'
+        ), 0) - 
+        COALESCE((
+          SELECT SUM(cp.amount_aed) 
+          FROM customer_payments cp 
+          JOIN customers c ON c.id = cp.customer_id 
+          WHERE c.entity_type = 'PARTY'
+        ), 0) as party_due_pending,
+        COALESCE((
+          SELECT SUM(cp.amount_aed) 
+          FROM customer_payments cp 
+          JOIN customers c ON c.id = cp.customer_id 
+          WHERE c.entity_type = 'PARTY'
+        ), 0) as party_paid
     `),
 
     queryOne(`
@@ -1484,7 +1572,9 @@ export async function getDashboardKPIs(filters?: { from?: string; to?: string; t
       transactionCount: Number(txnSummary?.count || 0),
 
       // Secondary Global Cards
-      outstandingReceivablesAed: roundTo(Number(custReceivables?.outstanding || 0), 2),
+      outstandingReceivablesAed: roundTo(Number(custReceivables?.customer_outstanding ?? custReceivables?.outstanding ?? 0), 2),
+      partyTransfersDueAed: roundTo(Math.max(0, Number(custReceivables?.party_due_pending || 0)), 2),
+      partyTransfersPaidAed: roundTo(Number(custReceivables?.party_paid || 0), 2),
       indiaDistributionPendingInr: roundTo(Math.max(0, Number(distPending?.pending_inr || 0)), 2),
       bankDistributionPendingInr: roundTo(Number(bankPending?.bank_pending_inr || 0), 2),
     },
@@ -1584,6 +1674,7 @@ export async function updateTransaction(id: string, data: {
     data.reason || "User updated transaction"
   ]);
 
+  invalidatePartyTransfersCache();
   return (await getTransaction(id))!;
 }
 
@@ -1595,6 +1686,7 @@ export async function deleteTransaction(id: string): Promise<void> {
   await execute(`UPDATE customer_payments SET transaction_id = NULL WHERE transaction_id = $1`, [id]);
   await execute(`DELETE FROM audit_logs WHERE entity_id = $1`, [id]);
   await execute(`DELETE FROM transactions WHERE id = $1`, [id]);
+  invalidatePartyTransfersCache();
 }
 
 export async function updateCustomer(id: string, data: {
@@ -1619,6 +1711,7 @@ export async function updateCustomer(id: string, data: {
     WHERE id = $6
   `, [name, code, phone || null, defaultRate || 38.25, status, id]);
 
+  invalidatePartyTransfersCache();
   return (await getCustomer(id))!;
 }
 
@@ -1629,10 +1722,12 @@ export async function deleteCustomer(id: string): Promise<void> {
   }
   await execute(`DELETE FROM customer_payments WHERE customer_id = $1`, [id]);
   await execute(`DELETE FROM customers WHERE id = $1`, [id]);
+  invalidatePartyTransfersCache();
 }
 
 export async function deleteCustomerPayment(id: string): Promise<void> {
   await execute(`DELETE FROM customer_payments WHERE id = $1`, [id]);
+  invalidatePartyTransfersCache();
 }
 
 export async function updateDistributionSplit(id: string, data: {

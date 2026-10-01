@@ -99,7 +99,7 @@ export default function ReceivablesPage() {
             setPayDate(getTodayDateString());
             setShowModal(true);
           }}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-teal-700 text-white hover:bg-teal-800 shadow-sm"
         >
           <PlusCircle className="w-3.5 h-3.5" />
           <span>Record Customer Payment</span>
@@ -122,26 +122,50 @@ export default function ReceivablesPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Customer Receivables</span>
-          <h3 className="text-2xl font-bold text-rose-600 mt-2">
-            {totalReceivables.toLocaleString("en-US", { minimumFractionDigits: 2 })} AED
-          </h3>
-          <p className="text-xs text-slate-500 mt-1">Across {owingCustomers.length} active customer accounts</p>
+          {loading ? (
+            <div className="h-8 w-32 rounded-md bg-slate-200 animate-pulse mt-2" />
+          ) : (
+            <h3 className="text-2xl font-bold text-rose-600 mt-2">
+              {totalReceivables.toLocaleString("en-US", { minimumFractionDigits: 2 })} AED
+            </h3>
+          )}
+          {loading ? (
+            <div className="h-4 w-40 rounded bg-slate-200 animate-pulse mt-1" />
+          ) : (
+            <p className="text-xs text-slate-500 mt-1">Across {owingCustomers.length} active customer accounts</p>
+          )}
         </div>
 
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Settled Customer Accounts</span>
-          <h3 className="text-2xl font-bold text-emerald-600 mt-2">
-            {customers.length - owingCustomers.length} Accounts
-          </h3>
-          <p className="text-xs text-slate-500 mt-1">Zero balance / fully paid</p>
+          {loading ? (
+            <div className="h-8 w-24 rounded-md bg-slate-200 animate-pulse mt-2" />
+          ) : (
+            <h3 className="text-2xl font-bold text-teal-700 mt-2">
+              {customers.length - owingCustomers.length} Accounts
+            </h3>
+          )}
+          {loading ? (
+            <div className="h-4 w-32 rounded bg-slate-200 animate-pulse mt-1" />
+          ) : (
+            <p className="text-xs text-slate-500 mt-1">Zero balance / fully paid</p>
+          )}
         </div>
 
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Accounts Tracked</span>
-          <h3 className="text-2xl font-bold text-slate-900 mt-2">
-            {customers.length} Customers
-          </h3>
-          <p className="text-xs text-slate-500 mt-1">All verified active customers</p>
+          {loading ? (
+            <div className="h-8 w-24 rounded-md bg-slate-200 animate-pulse mt-2" />
+          ) : (
+            <h3 className="text-2xl font-bold text-slate-900 mt-2">
+              {customers.length} Customers
+            </h3>
+          )}
+          {loading ? (
+            <div className="h-4 w-32 rounded bg-slate-200 animate-pulse mt-1" />
+          ) : (
+            <p className="text-xs text-slate-500 mt-1">All verified active customers</p>
+          )}
         </div>
       </div>
 
@@ -156,48 +180,51 @@ export default function ReceivablesPage() {
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
               <tr>
-                <th className="py-3 px-4">Customer</th>
-                <th className="py-3 px-4">Code</th>
-                <th className="py-3 px-4 text-right">Total AED Billed</th>
-                <th className="py-3 px-4 text-right">Total AED Paid</th>
-                <th className="py-3 px-4 text-right">Outstanding (AED)</th>
-                <th className="py-3 px-4 text-center">Action</th>
+                <th className="py-2.5 px-3">Customer</th>
+                <th className="py-2.5 px-3 text-right">Total AED Billed</th>
+                <th className="py-2.5 px-3 text-right">Total AED Paid</th>
+                <th className="py-2.5 px-3 text-right">Outstanding (AED)</th>
+                <th className="py-2.5 px-3 text-center">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 font-medium">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400 text-xs">
+                  <td colSpan={5} className="py-12 text-center text-slate-400 text-xs">
                     Loading receivables...
                   </td>
                 </tr>
               ) : owingCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-emerald-600 text-xs font-semibold">
+                  <td colSpan={5} className="py-12 text-center text-teal-700 text-xs font-semibold">
                     ✓ All customer accounts are settled and have zero outstanding balance!
                   </td>
                 </tr>
               ) : (
                 owingCustomers.map((c) => (
                   <tr key={c.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-3 px-4 font-bold text-slate-900">{c.name}</td>
-                    <td className="py-3 px-4 font-mono text-slate-500">{c.code}</td>
-                    <td className="py-3 px-4 text-right font-medium text-slate-900">
+                    <td className="py-2.5 px-3">
+                      <div className="font-bold text-slate-900">{c.name}</div>
+                      {c.code && (
+                        <div className="text-[10px] font-mono text-slate-500">{c.code}</div>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-medium text-slate-900 whitespace-nowrap">
                       {(c.total_aed || 0).toFixed(2)} AED
                     </td>
-                    <td className="py-3 px-4 text-right font-medium text-emerald-700">
+                    <td className="py-2.5 px-3 text-right font-medium text-teal-700 whitespace-nowrap">
                       {(c.total_paid || 0).toFixed(2)} AED
                     </td>
-                    <td className="py-3 px-4 text-right font-bold text-rose-600">
+                    <td className="py-2.5 px-3 text-right font-bold text-rose-600 whitespace-nowrap">
                       {(c.outstanding_balance || 0).toFixed(2)} AED
                     </td>
-                    <td className="py-3 px-4 text-center">
+                    <td className="py-2.5 px-3 text-center whitespace-nowrap">
                       <button
                         onClick={() => {
                           setSelectedCustId(c.id);
                           setShowModal(true);
                         }}
-                        className="px-2.5 py-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded"
+                        className="px-2.5 py-1 text-xs font-semibold text-teal-700 hover:text-teal-800 hover:bg-teal-50 rounded"
                       >
                         Settle Payment ➔
                       </button>
@@ -233,7 +260,7 @@ export default function ReceivablesPage() {
               <select
                 value={selectedCustId}
                 onChange={(e) => setSelectedCustId(e.target.value)}
-                className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold"
+                className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500 font-semibold"
               >
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -251,7 +278,7 @@ export default function ReceivablesPage() {
                   required
                   value={payDate}
                   onChange={(e) => setPayDate(e.target.value)}
-                  className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
 
@@ -260,7 +287,7 @@ export default function ReceivablesPage() {
                 <select
                   value={payMethod}
                   onChange={(e) => setPayMethod(e.target.value)}
-                  className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 >
                   <option value="CASH">Cash (Dubai)</option>
                   <option value="BANK_TRANSFER">Bank Transfer (AED)</option>
@@ -281,7 +308,7 @@ export default function ReceivablesPage() {
                 placeholder="e.g. 5000"
                 value={payAmount}
                 onChange={(e) => setPayAmount(e.target.value)}
-                className="w-full text-sm font-bold border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full text-sm font-bold border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
 
@@ -292,7 +319,7 @@ export default function ReceivablesPage() {
                 placeholder="Deposit slip / transfer reference"
                 value={payNotes}
                 onChange={(e) => setPayNotes(e.target.value)}
-                className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
 
@@ -307,7 +334,7 @@ export default function ReceivablesPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm"
+                className="px-4 py-2 bg-teal-700 text-white text-xs font-bold rounded-lg hover:bg-teal-800 shadow-sm"
               >
                 {submitting ? "Saving..." : "Record Payment"}
               </button>

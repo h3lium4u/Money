@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import {
   Landmark,
   PlusCircle,
@@ -25,6 +26,7 @@ import {
   Filter,
 } from "lucide-react";
 import { getTodayDateString } from "@/lib/date-utils";
+import { FadeIn, PageTransition, StaggerContainer, StaggerItem } from "@/components/AnimatedLayout";
 
 interface BankAccount {
   id: string;
@@ -281,8 +283,10 @@ export default function BankDistripPage() {
       setAddPaid("");
       setAddNotes("");
       await fetchBankData();
+      toast.success("Settlement entry created successfully");
     } catch (err: any) {
       setAddError(err.message || "Failed to create settlement entry");
+      toast.error(err.message || "Failed to create settlement entry");
     } finally {
       setAddSubmitting(false);
     }
@@ -314,8 +318,10 @@ export default function BankDistripPage() {
 
       setEditRecord(null);
       await fetchBankData();
+      toast.success("Settlement entry updated successfully");
     } catch (err: any) {
       setEditError(err.message || "Failed to update settlement entry");
+      toast.error(err.message || "Failed to update settlement entry");
     } finally {
       setEditSubmitting(false);
     }
@@ -337,8 +343,10 @@ export default function BankDistripPage() {
 
       setDeleteTarget(null);
       await fetchBankData();
+      toast.success("Settlement entry deleted successfully");
     } catch (err: any) {
       setDeleteError(err.message || "Failed to delete settlement record");
+      toast.error(err.message || "Failed to delete settlement record");
     } finally {
       setDeleteSubmitting(false);
     }
@@ -378,8 +386,10 @@ export default function BankDistripPage() {
       await fetchBankData();
       setSelectedAccount(created.id);
       setAddAccountId(created.id);
+      toast.success("Account created successfully");
     } catch (err: any) {
       setNewAccError(err.message || "Failed to create account");
+      toast.error(err.message || "Failed to create account");
     } finally {
       setNewAccSubmitting(false);
     }
@@ -410,6 +420,7 @@ export default function BankDistripPage() {
   }
 
   return (
+    <PageTransition>
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -491,7 +502,7 @@ export default function BankDistripPage() {
       </div>
 
       {/* Logic Callout Banner */}
-      <div className="bg-gradient-to-r from-teal-50/80 via-emerald-50/50 to-teal-50/80 dark:from-teal-950/40 dark:via-emerald-950/20 dark:to-teal-950/40 border border-teal-200/80 dark:border-teal-800/60 rounded-xl p-3 sm:p-4 text-xs text-slate-700 dark:text-slate-300 shadow-2xs">
+      <div className="bg-gradient-to-r from-teal-50/80 via-teal-50/50 to-teal-50/80 dark:from-teal-950/40 dark:via-teal-950/20 dark:to-teal-950/40 border border-teal-200/80 dark:border-teal-800/60 rounded-xl p-3 sm:p-4 text-xs text-slate-700 dark:text-slate-300 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-start gap-2.5">
             <Calculator className="w-4 h-4 text-teal-700 dark:text-teal-400 shrink-0 mt-0.5" />
@@ -516,6 +527,7 @@ export default function BankDistripPage() {
       </div>
 
       {/* Distributor Tabs / Selector */}
+      <FadeIn delay={0.1}>
       <div className="bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2.5">
           <div className="flex items-center gap-2">
@@ -554,7 +566,7 @@ export default function BankDistripPage() {
               >
                 <span>{acc.account_code || acc.account_name}</span>
                 <span
-                  className={`px-1.5 py-0.5 rounded text-[11px] font-mono ${
+                  className={`px-1.5 py-0.5 rounded text-[11px] font-mono flex items-center justify-center ${
                     isSelected
                       ? "bg-teal-800/80 text-teal-100"
                       : isNeg
@@ -562,7 +574,11 @@ export default function BankDistripPage() {
                       : "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
                   }`}
                 >
-                  {formatINR(bal)}
+                  {loading ? (
+                    <div className={`h-4 w-12 rounded animate-pulse ${isSelected ? 'bg-teal-700' : 'bg-slate-200 dark:bg-slate-700'}`} />
+                  ) : (
+                    formatINR(bal)
+                  )}
                 </span>
               </button>
             );
@@ -570,8 +586,11 @@ export default function BankDistripPage() {
         </div>
       </div>
 
+      </FadeIn>
+
       {/* GRAND TOTAL MATRIX SECTION */}
       {activeTab === "grand-total" ? (
+        <FadeIn delay={0.2}>
         <div className="space-y-6">
           {/* Grand Total KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -580,9 +599,13 @@ export default function BankDistripPage() {
                 <span>GRAND ORDER</span>
                 <Layers className="w-4 h-4 text-teal-600 dark:text-teal-400" />
               </div>
-              <div className="text-xl font-bold font-mono text-slate-900 dark:text-slate-100 mt-2">
-                {formatINR(grandTotals?.grand_order || 0)}
-              </div>
+              {loading ? (
+                <div className="h-7 w-28 rounded bg-slate-200 dark:bg-slate-700 animate-pulse mt-2" />
+              ) : (
+                <div className="text-xl font-bold font-mono text-slate-900 dark:text-slate-100 mt-2">
+                  {formatINR(grandTotals?.grand_order || 0)}
+                </div>
+              )}
               <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                 Sum of all parties' order amounts
               </div>
@@ -591,11 +614,15 @@ export default function BankDistripPage() {
             <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
               <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
                 <span>GRAND COM</span>
-                <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <TrendingUp className="w-4 h-4 text-teal-700 dark:text-teal-400" />
               </div>
-              <div className="text-xl font-bold font-mono text-slate-900 dark:text-slate-100 mt-2">
-                {formatINR(grandTotals?.grand_commission || 0)}
-              </div>
+              {loading ? (
+                <div className="h-7 w-28 rounded bg-slate-200 dark:bg-slate-700 animate-pulse mt-2" />
+              ) : (
+                <div className="text-xl font-bold font-mono text-slate-900 dark:text-slate-100 mt-2">
+                  {formatINR(grandTotals?.grand_commission || 0)}
+                </div>
+              )}
               <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                 Sum of all parties' commission
               </div>
@@ -606,9 +633,13 @@ export default function BankDistripPage() {
                 <span>GRAND PAID</span>
                 <TrendingDown className="w-4 h-4 text-sky-600 dark:text-sky-400" />
               </div>
-              <div className="text-xl font-bold font-mono text-slate-900 dark:text-slate-100 mt-2">
-                {formatINR(grandTotals?.grand_paid || 0)}
-              </div>
+              {loading ? (
+                <div className="h-7 w-28 rounded bg-slate-200 dark:bg-slate-700 animate-pulse mt-2" />
+              ) : (
+                <div className="text-xl font-bold font-mono text-slate-900 dark:text-slate-100 mt-2">
+                  {formatINR(grandTotals?.grand_paid || 0)}
+                </div>
+              )}
               <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                 Sum of all payments made to parties
               </div>
@@ -619,9 +650,13 @@ export default function BankDistripPage() {
                 <span>GRAND CLOSING BAL</span>
                 <Landmark className="w-4 h-4 text-teal-300" />
               </div>
-              <div className="text-xl font-bold font-mono text-white mt-2">
-                {formatINR(grandTotals?.grand_balance || 0)}
-              </div>
+              {loading ? (
+                <div className="h-7 w-32 rounded bg-teal-800 animate-pulse mt-2" />
+              ) : (
+                <div className="text-xl font-bold font-mono text-white mt-2">
+                  {formatINR(grandTotals?.grand_balance || 0)}
+                </div>
+              )}
               <div className="text-[11px] text-teal-200/90 mt-1">
                 Sum of party closing balances (Excel Rule #9)
               </div>
@@ -647,17 +682,17 @@ export default function BankDistripPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800 font-semibold uppercase tracking-wider text-[11px]">
-                    <th className="py-3 px-4">Party / Distributor</th>
-                    <th className="py-3 px-4 text-right">Total Order (INR)</th>
-                    <th className="py-3 px-4 text-right">Total COM (INR)</th>
-                    <th className="py-3 px-4 text-right">Total Paid (INR)</th>
-                    <th className="py-3 px-4 text-right">Closing Balance (INR)</th>
-                    <th className="py-3 px-4 text-center">Records</th>
-                    <th className="py-3 px-4 text-right">Action</th>
+                  <tr className="bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800 font-semibold uppercase tracking-wider text-[10px]">
+                    <th className="py-2.5 px-3">Party / Distributor</th>
+                    <th className="py-2.5 px-3 text-right">Total Order (INR)</th>
+                    <th className="py-2.5 px-3 text-right">Total COM (INR)</th>
+                    <th className="py-2.5 px-3 text-right">Total Paid (INR)</th>
+                    <th className="py-2.5 px-3 text-right">Closing Balance (INR)</th>
+                    <th className="py-2.5 px-3 text-center">Records</th>
+                    <th className="py-2.5 px-3 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
                   {(grandTotals?.distributor_summaries || accounts.map(a => ({
                     account_id: a.id,
                     account_code: a.account_code,
@@ -672,39 +707,39 @@ export default function BankDistripPage() {
                       key={item.account_id}
                       className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors"
                     >
-                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-teal-500"></span>
+                      <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-slate-100">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0"></span>
                           <span>{item.account_code}</span>
-                          <span className="text-[11px] text-slate-400 font-normal">
+                          <span className="text-[10px] text-slate-400 font-normal">
                             ({item.account_name})
                           </span>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-right font-mono text-slate-700 dark:text-slate-300">
+                      <td className="py-2.5 px-3 text-right font-mono text-slate-700 dark:text-slate-300 whitespace-nowrap">
                         {formatINR(item.total_order)}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono text-slate-700 dark:text-slate-300">
+                      <td className="py-2.5 px-3 text-right font-mono text-slate-700 dark:text-slate-300 whitespace-nowrap">
                         {formatINR(item.total_commission)}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono text-slate-700 dark:text-slate-300">
+                      <td className="py-2.5 px-3 text-right font-mono text-slate-700 dark:text-slate-300 whitespace-nowrap">
                         {formatINR(item.total_paid)}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono font-bold">
+                      <td className="py-2.5 px-3 text-right font-mono font-bold whitespace-nowrap">
                         <span
-                          className={`px-2 py-0.5 rounded ${
+                          className={`px-2 py-0.5 rounded text-[11px] ${
                             item.closing_balance < 0
                               ? "bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
-                              : "bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                              : "bg-teal-50 text-teal-800 dark:bg-teal-950 dark:text-teal-300"
                           }`}
                         >
                           {formatINR(item.closing_balance)}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-center text-slate-500 dark:text-slate-400 font-mono">
+                      <td className="py-2.5 px-3 text-center text-slate-500 dark:text-slate-400 font-mono">
                         {item.record_count}
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-2.5 px-3 text-right whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => {
@@ -722,22 +757,22 @@ export default function BankDistripPage() {
                 </tbody>
                 <tfoot>
                   <tr className="bg-slate-100 dark:bg-slate-800/90 font-bold border-t-2 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100">
-                    <td className="py-3.5 px-4 text-xs tracking-wider uppercase">
+                    <td className="py-2.5 px-3 text-xs tracking-wider uppercase">
                       GRAND TOTAL
                     </td>
-                    <td className="py-3.5 px-4 text-right font-mono text-xs">
+                    <td className="py-2.5 px-3 text-right font-mono text-xs whitespace-nowrap">
                       {formatINR(grandTotals?.grand_order || 0)}
                     </td>
-                    <td className="py-3.5 px-4 text-right font-mono text-xs">
+                    <td className="py-2.5 px-3 text-right font-mono text-xs whitespace-nowrap">
                       {formatINR(grandTotals?.grand_commission || 0)}
                     </td>
-                    <td className="py-3.5 px-4 text-right font-mono text-xs">
+                    <td className="py-2.5 px-3 text-right font-mono text-xs whitespace-nowrap">
                       {formatINR(grandTotals?.grand_paid || 0)}
                     </td>
-                    <td className="py-3.5 px-4 text-right font-mono text-xs text-teal-700 dark:text-teal-300">
+                    <td className="py-2.5 px-3 text-right font-mono text-xs text-teal-700 dark:text-teal-300 whitespace-nowrap">
                       {formatINR(grandTotals?.grand_balance || 0)}
                     </td>
-                    <td colSpan={2} className="py-3.5 px-4 text-right text-[11px] text-slate-500 font-normal italic">
+                    <td colSpan={2} className="py-2.5 px-3 text-right text-[11px] text-slate-500 font-normal italic">
                       * Grand BAL = Sum of party closing balances
                     </td>
                   </tr>
@@ -746,8 +781,10 @@ export default function BankDistripPage() {
             </div>
           </div>
         </div>
+        </FadeIn>
       ) : (
         /* DISTRIBUTOR LEDGER SECTION */
+        <FadeIn delay={0.2}>
         <div className="space-y-6">
           {/* Active Distributor KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -762,9 +799,13 @@ export default function BankDistripPage() {
                 </span>
                 <Layers className="w-4 h-4 text-teal-600 dark:text-teal-400" />
               </div>
-              <div className="text-xl font-bold font-mono text-slate-900 dark:text-slate-100 mt-2">
-                {formatINR(totalOrders)}
-              </div>
+              {loading ? (
+                <div className="h-7 w-28 rounded bg-slate-200 dark:bg-slate-700 animate-pulse mt-2" />
+              ) : (
+                <div className="text-xl font-bold font-mono text-slate-900 dark:text-slate-100 mt-2">
+                  {formatINR(totalOrders)}
+                </div>
+              )}
               <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
                 <Lock className="w-3 h-3 text-slate-400" />
                 <span>Derived from splits & allocations</span>
@@ -780,11 +821,15 @@ export default function BankDistripPage() {
                     Manual
                   </span>
                 </span>
-                <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <TrendingUp className="w-4 h-4 text-teal-700 dark:text-teal-400" />
               </div>
-              <div className="text-xl font-bold font-mono text-slate-900 dark:text-slate-100 mt-2">
-                {formatINR(totalCommission)}
-              </div>
+              {loading ? (
+                <div className="h-7 w-28 rounded bg-slate-200 dark:bg-slate-700 animate-pulse mt-2" />
+              ) : (
+                <div className="text-xl font-bold font-mono text-slate-900 dark:text-slate-100 mt-2">
+                  {formatINR(totalCommission)}
+                </div>
+              )}
               <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                 Total commission entered for {activeAccount?.account_code || "party"}
               </div>
@@ -801,9 +846,13 @@ export default function BankDistripPage() {
                 </span>
                 <TrendingDown className="w-4 h-4 text-sky-600 dark:text-sky-400" />
               </div>
-              <div className="text-xl font-bold font-mono text-slate-900 dark:text-slate-100 mt-2">
-                {formatINR(totalPaid)}
-              </div>
+              {loading ? (
+                <div className="h-7 w-28 rounded bg-slate-200 dark:bg-slate-700 animate-pulse mt-2" />
+              ) : (
+                <div className="text-xl font-bold font-mono text-slate-900 dark:text-slate-100 mt-2">
+                  {formatINR(totalPaid)}
+                </div>
+              )}
               <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                 Net paid amounts (supports negatives)
               </div>
@@ -815,9 +864,13 @@ export default function BankDistripPage() {
                 <span className="tracking-wide">CLOSING BALANCE</span>
                 <Landmark className="w-4 h-4 text-teal-300" />
               </div>
-              <div className="text-xl font-bold font-mono text-white mt-2">
-                {formatINR(closingBalance)}
-              </div>
+              {loading ? (
+                <div className="h-7 w-32 rounded bg-teal-800 animate-pulse mt-2" />
+              ) : (
+                <div className="text-xl font-bold font-mono text-white mt-2">
+                  {formatINR(closingBalance)}
+                </div>
+              )}
               <div className="text-[11px] text-teal-200/90 mt-1 flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3 text-teal-400" />
                 <span>Latest chronological settlement balance</span>
@@ -936,9 +989,9 @@ export default function BankDistripPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800 font-semibold uppercase tracking-wider text-[11px]">
-                    <th className="py-3 px-4">Date</th>
-                    <th className="py-3 px-4 text-right">
+                  <tr className="bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800 font-semibold uppercase tracking-wider text-[10px]">
+                    <th className="py-2.5 px-3">Date</th>
+                    <th className="py-2.5 px-3 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <span>ORDER (INR)</span>
                         <span title="Read Only: From System Allocations & Splits">
@@ -946,19 +999,19 @@ export default function BankDistripPage() {
                         </span>
                       </div>
                     </th>
-                    <th className="py-3 px-4 text-right">COM (INR)</th>
-                    <th className="py-3 px-4 text-right">PAID (INR)</th>
-                    <th className="py-3 px-4 text-right">
+                    <th className="py-2.5 px-3 text-right">COM (INR)</th>
+                    <th className="py-2.5 px-3 text-right">PAID (INR)</th>
+                    <th className="py-2.5 px-3 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <span>RUNNING BAL (INR)</span>
                         <Calculator className="w-3 h-3 text-teal-600 dark:text-teal-400" />
                       </div>
                     </th>
-                    <th className="py-3 px-4">Notes</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
+                    <th className="py-2.5 px-3">Notes</th>
+                    <th className="py-2.5 px-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
                   {loading ? (
                     <tr>
                       <td colSpan={7} className="py-8 text-center text-slate-500">
@@ -968,8 +1021,32 @@ export default function BankDistripPage() {
                     </tr>
                   ) : filteredRecords.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-8 text-center text-slate-500 dark:text-slate-400">
-                        No settlement records recorded for this party yet.
+                      <td colSpan={7} className="px-6 py-16 text-center">
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                            <Landmark className="w-7 h-7 text-slate-400 dark:text-slate-500" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">No settlement records found</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Try adjusting your filters or record a new settlement</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAddAccountId(selectedAccount || (accounts[0]?.id || ""));
+                              setAddDate(getTodayDateString());
+                              setAddCom("");
+                              setAddPaid("");
+                              setAddNotes("");
+                              setAddError(null);
+                              setShowAddModal(true);
+                            }}
+                            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 transition"
+                          >
+                            <PlusCircle className="w-3.5 h-3.5" />
+                            Record Settlement
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ) : (
@@ -982,12 +1059,12 @@ export default function BankDistripPage() {
                           className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors group"
                         >
                           {/* Date */}
-                          <td className="py-3 px-4 font-mono font-medium text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                          <td className="py-2.5 px-3 font-mono font-medium text-slate-900 dark:text-slate-100 whitespace-nowrap">
                             {formatDateReadable(r.record_date)}
                           </td>
 
                           {/* ORDER (INR) - Read-only badge */}
-                          <td className="py-3 px-4 text-right font-mono text-slate-800 dark:text-slate-200">
+                          <td className="py-2.5 px-3 text-right font-mono text-slate-800 dark:text-slate-200 whitespace-nowrap">
                             <div className="flex items-center justify-end gap-1.5">
                               {r.order_inr > 0 ? (
                                 <span className="font-semibold">{formatINR(r.order_inr)}</span>
@@ -999,7 +1076,7 @@ export default function BankDistripPage() {
                           </td>
 
                           {/* COM (INR) */}
-                          <td className="py-3 px-4 text-right font-mono text-slate-800 dark:text-slate-200">
+                          <td className="py-2.5 px-3 text-right font-mono text-slate-800 dark:text-slate-200 whitespace-nowrap">
                             {r.commission_inr !== 0 ? (
                               <span className="text-teal-700 dark:text-teal-400 font-medium">
                                 {formatINR(r.commission_inr)}
@@ -1010,7 +1087,7 @@ export default function BankDistripPage() {
                           </td>
 
                           {/* PAID (INR) - Handles negative values */}
-                          <td className="py-3 px-4 text-right font-mono">
+                          <td className="py-2.5 px-3 text-right font-mono whitespace-nowrap">
                             {r.paid_inr !== 0 ? (
                               <span
                                 className={`font-medium ${
@@ -1027,9 +1104,9 @@ export default function BankDistripPage() {
                           </td>
 
                           {/* RUNNING BAL (INR) */}
-                          <td className="py-3 px-4 text-right font-mono font-bold whitespace-nowrap">
+                          <td className="py-2.5 px-3 text-right font-mono font-bold whitespace-nowrap">
                             <span
-                              className={`px-2 py-0.5 rounded ${
+                              className={`px-2 py-0.5 rounded text-[11px] ${
                                 isBalNeg
                                   ? "bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
                                   : "bg-teal-50 text-teal-800 dark:bg-teal-950 dark:text-teal-300"
@@ -1040,12 +1117,12 @@ export default function BankDistripPage() {
                           </td>
 
                           {/* Notes */}
-                          <td className="py-3 px-4 text-slate-500 dark:text-slate-400 max-w-xs truncate">
+                          <td className="py-2.5 px-3 text-slate-500 dark:text-slate-400 max-w-xs truncate">
                             {r.notes || "-"}
                           </td>
 
                           {/* Actions */}
-                          <td className="py-3 px-4 text-right whitespace-nowrap">
+                          <td className="py-2.5 px-3 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-1.5">
                               <button
                                 type="button"
@@ -1105,6 +1182,7 @@ export default function BankDistripPage() {
             </div>
           </div>
         </div>
+        </FadeIn>
       )}
 
       {/* ADD SETTLEMENT ENTRY MODAL */}
@@ -1605,5 +1683,6 @@ export default function BankDistripPage() {
         </div>
       )}
     </div>
+    </PageTransition>
   );
 }

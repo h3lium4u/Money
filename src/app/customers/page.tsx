@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
+import { FadeIn, PageTransition, StaggerContainer, StaggerItem } from "@/components/AnimatedLayout";
+import { toast } from "sonner";
 import {
   Users,
   Search,
@@ -16,11 +19,24 @@ import {
   Trash2,
 } from "lucide-react";
 
-export default function CustomersPage() {
+function CustomersContent() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [balanceFilter, setBalanceFilter] = useState("all");
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const [search, setSearch] = useState(searchParams.get("q") || "");
+  const [balanceFilter, setBalanceFilter] = useState(searchParams.get("balance") || "all");
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (search) params.set("q", search);
+    if (balanceFilter && balanceFilter !== "all") params.set("balance", balanceFilter);
+
+    const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+    window.history.replaceState({}, '', newUrl);
+  }, [search, balanceFilter]);
 
   // Create Customer Modal State
   const [showModal, setShowModal] = useState(false);
@@ -93,8 +109,10 @@ export default function CustomersPage() {
       setNewPhone("");
       setNewRate("38.25");
       fetchCustomers();
+      toast.success("Customer created successfully");
     } catch (err: any) {
       setModalError(err.message || "Failed to create customer");
+      toast.error(err.message || "Failed to create customer");
     } finally {
       setSubmitting(false);
     }
@@ -132,8 +150,10 @@ export default function CustomersPage() {
 
       setEditCustomer(null);
       fetchCustomers();
+      toast.success("Customer updated successfully");
     } catch (err: any) {
       setEditError(err.message || "Failed to update customer");
+      toast.error(err.message || "Failed to update customer");
     } finally {
       setEditSubmitting(false);
     }
@@ -154,8 +174,10 @@ export default function CustomersPage() {
 
       setDeleteCustomerTarget(null);
       fetchCustomers();
+      toast.success("Customer deleted successfully");
     } catch (err: any) {
       setDeleteError(err.message || "Failed to delete customer");
+      toast.error(err.message || "Failed to delete customer");
     } finally {
       setDeleteSubmitting(false);
     }
@@ -177,6 +199,7 @@ export default function CustomersPage() {
   const totalOutstanding = customers.reduce((sum, c) => sum + (c.outstanding_balance || 0), 0);
 
   return (
+    <PageTransition>
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -192,13 +215,13 @@ export default function CustomersPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-teal-700 text-white text-xs font-bold rounded-lg hover:bg-teal-800 shadow-sm"
           >
             <UserPlus className="w-4 h-4" />
             <span>+ Add Customer</span>
           </button>
 
-          {customers.length > 0 && (
+          {(loading || customers.length > 0) && (
             <div className="flex items-center gap-3 bg-rose-50 border border-rose-200 px-4 py-2 rounded-xl">
               <div className="w-8 h-8 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center">
                 <Coins className="w-4 h-4" />
@@ -207,9 +230,13 @@ export default function CustomersPage() {
                 <span className="text-[10px] font-bold text-rose-800 uppercase tracking-wider">
                   Total Outstanding Due
                 </span>
-                <p className="text-sm font-bold text-rose-950">
-                  {totalOutstanding.toLocaleString("en-US", { minimumFractionDigits: 2 })} AED
-                </p>
+                {loading ? (
+                  <div className="h-5 w-24 mt-0.5 rounded bg-rose-200/50 animate-pulse" />
+                ) : (
+                  <p className="text-sm font-bold text-rose-950">
+                    {totalOutstanding.toLocaleString("en-US", { minimumFractionDigits: 2 })} AED
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -217,6 +244,7 @@ export default function CustomersPage() {
       </div>
 
       {/* Filter Bar */}
+      <FadeIn delay={0.1}>
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="relative w-full sm:w-72">
           <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
@@ -225,7 +253,7 @@ export default function CustomersPage() {
             placeholder="Search customer name or code..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full text-xs pl-8 pr-3 py-2 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full text-xs pl-8 pr-3 py-2 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
         </div>
 
@@ -251,43 +279,50 @@ export default function CustomersPage() {
         </div>
       </div>
 
+      </FadeIn>
+
       {/* Customer Grid / Table */}
+      <FadeIn delay={0.2}>
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
               <tr>
-                <th className="py-3 px-4">Customer Name</th>
-                <th className="py-3 px-4">Code</th>
-                <th className="py-3 px-4 text-right">Default Rate</th>
-                <th className="py-3 px-4 text-right">Total Processed (INR)</th>
-                <th className="py-3 px-4 text-right">Total AED Billed</th>
-                <th className="py-3 px-4 text-right">Total AED Paid</th>
-                <th className="py-3 px-4 text-right">Outstanding (AED)</th>
-                <th className="py-3 px-4 text-center">Actions</th>
+                <th className="py-3 px-3">Customer / Code</th>
+                <th className="py-3 px-3 text-right">Default Rate</th>
+                <th className="py-3 px-3 text-right">Total Processed (INR)</th>
+                <th className="py-3 px-3 text-right">Total AED Billed</th>
+                <th className="py-3 px-3 text-right">Total AED Paid</th>
+                <th className="py-3 px-3 text-right">Outstanding (AED)</th>
+                <th className="py-3 px-3 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-xs text-slate-400">
+                  <td colSpan={7} className="py-12 text-center text-xs text-slate-400">
                     Loading customers...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-16 text-center">
-                    <Users className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                    <p className="text-sm font-bold text-slate-800">No Customers Found</p>
-                    <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-                      All default names have been cleared. Click "+ Add Customer" above to create your clients.
-                    </p>
-                    <button
-                      onClick={() => setShowModal(true)}
-                      className="mt-4 px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm"
-                    >
-                      + Add First Customer
-                    </button>
+                  <td colSpan={7} className="px-6 py-16 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                        <Users className="w-7 h-7 text-slate-400 dark:text-slate-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">No customers found</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Try adjusting your filters or add a new customer</p>
+                      </div>
+                      <button
+                        onClick={() => setShowModal(true)}
+                        className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 transition"
+                      >
+                        <PlusCircle className="w-3.5 h-3.5" />
+                        Add Customer
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -295,42 +330,46 @@ export default function CustomersPage() {
                   const bal = c.outstanding_balance || 0;
                   return (
                     <tr key={c.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-3.5 px-4 font-bold text-slate-900">
-                        <Link href={`/customers/${c.id}`} className="hover:underline text-emerald-800">
+                      <td className="py-2.5 px-3">
+                        <Link href={`/customers/${c.id}`} className="font-bold text-slate-900 hover:underline hover:text-teal-800 text-xs">
                           {c.name}
                         </Link>
+                        {c.code && (
+                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                            {c.code}
+                          </div>
+                        )}
                       </td>
-                      <td className="py-3.5 px-4 font-mono text-slate-500">{c.code}</td>
-                      <td className="py-3.5 px-4 text-right font-mono text-slate-700">
+                      <td className="py-2.5 px-3 text-right font-mono text-slate-700 text-xs">
                         {c.default_rate || 38.25}
                       </td>
-                      <td className="py-3.5 px-4 text-right font-medium text-slate-900">
+                      <td className="py-2.5 px-3 text-right font-medium text-slate-900">
                         ₹ {(c.total_inr || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="py-3.5 px-4 text-right text-slate-700">
+                      <td className="py-2.5 px-3 text-right text-slate-700">
                         {(c.total_aed || 0).toFixed(2)} AED
                       </td>
-                      <td className="py-3.5 px-4 text-right text-emerald-700 font-medium">
+                      <td className="py-2.5 px-3 text-right text-teal-700 font-medium">
                         {(c.total_paid || 0).toFixed(2)} AED
                       </td>
-                      <td className="py-3.5 px-4 text-right font-bold">
+                      <td className="py-2.5 px-3 text-right font-bold">
                         <span
-                          className={`px-2.5 py-1 rounded-full text-xs ${
+                          className={`px-2 py-0.5 rounded-full text-xs ${
                             bal > 0.01
                               ? "bg-rose-100 text-rose-800 font-bold"
                               : bal < -0.01
                               ? "bg-blue-100 text-blue-800 font-bold"
-                              : "bg-emerald-100 text-emerald-800 font-medium"
+                              : "bg-teal-100 text-teal-800 font-medium"
                           }`}
                         >
                           {bal.toFixed(2)} AED
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="py-2.5 px-3 text-center">
                         <div className="flex items-center justify-center gap-1.5">
                           <Link
                             href={`/customers/${c.id}`}
-                            className="px-2 py-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded border border-emerald-200"
+                            className="px-2 py-1 text-xs font-semibold text-teal-700 hover:text-teal-700 hover:bg-teal-50 rounded border border-teal-200"
                             title="View Statement"
                           >
                             Statement
@@ -362,6 +401,7 @@ export default function CustomersPage() {
           </table>
         </div>
       </div>
+      </FadeIn>
 
       {/* CREATE CUSTOMER MODAL */}
       {showModal && (
@@ -369,7 +409,7 @@ export default function CustomersPage() {
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in duration-150">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-emerald-600" />
+                <UserPlus className="w-5 h-5 text-teal-700" />
                 <span>Add New Dubai Customer</span>
               </h3>
               <button
@@ -398,7 +438,7 @@ export default function CustomersPage() {
                   placeholder="e.g. DIVAN or SAMI"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
 
@@ -455,7 +495,7 @@ export default function CustomersPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 shadow-sm"
+                  className="px-4 py-2 bg-teal-700 text-white rounded-lg text-xs font-bold hover:bg-teal-800 disabled:opacity-50 shadow-sm"
                 >
                   {submitting ? "Saving..." : "Save Customer"}
                 </button>
@@ -471,7 +511,7 @@ export default function CustomersPage() {
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in duration-150">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Edit3 className="w-5 h-5 text-emerald-600" />
+                <Edit3 className="w-5 h-5 text-teal-700" />
                 <span>Edit Customer: {editCustomer.name}</span>
               </h3>
               <button
@@ -499,7 +539,7 @@ export default function CustomersPage() {
                   required
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
 
@@ -553,7 +593,7 @@ export default function CustomersPage() {
                 <button
                   type="submit"
                   disabled={editSubmitting}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 shadow-sm"
+                  className="px-4 py-2 bg-teal-700 text-white rounded-lg text-xs font-bold hover:bg-teal-800 disabled:opacity-50 shadow-sm"
                 >
                   {editSubmitting ? "Updating..." : "Update Customer"}
                 </button>
@@ -618,5 +658,14 @@ export default function CustomersPage() {
         </div>
       )}
     </div>
+    </PageTransition>
+  );
+}
+
+export default function CustomersPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CustomersContent />
+    </Suspense>
   );
 }

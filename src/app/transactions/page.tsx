@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
+import { FadeIn, PageTransition, StaggerContainer, StaggerItem } from "@/components/AnimatedLayout";
+import { toast } from "sonner";
 import {
   Search,
   PlusCircle,
@@ -33,19 +36,36 @@ import {
   getStartOfMonthDateString,
 } from "@/lib/date-utils";
 
-export default function TransactionsPage() {
+function TransactionsContent() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [distributors, setDistributors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   // Quick preset filter
-  const [timeFilter, setTimeFilter] = useState("all");
-  const [search, setSearch] = useState("");
-  const [selectedCustomer, setSelectedCustomer] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [fromDate, setFromDate] = useState(getTodayDateString());
-  const [toDate, setToDate] = useState(getTodayDateString());
+  const [timeFilter, setTimeFilter] = useState(searchParams.get("period") || "all");
+  const [search, setSearch] = useState(searchParams.get("q") || "");
+  const [selectedCustomer, setSelectedCustomer] = useState(searchParams.get("customer") || "");
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "");
+  const [fromDate, setFromDate] = useState(searchParams.get("from") || getTodayDateString());
+  const [toDate, setToDate] = useState(searchParams.get("to") || getTodayDateString());
+
+  // URL sync
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (timeFilter && timeFilter !== "all") params.set("period", timeFilter);
+    if (search) params.set("q", search);
+    if (selectedCustomer) params.set("customer", selectedCustomer);
+    if (statusFilter) params.set("status", statusFilter);
+    if (fromDate && fromDate !== getTodayDateString()) params.set("from", fromDate);
+    if (toDate && toDate !== getTodayDateString()) params.set("to", toDate);
+    
+    const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+    window.history.replaceState({}, '', newUrl);
+  }, [timeFilter, search, selectedCustomer, statusFilter, fromDate, toDate]);
 
   // Void modal state
   const [voidingTxn, setVoidingTxn] = useState<any | null>(null);
@@ -129,8 +149,10 @@ export default function TransactionsPage() {
 
       setPayingTxn(null);
       await fetchTransactions();
+      toast.success('Payment recorded successfully');
     } catch (err: any) {
       setPayError(err.message || "Failed to record payment");
+      toast.error(err.message || "Failed to record payment");
     } finally {
       setPayLoading(false);
     }
@@ -275,8 +297,10 @@ export default function TransactionsPage() {
 
       setEditingTxn(null);
       fetchTransactions();
+      toast.success('Transfer updated successfully');
     } catch (err: any) {
       setEditError(err.message || "Failed to update transaction");
+      toast.error(err.message || "Failed to update transaction");
     } finally {
       setIsUpdating(false);
     }
@@ -295,8 +319,10 @@ export default function TransactionsPage() {
 
       setDeletingTxn(null);
       fetchTransactions();
+      toast.success('Transfer deleted permanently');
     } catch (err: any) {
       setDeleteError(err.message || "Failed to delete transaction");
+      toast.error(err.message || "Failed to delete transaction");
     } finally {
       setIsDeleting(false);
     }
@@ -315,9 +341,14 @@ export default function TransactionsPage() {
         setVoidingTxn(null);
         setVoidReason("");
         fetchTransactions();
+        toast.success('Transfer voided successfully');
+      } else {
+        const error = await res.json();
+        toast.error(error.error || "Failed to void transfer");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      toast.error(err.message || "Failed to void transfer");
     } finally {
       setIsVoiding(false);
     }
@@ -349,8 +380,10 @@ export default function TransactionsPage() {
       setSplitAmount("");
       setSplitNotes("");
       fetchTransactions();
+      toast.success('Distribution split added');
     } catch (err: any) {
       setSplitError(err.message || "Failed to add split");
+      toast.error(err.message || "Failed to add split");
     } finally {
       setSplitLoading(false);
     }
@@ -380,6 +413,7 @@ export default function TransactionsPage() {
   });
 
   return (
+    <PageTransition>
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -393,7 +427,7 @@ export default function TransactionsPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/transactions/new"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-teal-700 text-white text-xs font-bold rounded-lg hover:bg-teal-800 shadow-sm transition-colors"
           >
             <PlusCircle className="w-4 h-4" />
             <span>+ New Remittance</span>
@@ -402,7 +436,7 @@ export default function TransactionsPage() {
             href="/distributors"
             className="inline-flex items-center gap-2 px-3.5 py-2 bg-white text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg hover:bg-slate-50 shadow-sm transition-colors"
           >
-            <Split className="w-4 h-4 text-emerald-600" />
+            <Split className="w-4 h-4 text-teal-700" />
             <span>India Distribution</span>
           </Link>
         </div>
@@ -411,7 +445,7 @@ export default function TransactionsPage() {
       {/* Info Banner linking to Party Transfers */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-50 border border-slate-200/80 p-3 rounded-xl shadow-2xs">
         <div className="flex items-center gap-2 text-xs text-slate-700">
-          <Users className="w-4 h-4 text-emerald-600 shrink-0" />
+          <Users className="w-4 h-4 text-teal-700 shrink-0" />
           <span className="font-semibold text-slate-900">
             Customer Remittances ({allCount} transfers)
           </span>
@@ -430,11 +464,12 @@ export default function TransactionsPage() {
       </div>
 
       {/* Filter Bar */}
+      <FadeIn delay={0.1}>
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
         {/* Quick Time Presets */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-xs font-bold text-slate-700 uppercase tracking-wider mr-2 flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5 text-emerald-600" /> Quick Date:
+            <Clock className="w-3.5 h-3.5 text-teal-700" /> Quick Date:
           </span>
           {[
             { id: "all", label: "All Time" },
@@ -518,35 +553,50 @@ export default function TransactionsPage() {
         </div>
       </div>
 
+      </FadeIn>
+
       {/* Table */}
+      <FadeIn delay={0.2}>
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200 text-[10px]">
               <tr>
-                <th className="px-4 py-3">Txn ID</th>
-                <th className="px-4 py-3">Date</th>
-                <th className="px-4 py-3">Customer</th>
-                <th className="px-4 py-3">INR Order</th>
-                <th className="px-4 py-3">Rate</th>
-                <th className="px-4 py-3">AED Charged</th>
-                <th className="px-4 py-3">Net Profit</th>
-                <th className="px-4 py-3">India Distribution</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-3 py-3 w-[15%]">Txn ID / Date</th>
+                <th className="px-3 py-3 w-[13%]">Customer</th>
+                <th className="px-3 py-3 w-[13%]">INR Order / Rate</th>
+                <th className="px-3 py-3 w-[16%]">AED Billed & Payment</th>
+                <th className="px-3 py-3 w-[12%]">Net Profit</th>
+                <th className="px-3 py-3 w-[16%]">Distribution & Status</th>
+                <th className="px-3 py-3 text-right w-[15%]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
               {loading ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-8 text-center text-slate-400">
+                  <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
                     Loading transfers...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-8 text-center text-slate-400">
-                    No remittance transactions found. Click "+ New Transfer" to add one.
+                  <td colSpan={7} className="px-6 py-16 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                        <ArrowLeftRight className="w-7 h-7 text-slate-400 dark:text-slate-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">No transfers found</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Try adjusting your filters or create a new remittance</p>
+                      </div>
+                      <Link
+                        href="/transactions/new"
+                        className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 transition"
+                      >
+                        <PlusCircle className="w-3.5 h-3.5" />
+                        New Remittance
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -557,18 +607,25 @@ export default function TransactionsPage() {
                       t.status === "VOIDED" ? "opacity-60 bg-slate-50/40" : ""
                     }`}
                   >
-                    <td className="px-4 py-3 font-mono font-bold text-slate-900">
-                      <span>{t.transaction_number}</span>
+                    {/* Txn ID & Date */}
+                    <td className="px-3 py-2.5 font-mono">
+                      <div className="font-bold text-slate-900 text-xs">
+                        {t.transaction_number}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        {t.transaction_date}
+                      </div>
                     </td>
-                    <td className="px-4 py-3 text-slate-600">{t.transaction_date}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5 flex-wrap">
+
+                    {/* Customer */}
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-1 flex-wrap">
                         <Link
                           href={`/customers/${t.customer_id}`}
-                          className="font-bold text-slate-800 hover:text-emerald-600 hover:underline flex items-center gap-1"
+                          className="font-bold text-slate-800 hover:text-teal-700 hover:underline flex items-center gap-1 text-xs"
                         >
                           <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span>{t.customer_name}</span>
+                          <span className="truncate max-w-[120px]">{t.customer_name}</span>
                         </Link>
                       </div>
                       {t.customer_code && (
@@ -577,86 +634,103 @@ export default function TransactionsPage() {
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3 font-bold text-slate-900">{formatINR(t.inr_amount)}</td>
-                    <td className="px-4 py-3 font-mono text-slate-600">{t.customer_rate.toFixed(4)}</td>
-                    <td className="px-4 py-3">
-                      <div className="font-bold text-slate-900">{formatAED(t.aed_amount)}</div>
+
+                    {/* INR Order & Rate */}
+                    <td className="px-3 py-2.5 font-mono whitespace-nowrap">
+                      <div className="font-bold text-slate-900 text-xs">
+                        {formatINR(t.inr_amount)}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        Rate: {t.customer_rate.toFixed(4)}
+                      </div>
+                    </td>
+
+                    {/* AED Charged & Payment */}
+                    <td className="px-3 py-2.5">
+                      <div className="font-bold text-slate-900 text-xs font-mono">
+                        {formatAED(t.aed_amount)}
+                      </div>
                       {t.status === "CONFIRMED" && (
                         <div className="mt-1">
                           {(t.paid_aed || 0) >= t.aed_amount ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded shadow-2xs">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">
                               <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
                               <span>Paid in Full</span>
                             </span>
                           ) : (t.paid_aed || 0) > 0 ? (
-                            <div className="text-[10px] font-semibold text-amber-900 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded inline-block">
+                            <div className="text-[10px] font-semibold text-amber-900 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded inline-block font-mono">
                               <span>Paid: {formatAED(t.paid_aed)}</span>
                               <span className="mx-1 text-slate-400">•</span>
                               <span className="text-rose-700 font-bold">Due: {formatAED(t.pending_aed)}</span>
                             </div>
                           ) : (
-                            <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded inline-block">
+                            <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.2 rounded inline-block font-mono">
                               Unpaid (Due: {formatAED(t.aed_amount)})
                             </span>
                           )}
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3 font-bold text-emerald-600">
+
+                    {/* Net Profit */}
+                    <td className="px-3 py-2.5 font-bold text-teal-700 font-mono whitespace-nowrap text-xs">
                       {formatAED(t.net_profit_aed)}
                     </td>
-                    <td className="px-4 py-3">
-                      {/* Combined Distributor Names */}
-                      {t.distributor_names && t.distributor_names !== "-" && (
-                        <div className="mb-1">
-                          <span className="font-bold text-xs text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                            {t.distributor_names}
-                          </span>
-                        </div>
-                      )}
-                      {t.remaining_inr === 0 ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-300 shadow-2xs">
-                          <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                          <span>100% Split ({formatINR(t.total_distributed_inr)})</span>
-                        </span>
-                      ) : (
-                        <div className="flex items-center gap-1.5">
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-50 text-amber-800 px-2 py-0.5 rounded border border-amber-200">
-                            <AlertCircle className="w-3 h-3" />
-                            <span>Pending {formatINR(t.remaining_inr)}</span>
-                          </span>
-                          <button
-                            onClick={() => {
-                              setSplittingTxn(t);
-                              setSplitAmount(String(t.remaining_inr));
-                              setSplitError(null);
-                            }}
-                            className="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200"
+
+                    {/* India Distribution & Status */}
+                    <td className="px-3 py-2.5">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span
+                            className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded ${
+                              t.status === "CONFIRMED"
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                : "bg-rose-50 text-rose-700 border border-rose-200"
+                            }`}
                           >
-                            + Split
-                          </button>
+                            {t.status}
+                          </span>
+                          {t.distributor_names && t.distributor_names !== "-" && (
+                            <span className="font-bold text-[10px] text-slate-700 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200 truncate max-w-[100px]" title={t.distributor_names}>
+                              {t.distributor_names}
+                            </span>
+                          )}
                         </div>
-                      )}
+
+                        {t.remaining_inr === 0 ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded border border-emerald-300">
+                            <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                            <span>100% Split</span>
+                          </span>
+                        ) : (
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-50 text-amber-800 px-1.5 py-0.2 rounded border border-amber-200">
+                              <span>Pending {formatINR(t.remaining_inr)}</span>
+                            </span>
+                            <button
+                              onClick={() => {
+                                setSplittingTxn(t);
+                                setSplitAmount(String(t.remaining_inr));
+                                setSplitError(null);
+                              }}
+                              className="text-[9px] font-bold text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 px-1 py-0.2 rounded border border-teal-200"
+                            >
+                              + Split
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
-                          t.status === "CONFIRMED"
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                            : "bg-rose-50 text-rose-700 border border-rose-200"
-                        }`}
-                      >
-                        {t.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+
+                    {/* Actions */}
+                    <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1">
                         {/* Quick Payment Button */}
                         {t.status === "CONFIRMED" && (t.pending_aed === undefined || t.pending_aed > 0) && (
                           <button
                             onClick={() => handleOpenPayModal(t)}
                             title="Record Customer Payment for this Transfer"
-                            className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 px-2 py-1 rounded shadow-2xs transition-colors"
+                            className="flex items-center gap-1 text-[10px] font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-300 px-2 py-1 rounded shadow-2xs transition-colors"
                           >
                             <CreditCard className="w-3 h-3" />
                             <span>+ Pay</span>
@@ -667,7 +741,7 @@ export default function TransactionsPage() {
                         <button
                           onClick={() => generateTransactionReceipt(t)}
                           title="Download Receipt (PDF)"
-                          className="p-1 rounded text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                          className="p-1 rounded text-slate-500 hover:text-slate-800 hover:bg-slate-100"
                         >
                           <FileText className="w-3.5 h-3.5" />
                         </button>
@@ -676,7 +750,7 @@ export default function TransactionsPage() {
                         <button
                           onClick={() => handleOpenEdit(t)}
                           title="Edit Transfer"
-                          className="p-1 rounded text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                          className="p-1 rounded text-slate-500 hover:text-blue-600 hover:bg-blue-50"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
@@ -684,19 +758,25 @@ export default function TransactionsPage() {
                         {/* Void Button */}
                         {t.status === "CONFIRMED" && (
                           <button
-                            onClick={() => setVoidingTxn(t)}
+                            onClick={() => {
+                              setVoidingTxn(t);
+                              setVoidReason("");
+                            }}
                             title="Void Transfer"
-                            className="text-[11px] text-amber-700 hover:text-amber-800 font-semibold px-1.5 py-0.5 rounded hover:bg-amber-50"
+                            className="px-1.5 py-0.5 rounded text-[10px] font-semibold text-slate-500 hover:text-amber-700 hover:bg-amber-50"
                           >
                             Void
                           </button>
                         )}
 
-                        {/* Permanent Delete Button */}
+                        {/* Delete Button */}
                         <button
-                          onClick={() => setDeletingTxn(t)}
-                          title="Delete Permanently"
-                          className="p-1 rounded text-rose-600 hover:text-rose-800 hover:bg-rose-50"
+                          onClick={() => {
+                            setDeletingTxn(t);
+                            setDeleteError(null);
+                          }}
+                          title="Permanently Delete Transfer"
+                          className="p-1 rounded text-slate-300 hover:text-rose-600 hover:bg-rose-50"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -709,6 +789,7 @@ export default function TransactionsPage() {
           </table>
         </div>
       </div>
+      </FadeIn>
 
       {/* EDIT TRANSACTION MODAL */}
       {editingTxn && (
@@ -717,7 +798,7 @@ export default function TransactionsPage() {
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <Edit2 className="w-4 h-4 text-emerald-600" />
+                  <Edit2 className="w-4 h-4 text-teal-700" />
                   <span>Edit Remittance Transfer</span>
                 </h3>
                 <span className="text-xs font-mono text-slate-500">{editingTxn.transaction_number}</span>
@@ -776,7 +857,7 @@ export default function TransactionsPage() {
                     INR Order Amount
                   </label>
                   {numberToIndianWords(editInr) && (
-                    <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    <span className="text-[11px] font-semibold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
                       {numberToIndianWords(editInr)}
                     </span>
                   )}
@@ -789,12 +870,12 @@ export default function TransactionsPage() {
                     required
                     value={editInr}
                     onChange={(e) => setEditInr(e.target.value)}
-                    className="w-full text-sm font-bold pl-7 pr-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full text-sm font-bold pl-7 pr-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
                 {numberToIndianWords(editInr) && (
-                  <div className="mt-1.5 p-2 bg-emerald-50/90 border border-emerald-200/90 rounded-lg flex items-center gap-2 text-xs text-emerald-900 animate-in fade-in duration-100">
-                    <span className="font-bold text-[10px] tracking-wider uppercase bg-emerald-200 text-emerald-950 px-1.5 py-0.5 rounded font-mono shrink-0">
+                  <div className="mt-1.5 p-2 bg-teal-50/90 border border-teal-200/90 rounded-lg flex items-center gap-2 text-xs text-teal-900 animate-in fade-in duration-100">
+                    <span className="font-bold text-[10px] tracking-wider uppercase bg-teal-200 text-teal-950 px-1.5 py-0.5 rounded font-mono shrink-0">
                       In Words:
                     </span>
                     <span className="font-semibold">{numberToIndianWords(editInr)}</span>
@@ -854,7 +935,7 @@ export default function TransactionsPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Recalculated Net Profit:</span>
-                    <strong className="text-emerald-600 font-mono">{formatAED(editPreview.netProfitAed)}</strong>
+                    <strong className="text-teal-700 font-mono">{formatAED(editPreview.netProfitAed)}</strong>
                   </div>
                 </div>
               )}
@@ -883,7 +964,7 @@ export default function TransactionsPage() {
                 <button
                   type="submit"
                   disabled={isUpdating}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 shadow-sm"
+                  className="px-4 py-2 bg-teal-700 text-white rounded-lg text-xs font-bold hover:bg-teal-800 disabled:opacity-50 shadow-sm"
                 >
                   {isUpdating ? "Saving Changes..." : "Save Changes"}
                 </button>
@@ -944,7 +1025,7 @@ export default function TransactionsPage() {
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in duration-150">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Split className="w-5 h-5 text-emerald-600" />
+                <Split className="w-5 h-5 text-teal-700" />
                 <span>Split Order to India Party</span>
               </h3>
               <button
@@ -1005,7 +1086,7 @@ export default function TransactionsPage() {
                     INR Amount to Allocate
                   </label>
                   {numberToIndianWords(splitAmount) && (
-                    <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    <span className="text-[11px] font-semibold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
                       {numberToIndianWords(splitAmount)}
                     </span>
                   )}
@@ -1018,12 +1099,12 @@ export default function TransactionsPage() {
                     required
                     value={splitAmount}
                     onChange={(e) => setSplitAmount(e.target.value)}
-                    className="w-full text-xs font-bold pl-7 pr-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full text-xs font-bold pl-7 pr-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
                 {numberToIndianWords(splitAmount) && (
-                  <div className="mt-1.5 p-2 bg-emerald-50/90 border border-emerald-200/90 rounded-lg flex items-center gap-1.5 text-xs text-emerald-900 animate-in fade-in duration-100">
-                    <span className="font-bold text-[10px] tracking-wider uppercase bg-emerald-200 text-emerald-950 px-1.5 py-0.5 rounded font-mono shrink-0">
+                  <div className="mt-1.5 p-2 bg-teal-50/90 border border-teal-200/90 rounded-lg flex items-center gap-1.5 text-xs text-teal-900 animate-in fade-in duration-100">
+                    <span className="font-bold text-[10px] tracking-wider uppercase bg-teal-200 text-teal-950 px-1.5 py-0.5 rounded font-mono shrink-0">
                       In Words:
                     </span>
                     <span className="font-semibold">{numberToIndianWords(splitAmount)}</span>
@@ -1055,7 +1136,7 @@ export default function TransactionsPage() {
                 <button
                   type="submit"
                   disabled={splitLoading}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 shadow-sm"
+                  className="px-4 py-2 bg-teal-700 text-white rounded-lg text-xs font-bold hover:bg-teal-800 disabled:opacity-50 shadow-sm"
                 >
                   {splitLoading ? "Saving Split..." : "Confirm Split"}
                 </button>
@@ -1112,7 +1193,7 @@ export default function TransactionsPage() {
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in duration-150">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-emerald-600" />
+                <CreditCard className="w-5 h-5 text-teal-700" />
                 <span>Record Customer Payment</span>
               </h3>
               <button
@@ -1144,7 +1225,7 @@ export default function TransactionsPage() {
                   <span className="text-slate-500">Total Billed:</span>
                   <span className="font-bold text-slate-900">{formatAED(payingTxn.aed_amount)}</span>
                 </div>
-                <div className="flex justify-between text-emerald-700">
+                <div className="flex justify-between text-teal-700">
                   <span>Already Paid:</span>
                   <span className="font-semibold">{formatAED(payingTxn.paid_aed || 0)}</span>
                 </div>
@@ -1195,7 +1276,7 @@ export default function TransactionsPage() {
                   placeholder="e.g. 5000"
                   value={payAmount}
                   onChange={(e) => setPayAmount(e.target.value)}
-                  className="w-full text-base font-bold border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full text-base font-bold border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
 
@@ -1223,7 +1304,7 @@ export default function TransactionsPage() {
                 <button
                   type="submit"
                   disabled={payLoading}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 disabled:opacity-50"
+                  className="px-4 py-2 bg-teal-700 text-white rounded-lg text-xs font-bold hover:bg-teal-800 disabled:opacity-50"
                 >
                   {payLoading ? "Recording..." : "Save Payment Receipt"}
                 </button>
@@ -1233,5 +1314,14 @@ export default function TransactionsPage() {
         </div>
       )}
     </div>
+    </PageTransition>
+  );
+}
+
+export default function TransactionsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <TransactionsContent />
+    </Suspense>
   );
 }

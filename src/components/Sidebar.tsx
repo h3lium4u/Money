@@ -16,21 +16,60 @@ import {
   Split,
   Settings,
   X,
+  Bot,
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 
-const navigation = [
-  { name: "Dashboard",             href: "/dashboard",          icon: LayoutDashboard },
-  { name: "New Remittance",        href: "/transactions/new",   icon: PlusCircle,      highlight: true },
-  { name: "All Transfers",         href: "/transactions",       icon: ArrowLeftRight },
-  { name: "Customers",             href: "/customers",          icon: Users },
-  { name: "Parties",               href: "/parties",            icon: Handshake },
-  { name: "Party Transfers",       href: "/party-transfers",    icon: ArrowRightLeft },
-  { name: "Receivables",           href: "/receivables",        icon: Wallet },
-  { name: "Distributors",          href: "/distributors",       icon: Split },
-  { name: "Bank Distribution Settlement", href: "/bank-distrip", icon: Landmark },
-  { name: "Reports",               href: "/reports",            icon: FileSpreadsheet },
-  { name: "Settings",              href: "/settings/system-health", icon: Settings },
+interface NavItem {
+  name: string;
+  href: string;
+  icon: any;
+  highlight?: boolean;
+}
+
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+const navigationGroups: NavGroup[] = [
+  {
+    label: "OVERVIEW",
+    items: [
+      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: "TRANSFERS",
+    items: [
+      { name: "New Remittance", href: "/transactions/new", icon: PlusCircle, highlight: true },
+      { name: "All Transfers", href: "/transactions", icon: ArrowLeftRight },
+      { name: "Party Transfers", href: "/party-transfers", icon: ArrowRightLeft },
+    ],
+  },
+  {
+    label: "PEOPLE",
+    items: [
+      { name: "Customers", href: "/customers", icon: Users },
+      { name: "Parties", href: "/parties", icon: Handshake },
+      { name: "Distributors", href: "/distributors", icon: Split },
+    ],
+  },
+  {
+    label: "SETTLEMENT",
+    items: [
+      { name: "Receivables", href: "/receivables", icon: Wallet },
+      { name: "Bank Settlement", href: "/bank-distrip", icon: Landmark },
+    ],
+  },
+  {
+    label: "TOOLS",
+    items: [
+      { name: "Reports", href: "/reports", icon: FileSpreadsheet },
+      { name: "AI Assistant", href: "/ai-assistant", icon: Bot },
+      { name: "Settings", href: "/settings/system-health", icon: Settings },
+    ],
+  },
 ];
 
 export default function Sidebar() {
@@ -129,98 +168,104 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* Section label */}
-      <div style={{ padding: "24px 20px 8px 20px" }}>
-        <span
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            color: isDark ? "#64748B" : "#999999",
-          }}
-        >
-          Menu
-        </span>
-      </div>
-
-      {/* Navigation */}
       <nav style={{ flex: 1, padding: "0 12px 16px", overflowY: "auto" }}>
-        {navigation.map((item) => {
-          const isActive =
-            pathname === item.href ||
-            (item.href !== "/dashboard" && pathname.startsWith(item.href));
-          const Icon = item.icon;
-
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              onClick={closeMobileMenu}
+        {navigationGroups.map((group, groupIndex) => (
+          <div key={group.label}>
+            {/* Group header label */}
+            <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "10px 12px",
-                borderRadius: 8,
-                marginBottom: 3,
-                fontSize: 14.5,
-                fontWeight: isActive ? 600 : 400,
-                textDecoration: "none",
-                color: isActive
-                  ? isDark ? "#2DD4BF" : "#0F766E"
-                  : isDark ? "#94A3B8" : "#666666",
-                background: isActive
-                  ? isDark ? "rgba(20, 184, 166, 0.14)" : "#F0FDFA"
-                  : "transparent",
-                borderLeft: `3px solid ${
-                  isActive
-                    ? isDark ? "#2DD4BF" : "#0F766E"
-                    : "transparent"
-                }`,
-                transition: "color 0.12s, background 0.12s",
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  (e.currentTarget as HTMLElement).style.color = isDark ? "#F8FAFC" : "#1A1A1A";
-                  (e.currentTarget as HTMLElement).style.background = isDark ? "#1E293B" : "#F5F5F5";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  (e.currentTarget as HTMLElement).style.color = isDark ? "#94A3B8" : "#666666";
-                  (e.currentTarget as HTMLElement).style.background = "transparent";
-                }
+                padding: groupIndex === 0 ? "16px 12px 6px" : "14px 12px 6px",
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase" as const,
+                color: isDark ? "#475569" : "#A1A1AA",
+                userSelect: "none" as const,
               }}
             >
-              <Icon
-                style={{
-                  width: 16,
-                  height: 16,
-                  flexShrink: 0,
-                  color: isActive
-                    ? isDark ? "#2DD4BF" : "#0F766E"
-                    : isDark ? "#64748B" : "#999999",
-                }}
-              />
-              <span>{item.name}</span>
+              {group.label}
+            </div>
 
-              {/* Indicator dot */}
-              {item.highlight && !isActive && (
-                <span
+            {/* Group items */}
+            {group.items.map((item) => {
+              const isActive =
+                pathname === item.href ||
+                (item.href !== "/dashboard" && pathname.startsWith(item.href));
+              const Icon = item.icon;
+
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={closeMobileMenu}
                   style={{
-                    marginLeft: "auto",
-                    width: 6,
-                    height: 6,
-                    borderRadius: "50%",
-                    background: isDark ? "#2DD4BF" : "#0F766E",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "9px 12px",
+                    borderRadius: 8,
+                    marginBottom: 2,
+                    fontSize: 14,
+                    fontWeight: isActive ? 600 : 400,
+                    textDecoration: "none",
+                    color: isActive
+                      ? isDark ? "#2DD4BF" : "#0F766E"
+                      : isDark ? "#94A3B8" : "#666666",
+                    background: isActive
+                      ? isDark ? "rgba(20, 184, 166, 0.14)" : "#F0FDFA"
+                      : "transparent",
+                    borderLeft: `3px solid ${
+                      isActive
+                        ? isDark ? "#2DD4BF" : "#0F766E"
+                        : "transparent"
+                    }`,
+                    transition: "color 0.12s, background 0.12s",
                   }}
-                />
-              )}
-            </Link>
-          );
-        })}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      (e.currentTarget as HTMLElement).style.color = isDark ? "#F8FAFC" : "#1A1A1A";
+                      (e.currentTarget as HTMLElement).style.background = isDark ? "#1E293B" : "#F5F5F5";
+                    }
+                    if (item.href === "/party-transfers") {
+                      fetch("/api/party-transfers").catch(() => {});
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      (e.currentTarget as HTMLElement).style.color = isDark ? "#94A3B8" : "#666666";
+                      (e.currentTarget as HTMLElement).style.background = "transparent";
+                    }
+                  }}
+                >
+                  <Icon
+                    style={{
+                      width: 16,
+                      height: 16,
+                      flexShrink: 0,
+                      color: isActive
+                        ? isDark ? "#2DD4BF" : "#0F766E"
+                        : isDark ? "#64748B" : "#999999",
+                    }}
+                  />
+                  <span>{item.name}</span>
+
+                  {/* Indicator dot for highlight items */}
+                  {item.highlight && !isActive && (
+                    <span
+                      style={{
+                        marginLeft: "auto",
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        background: isDark ? "#2DD4BF" : "#0F766E",
+                      }}
+                    />
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* Footer */}
