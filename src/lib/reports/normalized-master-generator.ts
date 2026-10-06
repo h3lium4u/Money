@@ -128,34 +128,26 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   wsSumm.getCell("E3").value = new Date().toLocaleString();
   wsSumm.getCell("E3").font = { bold: true, size: 10 };
 
-  // KPI Section 1: Customer Remittances
+  // KPI Section 1: Dubai Client Transfers
   wsSumm.mergeCells("A5:B5");
-  wsSumm.getCell("A5").value = "1. DUBAI CUSTOMER REMITTANCES";
+  wsSumm.getCell("A5").value = "1. DUBAI CLIENT TRANSFERS";
   wsSumm.getCell("A5").font = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
   wsSumm.getCell("A5").fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF065F46" } };
   wsSumm.getRow(5).height = 22;
 
-  const totalCustInr = customerTransactions.filter(t => t.status === "CONFIRMED").reduce((s, t) => s + (t.inr_amount || 0), 0);
-  const totalCustAed = customerTransactions.filter(t => t.status === "CONFIRMED").reduce((s, t) => s + (t.aed_amount || 0), 0);
-  const totalCustCostAed = customerTransactions.filter(t => t.status === "CONFIRMED").reduce((s, t) => s + (t.cost_aed || 0), 0);
-  const totalGrossAed = customerTransactions.filter(t => t.status === "CONFIRMED").reduce((s, t) => s + (t.gross_profit_aed || 0), 0);
-  const totalDelivAed = customerTransactions.filter(t => t.status === "CONFIRMED").reduce((s, t) => s + (t.delivery_charge_aed || 0), 0);
-  const totalNetAed = customerTransactions.filter(t => t.status === "CONFIRMED").reduce((s, t) => s + (t.net_profit_aed || 0), 0);
-  const totalPaymentsAed = payments.reduce((s, p) => s + (p.amount_aed || 0), 0);
-  const outstandingReceivables = Math.max(0, totalCustAed - totalPaymentsAed);
+  const totalDubaiInr = customerTransactions.filter(t => t.status === "CONFIRMED").reduce((s, t) => s + (t.total ?? t.inr_amount ?? 0), 0);
+  const totalInDhirams = customerTransactions.filter(t => t.status === "CONFIRMED").reduce((s, t) => s + (t.in_dhirams ?? t.aed_amount ?? 0), 0);
+  const totalPaidAmount = customerTransactions.filter(t => t.status === "CONFIRMED").reduce((s, t) => s + (t.paid_amount ?? t.paid_aed ?? 0), 0);
+  const totalBalanceToPaid = customerTransactions.filter(t => t.status === "CONFIRMED").reduce((s, t) => s + (t.balance_to_paid ?? t.pending_aed ?? 0), 0);
 
-  const custKpis = [
-    { label: "Total Customer Volume (INR)", value: totalCustInr, fmt: "#,##0.00" },
-    { label: "Total Customer Invoiced (AED)", value: totalCustAed, fmt: "#,##0.00" },
-    { label: "Total Payout Cost (AED)", value: totalCustCostAed, fmt: "#,##0.00" },
-    { label: "Gross Profit (AED)", value: totalGrossAed, fmt: "#,##0.00" },
-    { label: "Delivery Charge Share (20%) (AED)", value: totalDelivAed, fmt: "#,##0.00" },
-    { label: "Net Remittance Profit (AED)", value: totalNetAed, fmt: "#,##0.00" },
-    { label: "Total Customer Payments Collected (AED)", value: totalPaymentsAed, fmt: "#,##0.00" },
-    { label: "Outstanding Customer Receivables (AED)", value: outstandingReceivables, fmt: "#,##0.00" },
+  const dubaiKpis = [
+    { label: "Total Volume (INR)", value: totalDubaiInr, fmt: "#,##0.00" },
+    { label: "Total In Dhirams (AED)", value: totalInDhirams, fmt: "#,##0.00" },
+    { label: "Total Paid Amount (AED)", value: totalPaidAmount, fmt: "#,##0.00" },
+    { label: "Total Balance To Be Paid (AED)", value: totalBalanceToPaid, fmt: "#,##0.00" },
   ];
 
-  custKpis.forEach((k, idx) => {
+  dubaiKpis.forEach((k, idx) => {
     const r = 6 + idx;
     wsSumm.getCell(`A${r}`).value = k.label;
     wsSumm.getCell(`A${r}`).font = { bold: true, color: { argb: "FF334155" } };
@@ -396,79 +388,55 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   styleTotalRow(partyTotalRow);
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 04. CUSTOMER TRANSACTIONS (DUBAI CUSTOMERS)
+  // 04. DUBAI CLIENT TRANSFERS
   // ═══════════════════════════════════════════════════════════════════════════
-  const wsTxn = wb.addWorksheet("04_Customer_Transactions", { views: [{ state: "frozen", ySplit: 1 }] });
+  const wsTxn = wb.addWorksheet("04_Dubai_Client_Transfers", { views: [{ state: "frozen", ySplit: 1 }] });
   wsTxn.columns = [
-    { header: "Transaction ID", key: "txn_id", width: 18 },             // Col A
+    { header: "Transfer ID", key: "txn_id", width: 18 },                 // Col A
     { header: "Date", key: "date", width: 14 },                          // Col B
-    { header: "Customer ID", key: "cust_id", width: 16 },                // Col C
-    { header: "Customer Name", key: "cust_name", width: 24 },            // Col D
-    { header: "INR Order Amount", key: "inr_amount", width: 18 },        // Col E
-    { header: "Customer Rate", key: "daily_rate", width: 15 },           // Col F
-    { header: "Base Rate", key: "my_rate", width: 14 },                  // Col G
-    { header: "AED Charged", key: "aed_daily", width: 18 },              // Col H: =(E/1000)*F
-    { header: "AED Cost", key: "aed_my_rate", width: 18 },               // Col I: =E/G
-    { header: "Gross Profit (AED)", key: "gross_profit", width: 18 },    // Col J: =H-I
-    { header: "Delivery %", key: "deliv_pct", width: 14 },               // Col K
-    { header: "Delivery Cut (AED)", key: "deliv_amt", width: 18 },       // Col L: =J*K
-    { header: "Net Profit (AED)", key: "net_profit", width: 18 },        // Col M: =J-L
-    { header: "India Distributors", key: "dist_names", width: 25 },      // Col N
-    { header: "Split Breakdown", key: "split_details", width: 34 },      // Col O
-    { header: "Split Status", key: "split_status", width: 18 },          // Col P
-    { header: "Status", key: "status", width: 14 },                      // Col Q
-    { header: "Notes", key: "notes", width: 30 },                        // Col R
+    { header: "Dubai Client ID", key: "cust_id", width: 16 },            // Col C
+    { header: "Dubai Client Name", key: "cust_name", width: 24 },        // Col D
+    { header: "Total (INR)", key: "total_inr", width: 18 },              // Col E: Manual value input
+    { header: "Manual Value (Rate)", key: "manual_rate", width: 18 },    // Col F: Manual value input
+    { header: "Whole Sale Rate", key: "wholesale_rate", width: 18 },     // Col G: =ROUND(1000/F{rowNum}, 4)
+    { header: "In Dhirams (AED)", key: "in_dhirams", width: 18 },        // Col H: =ROUND(E{rowNum}/G{rowNum}, 2)
+    { header: "Paid Amount (AED)", key: "paid_amount", width: 18 },      // Col I: Manual entry / payments
+    { header: "Balance to Paid (AED)", key: "balance_to_paid", width: 20 }, // Col J: =ROUND(H{rowNum}-I{rowNum}, 2)
+    { header: "Status", key: "status", width: 14 },                      // Col K
+    { header: "Notes", key: "notes", width: 30 },                        // Col L
   ];
   styleHeader(wsTxn.getRow(1), "FF065F46"); // Dark Emerald
 
   customerTransactions.forEach((t, i) => {
     const rowNum = i + 2;
-    const isFullyAllocated = (t.remaining_inr === 0);
     const uniqueCustId = custCodeMap.get(t.customer_id) || t.customer_code || (t.customer_id ? t.customer_id.slice(0, 8) : "-");
+    const totalInr = Number(t.total ?? t.inr_amount ?? 0);
+    const manualRate = Number(t.manual_rate ?? t.customer_rate ?? 0);
+    const paidAmount = Number(t.paid_amount ?? t.paid_aed ?? 0);
 
     const row = wsTxn.addRow({
       txn_id: t.transaction_number,
       date: t.transaction_date,
       cust_id: uniqueCustId,
       cust_name: t.customer_name || "-",
-      inr_amount: t.inr_amount,
-      daily_rate: t.customer_rate,
-      my_rate: t.base_rate,
-      aed_daily: { formula: `=(E${rowNum}/1000)*F${rowNum}` },
-      aed_my_rate: { formula: `=E${rowNum}/G${rowNum}` },
-      gross_profit: { formula: `=H${rowNum}-I${rowNum}` },
-      deliv_pct: t.delivery_charge_pct,
-      deliv_amt: { formula: `=J${rowNum}*K${rowNum}` },
-      net_profit: { formula: `=J${rowNum}-L${rowNum}` },
-      dist_names: t.distributor_names || t.distributor_name || "-",
-      split_details: t.distributor_split_details || "-",
-      split_status: isFullyAllocated ? "FULLY ALLOCATED" : `Pending ₹${(t.remaining_inr || 0).toLocaleString()}`,
+      total_inr: totalInr,
+      manual_rate: manualRate,
+      wholesale_rate: { formula: `=IF(F${rowNum}>0, ROUND(1000/F${rowNum}, 4), 0)` },
+      in_dhirams: { formula: `=IF(G${rowNum}>0, ROUND(E${rowNum}/G${rowNum}, 2), 0)` },
+      paid_amount: paidAmount,
+      balance_to_paid: { formula: `=ROUND(H${rowNum}-I${rowNum}, 2)` },
       status: t.status,
       notes: t.notes || "-",
     });
 
-    row.getCell(5).numFmt = "#,##0.00"; // INR Order Amount
-    row.getCell(6).numFmt = "0.0000";   // Customer Rate
-    row.getCell(7).numFmt = "0.0000";   // Base Rate
-    row.getCell(8).numFmt = "#,##0.00"; // AED Charged
-    row.getCell(9).numFmt = "#,##0.00"; // AED Cost
-    row.getCell(10).numFmt = "#,##0.00"; // Gross Profit
-    row.getCell(11).numFmt = "0.00%";   // Delivery %
-    row.getCell(12).numFmt = "#,##0.00"; // Delivery Cut
-    row.getCell(13).numFmt = "#,##0.00"; // Net Profit
+    row.getCell(5).numFmt = "#,##0.00"; // Total INR
+    row.getCell(6).numFmt = "0.0000";   // Manual Value (Rate)
+    row.getCell(7).numFmt = "0.0000";   // Wholesale Rate
+    row.getCell(8).numFmt = "#,##0.00"; // In Dhirams
+    row.getCell(9).numFmt = "#,##0.00"; // Paid Amount
+    row.getCell(10).numFmt = "#,##0.00"; // Balance to Paid
 
     styleDataRow(row, i % 2 === 1);
-
-    if (isFullyAllocated) {
-      [row.getCell(14), row.getCell(16)].forEach((c) => {
-        c.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: "FFD4EDDA" },
-        };
-        c.font = { color: { argb: "FF155724" }, bold: true };
-      });
-    }
   });
 
   const lastTxnRow = customerTransactions.length + 1;
@@ -476,19 +444,13 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     txn_id: "TOTAL",
     date: "",
     cust_id: "",
-    cust_name: `${customerTransactions.length} Transactions`,
-    inr_amount: { formula: `=SUM(E2:E${lastTxnRow})` },
-    daily_rate: "",
-    my_rate: "",
-    aed_daily: { formula: `=SUM(H2:H${lastTxnRow})` },
-    aed_my_rate: { formula: `=SUM(I2:I${lastTxnRow})` },
-    gross_profit: { formula: `=SUM(J2:J${lastTxnRow})` },
-    deliv_pct: "",
-    deliv_amt: { formula: `=SUM(L2:L${lastTxnRow})` },
-    net_profit: { formula: `=SUM(M2:M${lastTxnRow})` },
-    dist_names: "",
-    split_details: "",
-    split_status: "",
+    cust_name: `${customerTransactions.length} Dubai Client Transfers`,
+    total_inr: { formula: `=SUM(E2:E${lastTxnRow})` },
+    manual_rate: "",
+    wholesale_rate: "",
+    in_dhirams: { formula: `=SUM(H2:H${lastTxnRow})` },
+    paid_amount: { formula: `=SUM(I2:I${lastTxnRow})` },
+    balance_to_paid: { formula: `=SUM(J2:J${lastTxnRow})` },
     status: "",
     notes: "",
   });
@@ -496,8 +458,6 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   txnTotalRow.getCell(8).numFmt = "#,##0.00";
   txnTotalRow.getCell(9).numFmt = "#,##0.00";
   txnTotalRow.getCell(10).numFmt = "#,##0.00";
-  txnTotalRow.getCell(12).numFmt = "#,##0.00";
-  txnTotalRow.getCell(13).numFmt = "#,##0.00";
   styleTotalRow(txnTotalRow);
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -930,15 +890,11 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   const wsDaily = wb.addWorksheet("10_Daily_Summary", { views: [{ state: "frozen", ySplit: 1 }] });
   wsDaily.columns = [
     { header: "Date", key: "date", width: 14 },
-    { header: "Customer Transfers", key: "count", width: 20 },
-    { header: "Customer INR Volume", key: "inr", width: 22 },
-    { header: "Customer Invoiced (AED)", key: "aed_daily", width: 24 },
-    { header: "Customer Cost (AED)", key: "aed_cost", width: 22 },
-    { header: "Gross Profit (AED)", key: "gross", width: 18 },
-    { header: "Delivery Fee Share (AED)", key: "deliv", width: 24 },
-    { header: "Net Profit (AED)", key: "net", width: 20 },
-    { header: "Payments Received (AED)", key: "payments", width: 24 },
-    { header: "Daily Net Cash Flow (AED)", key: "cash_flow", width: 24 },
+    { header: "Dubai Client Transfers", key: "count", width: 22 },
+    { header: "Total INR Volume", key: "inr", width: 22 },
+    { header: "Total In Dhirams (AED)", key: "aed_daily", width: 24 },
+    { header: "Paid Amount (AED)", key: "paid_amount", width: 22 },
+    { header: "Balance to Paid (AED)", key: "balance_to_paid", width: 24 },
   ];
   styleHeader(wsDaily.getRow(1), "FF0E7490"); // Cyan / Teal
 
@@ -954,19 +910,15 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     const rowNum = idx + 2;
     const row = wsDaily.addRow({
       date: d,
-      count: { formula: `=COUNTIFS('04_Customer_Transactions'!$B:$B, A${rowNum})` },
-      inr: { formula: `=SUMIFS('04_Customer_Transactions'!$E:$E, '04_Customer_Transactions'!$B:$B, A${rowNum})` },
-      aed_daily: { formula: `=SUMIFS('04_Customer_Transactions'!$H:$H, '04_Customer_Transactions'!$B:$B, A${rowNum})` },
-      aed_cost: { formula: `=SUMIFS('04_Customer_Transactions'!$I:$I, '04_Customer_Transactions'!$B:$B, A${rowNum})` },
-      gross: { formula: `=SUMIFS('04_Customer_Transactions'!$J:$J, '04_Customer_Transactions'!$B:$B, A${rowNum})` },
-      deliv: { formula: `=SUMIFS('04_Customer_Transactions'!$L:$L, '04_Customer_Transactions'!$B:$B, A${rowNum})` },
-      net: { formula: `=SUMIFS('04_Customer_Transactions'!$M:$M, '04_Customer_Transactions'!$B:$B, A${rowNum})` },
-      payments: { formula: `=SUMIFS('06_Customer_Payments'!$F:$F, '06_Customer_Payments'!$B:$B, A${rowNum})` },
-      cash_flow: { formula: `=I${rowNum}-E${rowNum}` },
+      count: { formula: `=COUNTIFS('04_Dubai_Client_Transfers'!$B:$B, A${rowNum})` },
+      inr: { formula: `=SUMIFS('04_Dubai_Client_Transfers'!$E:$E, '04_Dubai_Client_Transfers'!$B:$B, A${rowNum})` },
+      aed_daily: { formula: `=SUMIFS('04_Dubai_Client_Transfers'!$H:$H, '04_Dubai_Client_Transfers'!$B:$B, A${rowNum})` },
+      paid_amount: { formula: `=SUMIFS('04_Dubai_Client_Transfers'!$I:$I, '04_Dubai_Client_Transfers'!$B:$B, A${rowNum})` },
+      balance_to_paid: { formula: `=SUMIFS('04_Dubai_Client_Transfers'!$J:$J, '04_Dubai_Client_Transfers'!$B:$B, A${rowNum})` },
     });
 
     row.getCell(2).numFmt = "#,##0";
-    for (let c = 3; c <= 10; c++) {
+    for (let c = 3; c <= 6; c++) {
       row.getCell(c).numFmt = "#,##0.00";
     }
     styleDataRow(row, idx % 2 === 1);
@@ -978,15 +930,11 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     count: { formula: `=SUM(B2:B${lastDailyRow})` },
     inr: { formula: `=SUM(C2:C${lastDailyRow})` },
     aed_daily: { formula: `=SUM(D2:D${lastDailyRow})` },
-    aed_cost: { formula: `=SUM(E2:E${lastDailyRow})` },
-    gross: { formula: `=SUM(F2:F${lastDailyRow})` },
-    deliv: { formula: `=SUM(G2:G${lastDailyRow})` },
-    net: { formula: `=SUM(H2:H${lastDailyRow})` },
-    payments: { formula: `=SUM(I2:I${lastDailyRow})` },
-    cash_flow: { formula: `=SUM(J2:J${lastDailyRow})` },
+    paid_amount: { formula: `=SUM(E2:E${lastDailyRow})` },
+    balance_to_paid: { formula: `=SUM(F2:F${lastDailyRow})` },
   });
   dailyTotalRow.getCell(2).numFmt = "#,##0";
-  for (let c = 3; c <= 10; c++) {
+  for (let c = 3; c <= 6; c++) {
     dailyTotalRow.getCell(c).numFmt = "#,##0.00";
   }
   styleTotalRow(dailyTotalRow);

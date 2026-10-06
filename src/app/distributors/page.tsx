@@ -558,7 +558,7 @@ export default function IndiaDistributionPage() {
             <div>
               <p className="font-bold text-slate-900">One Customer Transaction ➔ Multiple India Distributions</p>
               <p className="text-slate-500 mt-0.5">
-                Each Dubai customer order can be split among multiple India parties (e.g. MK, ISMAIL, SARABU). The system ensures total distribution cannot exceed the customer’s INR order amount.
+                Each Dubai customer order can be split among multiple India parties (e.g. MK, SALA). The system ensures total distribution cannot exceed the customer’s INR order amount.
               </p>
             </div>
           </div>
@@ -1247,8 +1247,7 @@ export default function IndiaDistributionPage() {
             <div>
               <p className="font-extrabold text-teal-950">IND Distribution Group — India-side Parties</p>
               <p className="text-teal-800 mt-0.5 leading-relaxed">
-                These are the India-side distributors. Dubai customer INR orders are split and allocated to these parties.
-                <strong className="ml-1">SARABU (IND)</strong> is separate from <strong>SARABU (AED)</strong> — different accounts, different balances.
+                These are the India-side distributors (<strong>MK · SALA</strong>). Dubai customer INR orders are split and allocated to these parties.
               </p>
             </div>
           </div>
@@ -1311,9 +1310,8 @@ export default function IndiaDistributionPage() {
             <div>
               <p className="font-extrabold text-blue-950">AED Distribution Group — AED-side Parties</p>
               <p className="text-blue-800 mt-0.5 leading-relaxed">
-                These are the AED-side distribution parties. <strong>SALA · SARABU · MK · ISMAIL · NNG</strong>.
+                These are the AED-side distribution parties: <strong>HAJA · SARAB · NF2</strong>.
                 TOTAL is automatically calculated — it is never a manual entry.
-                <strong className="ml-1">SARABU (AED)</strong> is a separate account from <strong>SARABU (IND)</strong>.
               </p>
             </div>
           </div>

@@ -42,6 +42,7 @@ interface Party {
   id: string;
   code: string;
   name: string;
+  party_type?: string;
   default_rate?: number;
   outstanding_balance?: number;
 }
@@ -54,6 +55,7 @@ interface PartyTransaction {
   customer_code?: string;
   customer_name: string;
   entity_type?: string;
+  party_type?: string;
   inr_amount: number;
   customer_rate: number;
   aed_amount: number;
@@ -153,6 +155,7 @@ function PartyTransfersContent() {
 
   // Extra party creation inside new transfer modal
   const [showAddPartyField, setShowAddPartyField] = useState(false);
+  const [extraPartyType, setExtraPartyType] = useState<"DUBAI" | "INDIA">("DUBAI");
   const [extraPartyName, setExtraPartyName] = useState("");
   const [extraPartyCode, setExtraPartyCode] = useState("");
   const [savingExtraParty, setSavingExtraParty] = useState(false);
@@ -292,6 +295,7 @@ function PartyTransfersContent() {
           name: extraPartyName.trim(),
           code: extraPartyCode.trim() || extraPartyName.trim().toUpperCase(),
           default_rate: parseFloat(newCustomerRate) || 38.67,
+          party_type: extraPartyType,
         }),
       });
       const created = await res.json();
@@ -299,6 +303,7 @@ function PartyTransfersContent() {
       setParties((prev) => [...prev, created]);
       setNewPartyId(created.id);
       setShowAddPartyField(false);
+      setExtraPartyType("DUBAI");
       setExtraPartyName("");
       setExtraPartyCode("");
       toast.success("Party created successfully");
@@ -618,13 +623,13 @@ function PartyTransfersContent() {
           <div className="space-y-1.5">
             <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-teal-500/20 text-teal-200 border border-teal-400/30 text-xs font-bold tracking-wide uppercase">
               <Handshake className="w-3.5 h-3.5" />
-              <span>IND Settlement Parties Entity</span>
+              <span>Settlement Parties Entity</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
               Party Transfers
             </h1>
             <p className="text-teal-100/80 text-xs sm:text-sm max-w-2xl leading-relaxed">
-              Dedicated financial movement and transfer transactions for India settlement parties (<strong>AWAFI</strong>, <strong>BASID</strong>, <strong>HAJA</strong>, <strong>NF2</strong>, <strong>SARABU</strong>).
+              Dedicated financial movement and transfer transactions for Dubai settlement parties (<strong>HAJA</strong>, <strong>SARAB</strong>, <strong>NF2</strong>) and India distribution partners (<strong>MK</strong>, <strong>SALA</strong>).
             </p>
           </div>
 
@@ -832,11 +837,20 @@ function PartyTransfersContent() {
               className="border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 py-1.5 px-2.5 bg-white dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-teal-500"
             >
               <option value="ALL">All Parties ({parties.length})</option>
-              {parties.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} {p.code ? `(${p.code})` : ""}
-                </option>
-              ))}
+              <optgroup label="🇦🇪 Dubai Parties (AED)">
+                {parties.filter((p) => p.party_type !== "INDIA").map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} {p.code ? `(${p.code})` : ""}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="🇮🇳 Indian Parties (INR)">
+                {parties.filter((p) => p.party_type === "INDIA").map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} {p.code ? `(${p.code})` : ""}
+                  </option>
+                ))}
+              </optgroup>
             </select>
 
             <select
@@ -945,7 +959,7 @@ function PartyTransfersContent() {
           </div>
 
           <div className="text-xs text-slate-500 dark:text-slate-400">
-            Showing only transfers for <strong className="text-slate-700 dark:text-slate-200">IND Settlement Parties</strong>
+            Showing transfers for <strong className="text-slate-700 dark:text-slate-200">Dubai & India Settlement Parties</strong>
           </div>
         </div>
 
@@ -954,7 +968,7 @@ function PartyTransfersContent() {
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-800 text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
                 <th className="px-3 py-3 w-[15%]">TXN ID / Date</th>
-                <th className="px-3 py-3 w-[12%]">IND Party</th>
+                <th className="px-3 py-3 w-[12%]">Party</th>
                 <th className="px-3 py-3 w-[13%]">INR Order / Rate</th>
                 <th className="px-3 py-3 w-[13%]">INR Cost</th>
                 <th className="px-3 py-3 w-[13%]">Net Profit (INR)</th>
@@ -1027,7 +1041,7 @@ function PartyTransfersContent() {
                         </div>
                       </td>
 
-                      {/* IND Party */}
+                      {/* Party */}
                       <td className="px-3 py-2.5">
                         <div className="flex items-center gap-1.5">
                           <Link
@@ -1039,8 +1053,12 @@ function PartyTransfersContent() {
                           </Link>
                         </div>
                         <div className="flex items-center gap-1 mt-0.5">
-                          <span className="inline-flex items-center px-1 py-0.2 rounded text-[9px] font-bold bg-teal-50 dark:bg-emerald-950 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-emerald-800">
-                            IND
+                          <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold border ${
+                            t.party_type === "INDIA" || t.customer_name === "MK" || t.customer_name === "SALA"
+                              ? "bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800"
+                              : "bg-teal-50 dark:bg-emerald-950 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-emerald-800"
+                          }`}>
+                            {t.party_type === "INDIA" || t.customer_name === "MK" || t.customer_name === "SALA" ? "🇮🇳 IND" : "🇦🇪 Dubai"}
                           </span>
                           {t.customer_code && (
                             <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
@@ -1266,14 +1284,14 @@ function PartyTransfersContent() {
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      IND Party
+                      Party
                     </label>
                     <button
                       type="button"
                       onClick={() => setShowAddPartyField(!showAddPartyField)}
-                      className="text-[11px] text-teal-700 hover:underline font-bold"
+                      className="text-[11px] text-teal-700 hover:underline font-bold cursor-pointer"
                     >
-                      {showAddPartyField ? "Cancel Extra" : "+ Add Extra Party"}
+                      {showAddPartyField ? "Cancel Extra" : "+ Create New Party"}
                     </button>
                   </div>
 
@@ -1283,17 +1301,51 @@ function PartyTransfersContent() {
                       onChange={(e) => handlePartySelect(e.target.value)}
                       className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-teal-500"
                     >
-                      {parties.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} {p.code ? `(${p.code})` : ""}
-                        </option>
-                      ))}
+                      <option value="" disabled>Select Party...</option>
+                      <optgroup label="🇦🇪 Dubai Parties (AED)">
+                        {parties.filter((p) => p.party_type !== "INDIA").map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} {p.code ? `(${p.code})` : ""}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="🇮🇳 Indian Parties (INR)">
+                        {parties.filter((p) => p.party_type === "INDIA").map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} {p.code ? `(${p.code})` : ""}
+                          </option>
+                        ))}
+                      </optgroup>
                     </select>
                   ) : (
                     <div className="p-2.5 bg-teal-50/70 border border-teal-200 rounded-lg space-y-2">
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setExtraPartyType("DUBAI")}
+                          className={`flex-1 py-1 rounded text-xs font-bold border transition cursor-pointer ${
+                            extraPartyType === "DUBAI"
+                              ? "bg-teal-700 text-white border-teal-700"
+                              : "bg-white text-slate-700 border-slate-300"
+                          }`}
+                        >
+                          🇦🇪 Dubai Party
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setExtraPartyType("INDIA")}
+                          className={`flex-1 py-1 rounded text-xs font-bold border transition cursor-pointer ${
+                            extraPartyType === "INDIA"
+                              ? "bg-orange-600 text-white border-orange-600"
+                              : "bg-white text-slate-700 border-slate-300"
+                          }`}
+                        >
+                          🇮🇳 Indian Party
+                        </button>
+                      </div>
                       <input
                         type="text"
-                        placeholder="Party Name (e.g. AWAFI, SARABU...)"
+                        placeholder={extraPartyType === "DUBAI" ? "Party Name (e.g. HAJA, SARAB, NF2...)" : "Party Name (e.g. MK, SALA...)"}
                         value={extraPartyName}
                         onChange={(e) => setExtraPartyName(e.target.value)}
                         className="w-full text-xs border border-teal-300 rounded p-1.5 text-slate-900 bg-white"
@@ -1310,7 +1362,7 @@ function PartyTransfersContent() {
                           type="button"
                           onClick={handleCreateExtraParty}
                           disabled={savingExtraParty}
-                          className="w-1/2 bg-teal-700 text-white rounded text-xs font-bold py-1.5 hover:bg-teal-800 disabled:opacity-50"
+                          className="w-1/2 bg-teal-700 text-white rounded text-xs font-bold py-1.5 hover:bg-teal-800 disabled:opacity-50 cursor-pointer"
                         >
                           {savingExtraParty ? "Saving..." : "Save Party"}
                         </button>
@@ -1486,7 +1538,7 @@ function PartyTransfersContent() {
                 <span className="font-mono font-bold text-slate-900">{newDate}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">IND Party:</span>
+                <span className="text-slate-500">Party:</span>
                 <span className="font-bold text-teal-900">
                   {parties.find((p) => p.id === newPartyId)?.name || "Selected Party"}
                 </span>

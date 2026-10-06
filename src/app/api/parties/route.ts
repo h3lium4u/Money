@@ -7,11 +7,14 @@ const schema = z.object({
   code: z.string().optional(),
   phone: z.string().optional(),
   default_rate: z.number().positive().optional(),
+  party_type: z.enum(["DUBAI", "INDIA"]).optional().default("DUBAI"),
 });
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const parties = await listParties();
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get("type") as "DUBAI" | "INDIA" | "ALL" | null;
+    const parties = await listParties(type || undefined);
     return NextResponse.json(parties);
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to list parties" }, { status: 500 });
@@ -29,3 +32,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message || "Failed to create party" }, { status: 400 });
   }
 }
+

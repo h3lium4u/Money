@@ -17,6 +17,8 @@ import {
   Settings,
   X,
   Bot,
+  Building2,
+  Receipt,
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -42,8 +44,8 @@ const navigationGroups: NavGroup[] = [
   {
     label: "TRANSFERS",
     items: [
-      { name: "New Remittance", href: "/transactions/new", icon: PlusCircle, highlight: true },
-      { name: "All Transfers", href: "/transactions", icon: ArrowLeftRight },
+      { name: "Dubai Client", href: "/transactions", icon: Building2 },
+      { name: "Customer Remittances", href: "/remittances", icon: Receipt },
       { name: "Party Transfers", href: "/party-transfers", icon: ArrowRightLeft },
     ],
   },

@@ -26,6 +26,50 @@ export interface TransactionCalculationResult {
   marginPct: number; // Profit margin percentage on AED collected
 }
 
+export interface DubaiClientInputs {
+  total: number;
+  manualRate: number;
+  paidAmount?: number;
+}
+
+export interface DubaiClientCalculationResult {
+  total: number;
+  manualRate: number;
+  wholesaleRate: number;
+  inDhirams: number;
+  paidAmount: number;
+  balanceToPaid: number;
+}
+
+/**
+ * Authoritative Dubai Client transfer calculation:
+ * Wholesale rate = 1000 / manual value
+ * In Dhirams = Total / Wholesale rate
+ * Balance to paid = In Dhirams - Paid amount
+ */
+export function calculateDubaiClientTransfer(inputs: DubaiClientInputs): DubaiClientCalculationResult {
+  const total = Number(inputs.total);
+  const manualRate = Number(inputs.manualRate);
+  const paidAmount = Number(inputs.paidAmount || 0);
+
+  if (total <= 0) throw new Error("Total amount must be greater than zero");
+  if (manualRate <= 0) throw new Error("Manual rate value must be greater than zero");
+  if (paidAmount < 0) throw new Error("Paid amount cannot be negative");
+
+  const wholesaleRate = roundTo(1000 / manualRate, 4);
+  const inDhirams = roundTo(total / wholesaleRate, 2);
+  const balanceToPaid = roundTo(inDhirams - paidAmount, 2);
+
+  return {
+    total: roundTo(total, 2),
+    manualRate: roundTo(manualRate, 4),
+    wholesaleRate,
+    inDhirams,
+    paidAmount: roundTo(paidAmount, 2),
+    balanceToPaid,
+  };
+}
+
 /**
  * Rounds a number to a specified number of decimal places.
  */

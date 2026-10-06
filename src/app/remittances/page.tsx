@@ -9,11 +9,9 @@ import {
   Search,
   PlusCircle,
   Clock,
-  ShieldCheck,
   Trash2,
   AlertTriangle,
   Edit2,
-  Calculator,
   RefreshCw,
   CreditCard,
   CheckCircle2,
@@ -33,11 +31,10 @@ import {
   getDaysAgoDateString,
   getStartOfMonthDateString,
 } from "@/lib/date-utils";
-import Breadcrumbs from "@/components/Breadcrumbs";
 
-function DubaiClientTransactionsContent() {
+function CustomerRemittancesContent() {
   const [transactions, setTransactions] = useState<any[]>([]);
-  const [clients, setClients] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const searchParams = useSearchParams();
@@ -79,14 +76,13 @@ function DubaiClientTransactionsContent() {
   const [editingTxn, setEditingTxn] = useState<any | null>(null);
   const [editDate, setEditDate] = useState("");
   const [editCustomerId, setEditCustomerId] = useState("");
-  const [editTotal, setEditTotal] = useState("");
-  const [editManualRate, setEditManualRate] = useState("");
+  const [editInr, setEditInr] = useState("");
+  const [editCustRate, setEditCustRate] = useState("");
   const [editPaidAmount, setEditPaidAmount] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editReason, setEditReason] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
-  const [editPreview, setEditPreview] = useState<any | null>(null);
 
   // Quick payment modal state
   const [payingTxn, setPayingTxn] = useState<any | null>(null);
@@ -100,9 +96,9 @@ function DubaiClientTransactionsContent() {
   function handleOpenPayModal(txn: any) {
     setPayingTxn(txn);
     setPayDate(getTodayDateString());
-    setPayAmount(String(txn.balance_to_paid ?? txn.pending_aed ?? ""));
+    setPayAmount(String(txn.pending_aed ?? txn.aed_amount ?? ""));
     setPayMethod("CASH");
-    setPayNotes(`Payment for transfer ${txn.transaction_number}`);
+    setPayNotes(`Payment for remittance ${txn.transaction_number}`);
     setPayError(null);
   }
 
@@ -161,12 +157,12 @@ function DubaiClientTransactionsContent() {
 
   async function fetchMetadata() {
     try {
-      const res = await fetch("/api/parties?type=DUBAI");
-      const pData = await res.json();
-      setClients(Array.isArray(pData) ? pData : []);
+      const res = await fetch("/api/customers");
+      const cData = await res.json();
+      setCustomers(Array.isArray(cData) ? cData : []);
     } catch (err) {
       console.error(err);
-      setClients([]);
+      setCustomers([]);
     }
   }
 
@@ -193,7 +189,7 @@ function DubaiClientTransactionsContent() {
 
       if (selectedCustomer) params.set("customerId", selectedCustomer);
       if (statusFilter) params.set("status", statusFilter);
-      params.set("entityType", "PARTY");
+      params.set("entityType", "CUSTOMER");
       params.set("limit", "250");
 
       const res = await fetch(`/api/transactions?${params.toString()}`);
@@ -207,45 +203,17 @@ function DubaiClientTransactionsContent() {
     }
   }
 
-  // Open Edit Modal
   function handleOpenEdit(t: any) {
     setEditingTxn(t);
     setEditDate(t.transaction_date);
     setEditCustomerId(t.customer_id);
-    setEditTotal(String(t.total ?? t.inr_amount));
-    setEditManualRate(String(t.manual_rate ?? t.customer_rate));
-    setEditPaidAmount(String(t.paid_amount ?? t.paid_aed ?? "0"));
+    setEditInr(String(t.inr_amount));
+    setEditCustRate(String(t.customer_rate));
+    setEditPaidAmount(String(t.paid_aed ?? "0"));
     setEditNotes(t.notes || "");
     setEditReason("");
     setEditError(null);
   }
-
-  // Live calculation for edit modal
-  useEffect(() => {
-    if (!editingTxn) return;
-    const total = parseFloat(editTotal);
-    const mRate = parseFloat(editManualRate);
-    const pAmt = parseFloat(editPaidAmount || "0");
-
-    if (!total || total <= 0 || !mRate || mRate <= 0) {
-      setEditPreview(null);
-      return;
-    }
-
-    const wholesaleRate = Math.round((1000 / mRate) * 10000) / 10000;
-    const inDhirams = Math.round((total / wholesaleRate) * 100) / 100;
-    const paid = isNaN(pAmt) ? 0 : Math.round(pAmt * 100) / 100;
-    const balanceToPaid = Math.round((inDhirams - paid) * 100) / 100;
-
-    setEditPreview({
-      total,
-      manualRate: mRate,
-      wholesaleRate,
-      inDhirams,
-      paidAmount: paid,
-      balanceToPaid,
-    });
-  }, [editingTxn, editTotal, editManualRate, editPaidAmount]);
 
   async function handleSaveEdit(e: React.FormEvent) {
     e.preventDefault();
@@ -260,8 +228,8 @@ function DubaiClientTransactionsContent() {
         body: JSON.stringify({
           transaction_date: editDate,
           customer_id: editCustomerId,
-          total: parseFloat(editTotal),
-          manual_rate: parseFloat(editManualRate),
+          inr_amount: parseFloat(editInr),
+          customer_rate: parseFloat(editCustRate),
           paid_amount: parseFloat(editPaidAmount || "0"),
           notes: editNotes || undefined,
           reason: editReason || undefined,
@@ -273,7 +241,7 @@ function DubaiClientTransactionsContent() {
 
       setEditingTxn(null);
       fetchTransactions();
-      toast.success("Dubai Client transfer updated successfully");
+      toast.success("Customer remittance updated successfully");
     } catch (err: any) {
       setEditError(err.message || "Failed to update transaction");
       toast.error(err.message || "Failed to update transaction");
@@ -295,7 +263,7 @@ function DubaiClientTransactionsContent() {
 
       setDeletingTxn(null);
       fetchTransactions();
-      toast.success("Transfer deleted permanently");
+      toast.success("Remittance deleted permanently");
     } catch (err: any) {
       setDeleteError(err.message || "Failed to delete transaction");
       toast.error(err.message || "Failed to delete transaction");
@@ -311,20 +279,20 @@ function DubaiClientTransactionsContent() {
       const res = await fetch(`/api/transactions/${voidingTxn.id}?action=void`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: voidReason || "User voided transaction" }),
+        body: JSON.stringify({ reason: voidReason || "User voided remittance" }),
       });
       if (res.ok) {
         setVoidingTxn(null);
         setVoidReason("");
         fetchTransactions();
-        toast.success("Transfer voided successfully");
+        toast.success("Remittance voided successfully");
       } else {
         const error = await res.json();
-        toast.error(error.error || "Failed to void transfer");
+        toast.error(error.error || "Failed to void remittance");
       }
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || "Failed to void transfer");
+      toast.error(err.message || "Failed to void remittance");
     } finally {
       setIsVoiding(false);
     }
@@ -336,10 +304,9 @@ function DubaiClientTransactionsContent() {
   const formatAED = (val?: number) =>
     `${(val || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED`;
 
-  // Strictly Dubai Client transfers: only Dubai parties (exclude normal customers and Indian parties)
+  // Strictly customer remittances: only entity_type === 'CUSTOMER'
   const filtered = transactions.filter((t) => {
-    if (t.entity_type === "CUSTOMER") return false;
-    if (t.party_type === "INDIA") return false;
+    if (t.entity_type === "PARTY") return false;
 
     if (!search) return true;
     const q = search.toLowerCase();
@@ -351,24 +318,11 @@ function DubaiClientTransactionsContent() {
     );
   });
 
-  // Authoritative Aggregate KPIs
-  const confirmedTransfers = filtered.filter((t) => t.status === "CONFIRMED");
-  const totalVolumeInr = confirmedTransfers.reduce(
-    (sum, t) => sum + (t.total ?? t.inr_amount ?? 0),
-    0
-  );
-  const totalInDhirams = confirmedTransfers.reduce(
-    (sum, t) => sum + (t.in_dhirams ?? t.aed_amount ?? 0),
-    0
-  );
-  const totalPaidAed = confirmedTransfers.reduce(
-    (sum, t) => sum + (t.paid_amount ?? t.paid_aed ?? 0),
-    0
-  );
-  const totalBalanceDue = confirmedTransfers.reduce(
-    (sum, t) => sum + (t.balance_to_paid ?? t.pending_aed ?? 0),
-    0
-  );
+  const confirmed = filtered.filter((t) => t.status === "CONFIRMED");
+  const totalVolumeInr = confirmed.reduce((sum, t) => sum + (t.inr_amount || 0), 0);
+  const totalInvoicedAed = confirmed.reduce((sum, t) => sum + (t.aed_amount || 0), 0);
+  const totalPaidAed = confirmed.reduce((sum, t) => sum + (t.paid_aed || 0), 0);
+  const totalDueAed = confirmed.reduce((sum, t) => sum + (t.pending_aed || 0), 0);
 
   return (
     <PageTransition>
@@ -377,28 +331,28 @@ function DubaiClientTransactionsContent() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
           <div>
             <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <Coins className="w-5 h-5 text-teal-700" />
-              <span>Dubai Client</span>
+              <Users className="w-5 h-5 text-teal-700" />
+              <span>Customer Remittances</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Authoritative Dubai client transfers and settlement registry.
+              Authoritative registry of retail customer remittance transfers (kept strictly separate from parties).
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <Link
-              href="/transactions/new"
+              href="/remittances/new"
               className="inline-flex items-center gap-2 px-4 py-2 bg-teal-700 text-white text-xs font-bold rounded-lg hover:bg-teal-800 shadow-sm transition-colors"
             >
               <PlusCircle className="w-4 h-4" />
-              <span>+ New Dubai Client Transfer</span>
+              <span>+ New Customer Remittance</span>
             </Link>
             <Link
-              href="/api/reports/export-excel"
+              href="/customers"
               className="inline-flex items-center gap-2 px-3 py-2 bg-white text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg hover:bg-slate-50 shadow-2xs transition-colors"
             >
-              <FileText className="w-4 h-4 text-emerald-700" />
-              <span>Download Excel</span>
+              <Users className="w-4 h-4 text-teal-700" />
+              <span>Customers Directory</span>
             </Link>
           </div>
         </div>
@@ -406,21 +360,21 @@ function DubaiClientTransactionsContent() {
         {/* Module Separation Banner */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-50 border border-slate-200/80 p-3 rounded-xl shadow-2xs">
           <div className="flex items-center gap-2 text-xs text-slate-700">
-            <Building2 className="w-4 h-4 text-teal-700 shrink-0" />
+            <Users className="w-4 h-4 text-teal-700 shrink-0" />
             <span className="font-semibold text-slate-900">
-              Dubai Client Transfers
+              Customer Remittances Module
             </span>
             <span className="text-slate-400 hidden sm:inline">•</span>
             <span className="text-slate-500 text-[11px] hidden sm:inline">
-              Strictly Dubai parties (HAJA, SARAB, NF2). Normal customer remittances are displayed separately.
+              Retail customers only. Dubai parties and Indian settlement parties are displayed separately.
             </span>
           </div>
           <div className="flex items-center gap-3">
             <Link
-              href="/remittances"
+              href="/transactions"
               className="text-xs font-semibold text-teal-700 hover:text-teal-900 hover:underline inline-flex items-center gap-1"
             >
-              <span>Customer Remittances</span>
+              <span>Dubai Client Transfers</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </Link>
             <span className="text-slate-300">|</span>
@@ -434,9 +388,8 @@ function DubaiClientTransactionsContent() {
           </div>
         </div>
 
-        {/* 4 Key Financial Summary Cards */}
+        {/* 4 Financial Summary Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Card 1: Total Volume INR */}
           <div className="bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-2xs space-y-1">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
               Total Volume (INR)
@@ -445,48 +398,45 @@ function DubaiClientTransactionsContent() {
               {formatINR(totalVolumeInr)}
             </div>
             <span className="text-[10px] text-slate-400 block font-medium">
-              Confirmed Transfers: {confirmedTransfers.length}
+              Confirmed Transfers: {confirmed.length}
             </span>
           </div>
 
-          {/* Card 2: Total In Dhirams */}
           <div className="bg-white p-3.5 rounded-xl border border-teal-200/90 shadow-2xs space-y-1 bg-teal-50/20">
             <span className="text-[10px] font-bold uppercase tracking-wider text-teal-800 block">
-              Total In Dhirams (AED)
+              Total Invoiced (AED)
             </span>
             <div className="text-base sm:text-lg font-black text-teal-900 font-mono tracking-tight">
-              {formatAED(totalInDhirams)}
+              {formatAED(totalInvoicedAed)}
             </div>
             <span className="text-[10px] text-teal-600 block font-medium">
-              Billed to Dubai Clients
+              Charged to Retail Customers
             </span>
           </div>
 
-          {/* Card 3: Total Paid Amount */}
           <div className="bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-2xs space-y-1">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
-              Total Paid Amount (AED)
+              Collected Payments
             </span>
             <div className="text-base sm:text-lg font-black text-emerald-700 font-mono tracking-tight">
               {formatAED(totalPaidAed)}
             </div>
             <span className="text-[10px] text-emerald-600 block font-medium">
-              Settled Collections
+              Recorded Customer Cash/Bank
             </span>
           </div>
 
-          {/* Card 4: Total Balance to Paid */}
           <div className="bg-white p-3.5 rounded-xl border border-amber-200/90 shadow-2xs space-y-1 bg-amber-50/20">
             <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block">
-              Total Balance to Paid (AED)
+              Outstanding Due (AED)
             </span>
             <div className={`text-base sm:text-lg font-black font-mono tracking-tight ${
-              totalBalanceDue > 0 ? "text-amber-800" : "text-emerald-700"
+              totalDueAed > 0 ? "text-amber-800" : "text-emerald-700"
             }`}>
-              {formatAED(totalBalanceDue)}
+              {formatAED(totalDueAed)}
             </div>
             <span className="text-[10px] text-amber-600 block font-medium">
-              Pending Collections
+              Pending Customer Dues
             </span>
           </div>
         </div>
@@ -494,7 +444,6 @@ function DubaiClientTransactionsContent() {
         {/* Filter Bar */}
         <FadeIn delay={0.1}>
           <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs space-y-3">
-            {/* Quick Time Presets */}
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-xs font-bold text-slate-700 uppercase tracking-wider mr-2 flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5 text-teal-700" /> Date:
@@ -521,13 +470,12 @@ function DubaiClientTransactionsContent() {
               ))}
             </div>
 
-            {/* Search & Dropdown Filters */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 pt-2 border-t border-slate-100">
               <div className="relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                 <input
                   type="text"
-                  placeholder="Search ID, client, notes..."
+                  placeholder="Search ID, customer, notes..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-slate-800"
@@ -540,8 +488,8 @@ function DubaiClientTransactionsContent() {
                   onChange={(e) => setSelectedCustomer(e.target.value)}
                   className="w-full text-xs font-medium border border-slate-300 rounded-lg p-2 text-slate-800"
                 >
-                  <option value="">All Dubai Clients ({clients.length})</option>
-                  {clients.map((c) => (
+                  <option value="">All Retail Customers ({customers.length})</option>
+                  {customers.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name} {c.code ? `(${c.code})` : ""}
                     </option>
@@ -582,214 +530,174 @@ function DubaiClientTransactionsContent() {
           </div>
         </FadeIn>
 
-        {/* Dubai Client Registry Table */}
+        {/* Customer Remittances Table */}
         <FadeIn delay={0.2}>
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="w-full overflow-x-auto">
               <table className="w-full text-left text-xs table-fixed">
                 <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200 text-[10px]">
                   <tr>
-                    <th className="px-3 py-3 w-[11%]">Date</th>
-                    <th className="px-3 py-3 w-[15%]">Dubai Client</th>
-                    <th className="px-3 py-3 w-[13%]">Total (INR)</th>
-                    <th className="px-3 py-3 w-[10%]">Manual Rate</th>
-                    <th className="px-3 py-3 w-[11%]">Wholesale Rate</th>
-                    <th className="px-3 py-3 w-[12%]">In Dhirams</th>
-                    <th className="px-3 py-3 w-[11%]">Paid Amount</th>
-                    <th className="px-3 py-3 w-[11%]">Balance to Paid</th>
-                    <th className="px-2 py-3 w-[6%] text-center">Status</th>
-                    <th className="px-3 py-3 text-right w-[10%]">Actions</th>
+                    <th className="px-3 py-3 w-[14%]">Txn ID / Date</th>
+                    <th className="px-3 py-3 w-[18%]">Customer</th>
+                    <th className="px-3 py-3 w-[16%]">INR Amount</th>
+                    <th className="px-3 py-3 w-[12%]">Rate (AED/1000)</th>
+                    <th className="px-3 py-3 w-[14%]">AED Billed</th>
+                    <th className="px-3 py-3 w-[14%]">Payment Status</th>
+                    <th className="px-3 py-3 text-right w-[12%]">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
                   {loading ? (
                     <tr>
-                      <td colSpan={10} className="px-4 py-8 text-center text-slate-400">
+                      <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
                         <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-teal-700" />
-                        <span>Loading Dubai Client transfers...</span>
+                        <span>Loading customer remittances...</span>
                       </td>
                     </tr>
                   ) : filtered.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="px-6 py-14 text-center">
+                      <td colSpan={7} className="px-6 py-14 text-center">
                         <div className="flex flex-col items-center gap-2">
-                          <Coins className="w-8 h-8 text-slate-300" />
-                          <p className="text-sm font-semibold text-slate-600">No Dubai Client transfers found</p>
+                          <Users className="w-8 h-8 text-slate-300" />
+                          <p className="text-sm font-semibold text-slate-600">No customer remittances recorded</p>
                           <Link
-                            href="/transactions/new"
+                            href="/remittances/new"
                             className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 transition"
                           >
                             <PlusCircle className="w-3.5 h-3.5" />
-                            + New Transfer
+                            + New Remittance
                           </Link>
                         </div>
                       </td>
                     </tr>
                   ) : (
-                    filtered.map((t) => {
-                      const totalVal = t.total ?? t.inr_amount ?? 0;
-                      const manualRateVal = t.manual_rate ?? t.customer_rate ?? 0;
-                      const wholesaleRateVal =
-                        t.wholesale_rate ?? (manualRateVal > 0 ? 1000 / manualRateVal : 0);
-                      const inDhiramsVal = t.in_dhirams ?? t.aed_amount ?? 0;
-                      const paidAmountVal = t.paid_amount ?? t.paid_aed ?? 0;
-                      const balanceToPaidVal =
-                        t.balance_to_paid ?? Math.max(0, inDhiramsVal - paidAmountVal);
+                    filtered.map((t) => (
+                      <tr
+                        key={t.id}
+                        className={`hover:bg-slate-50/80 transition-colors ${
+                          t.status === "VOIDED" ? "opacity-60 bg-slate-50/40" : ""
+                        }`}
+                      >
+                        <td className="px-3 py-2.5 font-mono">
+                          <div className="font-bold text-slate-900 text-xs">
+                            {t.transaction_number}
+                          </div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">
+                            {t.transaction_date}
+                          </div>
+                        </td>
 
-                      return (
-                        <tr
-                          key={t.id}
-                          className={`hover:bg-slate-50/80 transition-colors ${
-                            t.status === "VOIDED" ? "opacity-60 bg-slate-50/40" : ""
-                          }`}
-                        >
-                          {/* 1. Date */}
-                          <td className="px-3 py-2.5 font-mono">
-                            <div className="font-bold text-slate-900 text-xs">
-                              {t.transaction_date}
-                            </div>
-                            <div className="text-[10px] text-slate-400 mt-0.5 truncate" title={t.transaction_number}>
-                              {t.transaction_number}
-                            </div>
-                          </td>
-
-                          {/* 2. Dubai Client */}
-                          <td className="px-3 py-2.5">
-                            <div className="font-bold text-slate-800 flex items-center gap-1 text-xs truncate">
-                              <Building2 className="w-3.5 h-3.5 text-teal-700 shrink-0" />
-                              <span className="truncate" title={t.customer_name}>
-                                {t.customer_name}
-                              </span>
-                            </div>
-                            {t.customer_code && (
-                              <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                                {t.customer_code}
-                              </div>
-                            )}
-                          </td>
-
-                          {/* 3. Total (INR) */}
-                          <td className="px-3 py-2.5 font-mono whitespace-nowrap">
-                            <div className="font-bold text-slate-900 text-xs">
-                              {formatINR(totalVal)}
-                            </div>
-                          </td>
-
-                          {/* 4. Manual Rate Value */}
-                          <td className="px-3 py-2.5 font-mono whitespace-nowrap">
-                            <div className="font-bold text-slate-800 text-xs">
-                              {Number(manualRateVal).toFixed(4)}
-                            </div>
-                            <span className="text-[9px] text-slate-400">AED/1000</span>
-                          </td>
-
-                          {/* 5. Whole Sale Rate */}
-                          <td className="px-3 py-2.5 font-mono whitespace-nowrap">
-                            <div className="font-bold text-teal-700 text-xs">
-                              {Number(wholesaleRateVal).toFixed(4)}
-                            </div>
-                            <span className="text-[9px] text-slate-400">= 1000/Rate</span>
-                          </td>
-
-                          {/* 6. In Dhirams */}
-                          <td className="px-3 py-2.5 font-mono whitespace-nowrap">
-                            <div className="font-extrabold text-slate-900 text-xs">
-                              {formatAED(inDhiramsVal)}
-                            </div>
-                          </td>
-
-                          {/* 7. Paid Amount */}
-                          <td className="px-3 py-2.5 font-mono whitespace-nowrap">
-                            <div className="font-bold text-emerald-700 text-xs">
-                              {formatAED(paidAmountVal)}
-                            </div>
-                          </td>
-
-                          {/* 8. Balance to Paid */}
-                          <td className="px-3 py-2.5 font-mono whitespace-nowrap">
-                            <div className={`font-bold text-xs ${
-                              balanceToPaidVal > 0 ? "text-amber-700 font-extrabold" : "text-emerald-700"
-                            }`}>
-                              {formatAED(balanceToPaidVal)}
-                            </div>
-                          </td>
-
-                          {/* 9. Status */}
-                          <td className="px-2 py-2.5 text-center">
-                            <span
-                              className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
-                                t.status === "CONFIRMED"
-                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                  : "bg-rose-50 text-rose-700 border border-rose-200"
-                              }`}
+                        <td className="px-3 py-2.5">
+                          <div className="font-bold text-slate-800 flex items-center gap-1 text-xs truncate">
+                            <Users className="w-3.5 h-3.5 text-teal-700 shrink-0" />
+                            <Link
+                              href={`/customers/${t.customer_id}`}
+                              className="hover:underline truncate"
+                              title={t.customer_name}
                             >
-                              {t.status}
+                              {t.customer_name}
+                            </Link>
+                          </div>
+                          {t.customer_code && (
+                            <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                              {t.customer_code}
+                            </div>
+                          )}
+                        </td>
+
+                        <td className="px-3 py-2.5 font-mono whitespace-nowrap">
+                          <div className="font-bold text-slate-900 text-xs">
+                            {formatINR(t.inr_amount)}
+                          </div>
+                        </td>
+
+                        <td className="px-3 py-2.5 font-mono whitespace-nowrap">
+                          <div className="font-bold text-slate-800 text-xs">
+                            {Number(t.customer_rate).toFixed(4)}
+                          </div>
+                        </td>
+
+                        <td className="px-3 py-2.5 font-mono whitespace-nowrap">
+                          <div className="font-extrabold text-slate-900 text-xs">
+                            {formatAED(t.aed_amount)}
+                          </div>
+                        </td>
+
+                        <td className="px-3 py-2.5 whitespace-nowrap">
+                          {(t.paid_aed || 0) >= t.aed_amount ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                              <span>Paid in Full</span>
                             </span>
-                          </td>
+                          ) : (t.paid_aed || 0) > 0 ? (
+                            <div className="text-[10px] font-semibold text-amber-900 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded inline-block font-mono">
+                              <span>Paid: {formatAED(t.paid_aed)}</span>
+                              <span className="mx-1 text-slate-400">•</span>
+                              <span className="text-rose-700 font-bold">Due: {formatAED(t.pending_aed)}</span>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded inline-block font-mono">
+                              Unpaid (Due: {formatAED(t.aed_amount)})
+                            </span>
+                          )}
+                        </td>
 
-                          {/* 10. Actions */}
-                          <td className="px-3 py-2.5 text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-1">
-                              {/* Quick Pay */}
-                              {t.status === "CONFIRMED" && balanceToPaidVal > 0 && (
-                                <button
-                                  onClick={() => handleOpenPayModal(t)}
-                                  title="Record Payment in AED"
-                                  className="flex items-center gap-1 text-[10px] font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-300 px-2 py-1 rounded shadow-2xs transition-colors"
-                                >
-                                  <CreditCard className="w-3 h-3" />
-                                  <span>+ Pay</span>
-                                </button>
-                              )}
-
-                              {/* Receipt */}
+                        <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1">
+                            {t.status === "CONFIRMED" && (t.pending_aed === undefined || t.pending_aed > 0) && (
                               <button
-                                onClick={() => generateTransactionReceipt(t)}
-                                title="Download PDF Receipt"
-                                className="p-1 rounded text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                                onClick={() => handleOpenPayModal(t)}
+                                title="Record Payment"
+                                className="flex items-center gap-1 text-[10px] font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-300 px-2 py-1 rounded shadow-2xs transition-colors"
                               >
-                                <FileText className="w-3.5 h-3.5" />
+                                <CreditCard className="w-3 h-3" />
+                                <span>+ Pay</span>
                               </button>
+                            )}
 
-                              {/* Edit */}
-                              <button
-                                onClick={() => handleOpenEdit(t)}
-                                title="Edit Transfer"
-                                className="p-1 rounded text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                              >
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </button>
+                            <button
+                              onClick={() => generateTransactionReceipt(t)}
+                              title="Download Receipt (PDF)"
+                              className="p-1 rounded text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                            </button>
 
-                              {/* Void */}
-                              {t.status === "CONFIRMED" && (
-                                <button
-                                  onClick={() => {
-                                    setVoidingTxn(t);
-                                    setVoidReason("");
-                                  }}
-                                  title="Void Transfer"
-                                  className="px-1.5 py-0.5 rounded text-[10px] font-semibold text-slate-500 hover:text-amber-700 hover:bg-amber-50"
-                                >
-                                  Void
-                                </button>
-                              )}
+                            <button
+                              onClick={() => handleOpenEdit(t)}
+                              title="Edit Transfer"
+                              className="p-1 rounded text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
 
-                              {/* Delete */}
+                            {t.status === "CONFIRMED" && (
                               <button
                                 onClick={() => {
-                                  setDeletingTxn(t);
-                                  setDeleteError(null);
+                                  setVoidingTxn(t);
+                                  setVoidReason("");
                                 }}
-                                title="Permanently Delete Transfer"
-                                className="p-1 rounded text-slate-300 hover:text-rose-600 hover:bg-rose-50"
+                                title="Void Transfer"
+                                className="px-1.5 py-0.5 rounded text-[10px] font-semibold text-slate-500 hover:text-amber-700 hover:bg-amber-50"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                Void
                               </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
+                            )}
+
+                            <button
+                              onClick={() => {
+                                setDeletingTxn(t);
+                                setDeleteError(null);
+                              }}
+                              title="Delete Transfer"
+                              className="p-1 rounded text-slate-300 hover:text-rose-600 hover:bg-rose-50"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
                   )}
                 </tbody>
               </table>
@@ -797,41 +705,28 @@ function DubaiClientTransactionsContent() {
           </div>
         </FadeIn>
 
-        {/* EDIT TRANSACTION MODAL */}
+        {/* EDIT MODAL */}
         {editingTxn && (
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+            <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4 border border-slate-200">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <Edit2 className="w-4 h-4 text-teal-700" />
-                    <span>Edit Dubai Client Transfer</span>
-                  </h3>
-                  <span className="text-xs font-mono text-slate-500">
-                    {editingTxn.transaction_number}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setEditingTxn(null)}
-                  className="text-slate-400 hover:text-slate-600 text-lg font-bold"
-                >
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Edit2 className="w-4 h-4 text-teal-700" />
+                  <span>Edit Customer Remittance</span>
+                </h3>
+                <button onClick={() => setEditingTxn(null)} className="text-slate-400 hover:text-slate-600">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {editError && (
-                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs font-medium flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
-                  <span>{editError}</span>
-                </div>
+                <p className="text-xs text-rose-600 font-semibold">{editError}</p>
               )}
 
               <form onSubmit={handleSaveEdit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                      Date
-                    </label>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Date</label>
                     <input
                       type="date"
                       required
@@ -840,17 +735,14 @@ function DubaiClientTransactionsContent() {
                       className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900"
                     />
                   </div>
-
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                      Dubai Client
-                    </label>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Customer</label>
                     <select
                       value={editCustomerId}
                       onChange={(e) => setEditCustomerId(e.target.value)}
                       className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900"
                     >
-                      {clients.map((c) => (
+                      {customers.map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.name} {c.code ? `(${c.code})` : ""}
                         </option>
@@ -859,96 +751,48 @@ function DubaiClientTransactionsContent() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Total (INR)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2 text-slate-400 font-bold text-sm">₹</span>
-                    <input
-                      type="number"
-                      step="any"
-                      required
-                      value={editTotal}
-                      onChange={(e) => setEditTotal(e.target.value)}
-                      className="w-full text-sm font-bold pl-7 pr-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                  </div>
-                </div>
-
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                      Manual Rate Value
-                    </label>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">INR Amount</label>
                     <input
                       type="number"
                       step="any"
                       required
-                      value={editManualRate}
-                      onChange={(e) => setEditManualRate(e.target.value)}
+                      value={editInr}
+                      onChange={(e) => setEditInr(e.target.value)}
                       className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900"
                     />
-                    <span className="text-[10px] text-slate-400">AED / 1000 INR</span>
                   </div>
-
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                      Paid Amount (AED)
-                    </label>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Customer Rate</label>
                     <input
                       type="number"
                       step="any"
-                      value={editPaidAmount}
-                      onChange={(e) => setEditPaidAmount(e.target.value)}
+                      required
+                      value={editCustRate}
+                      onChange={(e) => setEditCustRate(e.target.value)}
                       className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900"
                     />
-                    <span className="text-[10px] text-slate-400">Manual Entry</span>
                   </div>
                 </div>
 
-                {/* Calculation Output Card */}
-                {editPreview && (
-                  <div className="p-3 bg-teal-50 rounded-xl border border-teal-200 text-xs space-y-1.5 font-medium">
-                    <div className="flex justify-between">
-                      <span className="text-teal-800">Whole Sale Rate (=1000/Rate):</span>
-                      <span className="font-mono font-bold text-teal-900">{editPreview.wholesaleRate.toFixed(4)}</span>
-                    </div>
-                    <div className="flex justify-between font-bold">
-                      <span className="text-teal-900">In Dhirams (=Total/Wholesale):</span>
-                      <span className="font-mono text-teal-900">AED {editPreview.inDhirams.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-600">Paid Amount:</span>
-                      <span className="font-mono text-slate-800">AED {editPreview.paidAmount.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between font-bold pt-1 border-t border-teal-200 text-amber-800">
-                      <span>Balance to Paid:</span>
-                      <span className="font-mono">AED {editPreview.balanceToPaid.toFixed(2)}</span>
-                    </div>
-                  </div>
-                )}
-
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Notes
-                  </label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Paid Amount (AED)</label>
                   <input
-                    type="text"
-                    value={editNotes}
-                    onChange={(e) => setEditNotes(e.target.value)}
-                    className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900"
+                    type="number"
+                    step="any"
+                    value={editPaidAmount}
+                    onChange={(e) => setEditPaidAmount(e.target.value)}
+                    className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Reason for Edit *
-                  </label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Reason for Edit *</label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Corrected manual rate value or order total"
+                    placeholder="e.g. Rate adjustment or order update"
                     value={editReason}
                     onChange={(e) => setEditReason(e.target.value)}
                     className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900"
@@ -979,45 +823,23 @@ function DubaiClientTransactionsContent() {
         {/* QUICK PAYMENT MODAL */}
         {payingTxn && (
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-teal-700" />
-                    <span>Record Client Payment</span>
-                  </h3>
-                  <span className="text-xs text-slate-500 font-mono">
-                    {payingTxn.customer_name} • {payingTxn.transaction_number}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setPayingTxn(null)}
-                  className="text-slate-400 hover:text-slate-600 text-lg font-bold"
-                >
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-teal-700" />
+                  <span>Record Customer Payment</span>
+                </h3>
+                <button onClick={() => setPayingTxn(null)} className="text-slate-400 hover:text-slate-600">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {payError && (
-                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs font-medium flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
-                  <span>{payError}</span>
-                </div>
-              )}
+              {payError && <p className="text-xs text-rose-600 font-semibold">{payError}</p>}
 
               <form onSubmit={handleSavePayment} className="space-y-4">
-                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs flex justify-between items-center">
-                  <span className="text-slate-600 font-medium">Pending Balance:</span>
-                  <span className="font-mono font-bold text-amber-700 text-sm">
-                    {formatAED(payingTxn.balance_to_paid ?? payingTxn.pending_aed)}
-                  </span>
-                </div>
-
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                      Payment Date
-                    </label>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Payment Date</label>
                     <input
                       type="date"
                       required
@@ -1026,11 +848,8 @@ function DubaiClientTransactionsContent() {
                       className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900"
                     />
                   </div>
-
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                      Amount (AED) *
-                    </label>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Amount (AED) *</label>
                     <input
                       type="number"
                       step="any"
@@ -1040,33 +859,6 @@ function DubaiClientTransactionsContent() {
                       className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900"
                     />
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Payment Method
-                  </label>
-                  <select
-                    value={payMethod}
-                    onChange={(e) => setPayMethod(e.target.value)}
-                    className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900"
-                  >
-                    <option value="CASH">CASH</option>
-                    <option value="BANK_TRANSFER">BANK TRANSFER</option>
-                    <option value="CHEQUE">CHEQUE</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Notes
-                  </label>
-                  <input
-                    type="text"
-                    value={payNotes}
-                    onChange={(e) => setPayNotes(e.target.value)}
-                    className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900"
-                  />
                 </div>
 
                 <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
@@ -1096,39 +888,27 @@ function DubaiClientTransactionsContent() {
             <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-amber-600" />
-                <span>Void Dubai Client Transfer?</span>
+                <span>Void Customer Remittance?</span>
               </h3>
               <p className="text-xs text-slate-600">
-                Are you sure you want to void transfer{" "}
-                <span className="font-mono font-bold text-slate-900">
-                  {voidingTxn.transaction_number}
-                </span>
-                ? This marks the transfer inactive while preserving audit history.
+                Are you sure you want to void remittance {voidingTxn.transaction_number}?
               </p>
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Reason for Void *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Client requested cancellation"
-                  value={voidReason}
-                  onChange={(e) => setVoidReason(e.target.value)}
-                  className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900"
-                />
-              </div>
+              <input
+                type="text"
+                required
+                placeholder="Reason for voiding"
+                value={voidReason}
+                onChange={(e) => setVoidReason(e.target.value)}
+                className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900"
+              />
               <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  onClick={() => setVoidingTxn(null)}
-                  className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
-                >
+                <button onClick={() => setVoidingTxn(null)} className="px-3 py-1.5 text-xs font-semibold">
                   Cancel
                 </button>
                 <button
                   onClick={handleConfirmVoid}
                   disabled={isVoiding}
-                  className="px-4 py-1.5 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg disabled:opacity-50"
+                  className="px-4 py-1.5 text-xs font-bold bg-amber-600 text-white rounded-lg"
                 >
                   {isVoiding ? "Voiding..." : "Confirm Void"}
                 </button>
@@ -1143,29 +923,20 @@ function DubaiClientTransactionsContent() {
             <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200">
               <h3 className="text-base font-bold text-rose-700 flex items-center gap-2">
                 <Trash2 className="w-5 h-5 text-rose-600" />
-                <span>Permanently Delete Transfer?</span>
+                <span>Permanently Delete Remittance?</span>
               </h3>
               <p className="text-xs text-slate-600">
-                This action cannot be undone. Transfer{" "}
-                <span className="font-mono font-bold text-slate-900">
-                  {deletingTxn.transaction_number}
-                </span>{" "}
-                and associated ledger records will be deleted.
+                Are you sure you want to delete {deletingTxn.transaction_number}? This cannot be undone.
               </p>
-              {deleteError && (
-                <p className="text-xs text-rose-600 font-semibold">{deleteError}</p>
-              )}
+              {deleteError && <p className="text-xs text-rose-600 font-semibold">{deleteError}</p>}
               <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  onClick={() => setDeletingTxn(null)}
-                  className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
-                >
+                <button onClick={() => setDeletingTxn(null)} className="px-3 py-1.5 text-xs font-semibold">
                   Cancel
                 </button>
                 <button
                   onClick={handleConfirmDelete}
                   disabled={isDeleting}
-                  className="px-4 py-1.5 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-lg disabled:opacity-50"
+                  className="px-4 py-1.5 text-xs font-bold bg-rose-600 text-white rounded-lg"
                 >
                   {isDeleting ? "Deleting..." : "Permanently Delete"}
                 </button>
@@ -1178,16 +949,16 @@ function DubaiClientTransactionsContent() {
   );
 }
 
-export default function DubaiClientPage() {
+export default function CustomerRemittancesPage() {
   return (
     <Suspense
       fallback={
         <div className="p-8 text-center text-xs text-slate-400">
-          Loading Dubai Client Transfers...
+          Loading Customer Remittances...
         </div>
       }
     >
-      <DubaiClientTransactionsContent />
+      <CustomerRemittancesContent />
     </Suspense>
   );
 }

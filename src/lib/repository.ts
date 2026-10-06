@@ -1,5 +1,5 @@
 import { query, queryOne, execute } from "@/lib/db";
-import { calculateTransaction, roundTo } from "@/lib/calculations";
+import { calculateTransaction, calculateDubaiClientTransfer, roundTo } from "@/lib/calculations";
 import {
   getTodayDateString,
   getYesterdayDateString,
@@ -17,6 +17,7 @@ export interface Customer {
   default_rate?: number | null;
   status: string;
   entity_type?: string;
+  party_type?: "DUBAI" | "INDIA" | string;
   total_inr?: number;
   total_aed?: number;
   total_paid?: number;
@@ -55,10 +56,15 @@ export interface TransactionRecord {
   customer_code?: string | null;
   customer_name?: string;
   entity_type?: string;
+  party_type?: string;
   inr_amount: number;
+  total?: number;
   customer_rate: number;
+  manual_rate?: number;
   aed_amount: number;
+  in_dhirams?: number;
   base_rate: number;
+  wholesale_rate?: number;
   cost_aed: number;
   gross_profit_aed: number;
   delivery_charge_pct: number;
@@ -73,7 +79,9 @@ export interface TransactionRecord {
   total_distributed_inr?: number;
   remaining_inr?: number;
   paid_aed?: number;
+  paid_amount?: number;
   pending_aed?: number;
+  balance_to_paid?: number;
   is_demo?: boolean;
   splits?: DistributionSplitRecord[];
   created_at: string;
@@ -165,6 +173,7 @@ function mapCustomerRecord(r: any): Customer {
     default_rate: r.default_rate != null ? Number(r.default_rate) : null,
     status: r.status,
     entity_type: r.entity_type || "CUSTOMER",
+    party_type: r.party_type || (r.entity_type === "PARTY" ? "DUBAI" : undefined),
     total_inr: totalInr,
     total_aed: totalAed,
     total_paid: totalPaid,
@@ -180,6 +189,8 @@ function mapTransactionRecord(r: any): TransactionRecord {
   const remainingInr = roundTo(Math.max(0, inrAmount - distributedInr), 2);
   const paidAed = roundTo(Number(r.paid_aed || 0), 2);
   const pendingAed = roundTo(Math.max(0, aedAmount - paidAed), 2);
+  const customerRate = roundTo(Number(r.customer_rate), 4);
+  const baseRate = roundTo(Number(r.base_rate), 4);
 
   return {
     id: r.id,
@@ -189,10 +200,15 @@ function mapTransactionRecord(r: any): TransactionRecord {
     customer_code: r.customer_code || null,
     customer_name: r.customer_name,
     entity_type: r.entity_type || "CUSTOMER",
+    party_type: r.party_type || (r.entity_type === "PARTY" ? "DUBAI" : undefined),
     inr_amount: inrAmount,
-    customer_rate: roundTo(Number(r.customer_rate), 4),
+    total: inrAmount,
+    customer_rate: customerRate,
+    manual_rate: customerRate,
     aed_amount: aedAmount,
-    base_rate: roundTo(Number(r.base_rate), 4),
+    in_dhirams: aedAmount,
+    base_rate: baseRate,
+    wholesale_rate: baseRate,
     cost_aed: roundTo(Number(r.cost_aed), 2),
     gross_profit_aed: roundTo(Number(r.gross_profit_aed), 2),
     delivery_charge_pct: Number(r.delivery_charge_pct),
@@ -208,7 +224,9 @@ function mapTransactionRecord(r: any): TransactionRecord {
     total_distributed_inr: distributedInr,
     remaining_inr: remainingInr,
     paid_aed: paidAed,
+    paid_amount: paidAed,
     pending_aed: pendingAed,
+    balance_to_paid: pendingAed,
     created_at: formatDateTime(r.created_at),
   };
 }
@@ -276,8 +294,25 @@ export async function listCustomers(entityType: string = "CUSTOMER"): Promise<Cu
   return rows.map(mapCustomerRecord);
 }
 
-export async function listParties(): Promise<Customer[]> {
-  return listCustomers("PARTY");
+export async function listParties(partyType?: "DUBAI" | "INDIA" | "ALL"): Promise<Customer[]> {
+  let whereClause = "WHERE COALESCE(c.entity_type, 'CUSTOMER') = 'PARTY'";
+  const params: any[] = [];
+  if (partyType && partyType !== "ALL") {
+    params.push(partyType);
+    whereClause += ` AND COALESCE(c.party_type, 'DUBAI') = $1`;
+  }
+  const rows = await query(`
+    SELECT 
+      c.*,
+      COALESCE((SELECT SUM(t.inr_amount) FROM transactions t WHERE t.customer_id = c.id AND t.status = 'CONFIRMED'), 0) as total_inr,
+      COALESCE((SELECT SUM(t.aed_amount) FROM transactions t WHERE t.customer_id = c.id AND t.status = 'CONFIRMED'), 0) as total_aed,
+      COALESCE((SELECT SUM(p.amount_aed) FROM customer_payments p WHERE p.customer_id = c.id), 0) as total_paid
+    FROM customers c
+    ${whereClause}
+    ORDER BY c.name ASC
+  `, params);
+
+  return rows.map(mapCustomerRecord);
 }
 
 export async function getCustomer(id: string): Promise<Customer | null> {
@@ -301,8 +336,10 @@ export async function createCustomer(data: {
   phone?: string;
   default_rate?: number;
   entity_type?: string;
+  party_type?: "DUBAI" | "INDIA" | string;
 }): Promise<Customer> {
   const entityType = data.entity_type || "CUSTOMER";
+  const partyType = data.party_type || (entityType === "PARTY" ? "DUBAI" : undefined);
   const id = entityType === "PARTY"
     ? `party-${(data.code || data.name).toLowerCase().replace(/[^a-z0-9]/g, "")}`
     : crypto.randomUUID();
@@ -312,15 +349,40 @@ export async function createCustomer(data: {
   );
   
   await execute(`
-    INSERT INTO customers (id, code, name, phone, default_rate, status, entity_type)
-    VALUES ($1, $2, $3, $4, $5, 'ACTIVE', $6)
+    INSERT INTO customers (id, code, name, phone, default_rate, status, entity_type, party_type)
+    VALUES ($1, $2, $3, $4, $5, 'ACTIVE', $6, $7)
     ON CONFLICT (code) DO UPDATE SET 
       name = EXCLUDED.name,
       entity_type = EXCLUDED.entity_type,
+      party_type = COALESCE(EXCLUDED.party_type, customers.party_type),
       phone = COALESCE(EXCLUDED.phone, customers.phone),
       default_rate = COALESCE(EXCLUDED.default_rate, customers.default_rate)
-  `, [id, code, data.name.trim(), data.phone || null, data.default_rate || 38.25, entityType]);
+  `, [id, code, data.name.trim(), data.phone || null, data.default_rate || 38.25, entityType, partyType || null]);
 
+  // If this is an Indian party, ensure it's also registered in distributors (for splits) & bank_distrip_accounts
+  if (entityType === "PARTY" && partyType === "INDIA") {
+    const distId = `dist-${code.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+    await execute(`
+      INSERT INTO distributors (id, code, name, partner_type, group_type, default_settlement_currency, status)
+      VALUES ($1, $2, $3, 'INDIA_DISTRIBUTOR', 'IND', 'INR', 'ACTIVE')
+      ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, code = EXCLUDED.code;
+    `, [distId, code, data.name.trim()]);
+
+    await execute(`
+      INSERT INTO bank_distrip_accounts (id, account_code, account_name, status)
+      VALUES ($1, $2, $3, 'ACTIVE')
+      ON CONFLICT (id) DO UPDATE SET account_name = EXCLUDED.account_name, account_code = EXCLUDED.account_code;
+    `, [distId, code, data.name.trim()]);
+  } else if (entityType === "PARTY" && partyType === "DUBAI") {
+    const distId = `dist-${code.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+    await execute(`
+      INSERT INTO distributors (id, code, name, partner_type, group_type, default_settlement_currency, status)
+      VALUES ($1, $2, $3, 'WHOLESALE_PARTNER', 'AED', 'AED', 'ACTIVE')
+      ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, code = EXCLUDED.code;
+    `, [distId, code, data.name.trim()]);
+  }
+
+  invalidatePartyTransfersCache();
   const created = await getCustomer(id);
   return created!;
 }
@@ -330,8 +392,9 @@ export async function createParty(data: {
   code?: string;
   phone?: string;
   default_rate?: number;
+  party_type?: "DUBAI" | "INDIA" | string;
 }): Promise<Customer> {
-  return createCustomer({ ...data, entity_type: "PARTY" });
+  return createCustomer({ ...data, entity_type: "PARTY", party_type: data.party_type || "DUBAI" });
 }
 
 // ---------------- TRANSACTIONS ----------------
@@ -357,6 +420,7 @@ export async function listTransactions(filters?: {
       c.code as customer_code,
       c.name as customer_name,
       c.entity_type,
+      c.party_type,
       d.name as distributor_name,
       '-' as distributor_names,
       '-' as distributor_split_details,
@@ -373,6 +437,7 @@ export async function listTransactions(filters?: {
       c.code as customer_code,
       c.name as customer_name,
       c.entity_type,
+      c.party_type,
       d.name as distributor_name,
       COALESCE((
         SELECT STRING_AGG(DISTINCT d2.name, ', ' ORDER BY d2.name)
@@ -504,9 +569,13 @@ export async function getTransaction(id: string): Promise<TransactionRecord | nu
 export async function createTransaction(data: {
   transaction_date: string;
   customer_id: string;
-  inr_amount: number;
-  customer_rate: number;
-  base_rate: number;
+  inr_amount?: number;
+  total?: number;
+  customer_rate?: number;
+  manual_rate?: number;
+  base_rate?: number;
+  paid_amount?: number;
+  paid_aed?: number;
   delivery_charge_pct?: number;
   distributor_id?: string | null;
   notes?: string;
@@ -519,13 +588,56 @@ export async function createTransaction(data: {
   const id = crypto.randomUUID();
   const txnNumber = generateTransactionNumber();
 
-  // Authoritative calculations on server:
-  const calc = calculateTransaction({
-    inrAmount: data.inr_amount,
-    customerRate: data.customer_rate,
-    baseRate: data.base_rate,
-    deliveryChargePct: data.delivery_charge_pct,
-  });
+  const total = Number(data.total ?? data.inr_amount);
+  const manualRate = Number(data.manual_rate ?? data.customer_rate);
+  const paidAmount = Number(data.paid_amount ?? data.paid_aed ?? 0);
+
+  let inrAmount = total;
+  let customerRate = manualRate;
+  let aedAmount = 0;
+  let baseRate = 0;
+  let costAed = 0;
+  let grossProfitAed = 0;
+  let deliveryPct = 0;
+  let deliveryChargeAed = 0;
+  let netProfitAed = 0;
+
+  if (data.base_rate !== undefined) {
+    const calc = calculateTransaction({
+      inrAmount: total,
+      customerRate: manualRate,
+      baseRate: Number(data.base_rate),
+      deliveryChargePct: data.delivery_charge_pct,
+    });
+    inrAmount = calc.inrAmount;
+    customerRate = calc.customerRate;
+    aedAmount = calc.aedAmount;
+    baseRate = calc.baseRate;
+    costAed = calc.costAed;
+    grossProfitAed = calc.grossProfitAed;
+    deliveryPct = calc.deliveryChargePct;
+    deliveryChargeAed = calc.deliveryChargeAed;
+    netProfitAed = calc.netProfitAed;
+  } else {
+    // Authoritative Dubai Client calculation:
+    // Whole sale rate = 1000 / manual value
+    // In Dhirams = Total / Whole sale rate
+    // Balance to paid = In Dhirams - paid amount
+    const dubaiCalc = calculateDubaiClientTransfer({
+      total,
+      manualRate,
+      paidAmount,
+    });
+    inrAmount = dubaiCalc.total;
+    customerRate = dubaiCalc.manualRate;
+    baseRate = dubaiCalc.wholesaleRate;
+    aedAmount = dubaiCalc.inDhirams;
+    costAed = dubaiCalc.inDhirams;
+    grossProfitAed = 0;
+    deliveryPct = 0;
+    deliveryChargeAed = 0;
+    netProfitAed = 0;
+  }
 
   await execute(`
     INSERT INTO transactions (
@@ -541,18 +653,33 @@ export async function createTransaction(data: {
     )
   `, [
     id, txnNumber, data.transaction_date, data.customer_id,
-    calc.inrAmount, calc.customerRate, calc.aedAmount, calc.baseRate,
-    calc.costAed, calc.grossProfitAed, calc.deliveryChargePct, calc.deliveryChargeAed,
-    calc.netProfitAed, data.distributor_id || null, data.notes || null
+    inrAmount, customerRate, aedAmount, baseRate,
+    costAed, grossProfitAed, deliveryPct, deliveryChargeAed,
+    netProfitAed, data.distributor_id || null, data.notes || null
   ]);
+
+  // If paidAmount is provided and > 0, record initial payment
+  if (paidAmount > 0) {
+    const paymentId = crypto.randomUUID();
+    const pmtNumber = `PMT-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
+    await execute(`
+      INSERT INTO customer_payments (
+        id, payment_number, payment_date, customer_id, transaction_id,
+        amount_aed, payment_method, notes, is_demo
+      ) VALUES (
+        $1, $2, $3, $4, $5,
+        $6, 'CASH', 'Initial payment upon transfer creation', false
+      )
+    `, [paymentId, pmtNumber, data.transaction_date, data.customer_id, id, paidAmount]);
+  }
 
   // Insert initial splits if provided
   if (data.splits && data.splits.length > 0) {
     let totalSplitInr = 0;
     for (const s of data.splits) {
       totalSplitInr += Number(s.inr_amount);
-      if (totalSplitInr > calc.inrAmount) {
-        throw new Error(`Total distribution (₹${totalSplitInr.toLocaleString()}) cannot exceed customer order (₹${calc.inrAmount.toLocaleString()})`);
+      if (totalSplitInr > inrAmount) {
+        throw new Error(`Total distribution (₹${totalSplitInr.toLocaleString()}) cannot exceed customer order (₹${inrAmount.toLocaleString()})`);
       }
       const splitId = crypto.randomUUID();
       await execute(`
@@ -567,7 +694,7 @@ export async function createTransaction(data: {
         )
       `, [
         splitId, id, s.distributor_id, data.transaction_date,
-        s.inr_amount, calc.baseRate, roundTo(s.inr_amount / calc.baseRate, 2), s.notes || null
+        s.inr_amount, baseRate, baseRate > 0 ? roundTo(s.inr_amount / baseRate, 2) : 0, s.notes || null
       ]);
     }
   }
@@ -576,7 +703,7 @@ export async function createTransaction(data: {
   await execute(`
     INSERT INTO audit_logs (id, entity_name, entity_id, action, new_values, reason)
     VALUES ($1, 'TRANSACTION', $2, 'CREATE', $3, 'Initial transaction creation')
-  `, [crypto.randomUUID(), id, JSON.stringify(calc)]);
+  `, [crypto.randomUUID(), id, JSON.stringify({ inrAmount, customerRate, baseRate, aedAmount, paidAmount })]);
 
   const created = await getTransaction(id);
   invalidatePartyTransfersCache();
@@ -1010,17 +1137,41 @@ export async function createDistributor(data: {
     VALUES ($1, $2, $3, $4, $5, $6, 'ACTIVE')
   `, [id, code, data.name.trim(), partnerType, data.group_type, currency]);
 
+  // Sync to customers and bank accounts if needed
+  if (data.group_type === "IND") {
+    const partyId = `party-${code.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+    await execute(`
+      INSERT INTO customers (id, code, name, default_rate, status, entity_type, party_type)
+      VALUES ($1, $2, $3, 38.25, 'ACTIVE', 'PARTY', 'INDIA')
+      ON CONFLICT (code) DO UPDATE SET entity_type = 'PARTY', party_type = 'INDIA';
+    `, [partyId, code, data.name.trim()]);
+
+    await execute(`
+      INSERT INTO bank_distrip_accounts (id, account_code, account_name, status)
+      VALUES ($1, $2, $3, 'ACTIVE')
+      ON CONFLICT (id) DO UPDATE SET account_name = EXCLUDED.account_name, account_code = EXCLUDED.account_code;
+    `, [id, code, data.name.trim()]);
+  } else if (data.group_type === "AED") {
+    const partyId = `party-${code.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+    await execute(`
+      INSERT INTO customers (id, code, name, default_rate, status, entity_type, party_type)
+      VALUES ($1, $2, $3, 38.25, 'ACTIVE', 'PARTY', 'DUBAI')
+      ON CONFLICT (code) DO UPDATE SET entity_type = 'PARTY', party_type = 'DUBAI';
+    `, [partyId, code, data.name.trim()]);
+  }
+
   const all = await listDistributors();
   return all.find(d => d.id === id)!;
 }
 
 export async function listBankDistripAccounts(): Promise<BankDistripAccountRecord[]> {
-  // Ensure all configured distributors are represented in bank_distrip_accounts
+  // Ensure only IND distributors are represented in bank_distrip_accounts
   try {
     await execute(`
       INSERT INTO bank_distrip_accounts (id, account_code, account_name, status)
       SELECT d.id, d.code, d.name, 'ACTIVE'
       FROM distributors d
+      WHERE d.group_type = 'IND'
       ON CONFLICT (id) DO UPDATE SET account_name = EXCLUDED.account_name, account_code = EXCLUDED.account_code;
     `);
   } catch (err) {
@@ -1617,8 +1768,12 @@ export async function updateTransaction(id: string, data: {
   transaction_date?: string;
   customer_id?: string;
   inr_amount?: number;
+  total?: number;
   customer_rate?: number;
+  manual_rate?: number;
   base_rate?: number;
+  paid_amount?: number;
+  paid_aed?: number;
   delivery_charge_pct?: number;
   notes?: string;
   reason?: string;
@@ -1626,10 +1781,8 @@ export async function updateTransaction(id: string, data: {
   const existing = await getTransaction(id);
   if (!existing) throw new Error("Transaction not found");
 
-  const inrAmount = data.inr_amount ?? existing.inr_amount;
-  const customerRate = data.customer_rate ?? existing.customer_rate;
-  const baseRate = data.base_rate ?? existing.base_rate;
-  const deliveryChargePct = data.delivery_charge_pct ?? existing.delivery_charge_pct;
+  const total = Number(data.total ?? data.inr_amount ?? existing.inr_amount);
+  const manualRate = Number(data.manual_rate ?? data.customer_rate ?? existing.customer_rate);
   const transactionDate = data.transaction_date ?? existing.transaction_date;
   const customerId = data.customer_id ?? existing.customer_id;
   const notes = data.notes !== undefined ? data.notes : existing.notes;
@@ -1637,17 +1790,52 @@ export async function updateTransaction(id: string, data: {
   // Validate splits if INR amount changed
   const currentSplits = await listDistributionSplits({ transaction_id: id });
   const totalSplitsInr = currentSplits.reduce((sum, s) => sum + s.inr_amount, 0);
-  if (inrAmount < totalSplitsInr) {
-    throw new Error(`New order amount (₹${inrAmount.toLocaleString()}) cannot be less than already allocated splits (₹${totalSplitsInr.toLocaleString()}). Adjust splits first.`);
+  if (total < totalSplitsInr) {
+    throw new Error(`New order amount (₹${total.toLocaleString()}) cannot be less than already allocated splits (₹${totalSplitsInr.toLocaleString()}). Adjust splits first.`);
   }
 
-  // Authoritative re-calculation
-  const calc = calculateTransaction({
-    inrAmount,
-    customerRate,
-    baseRate,
-    deliveryChargePct,
-  });
+  let inrAmount = total;
+  let customerRate = manualRate;
+  let baseRate = 0;
+  let aedAmount = 0;
+  let costAed = 0;
+  let grossProfitAed = 0;
+  let deliveryPct = 0;
+  let deliveryChargeAed = 0;
+  let netProfitAed = 0;
+
+  if (data.base_rate !== undefined) {
+    const calc = calculateTransaction({
+      inrAmount: total,
+      customerRate: manualRate,
+      baseRate: Number(data.base_rate),
+      deliveryChargePct: data.delivery_charge_pct !== undefined ? data.delivery_charge_pct : existing.delivery_charge_pct,
+    });
+    inrAmount = calc.inrAmount;
+    customerRate = calc.customerRate;
+    baseRate = calc.baseRate;
+    aedAmount = calc.aedAmount;
+    costAed = calc.costAed;
+    grossProfitAed = calc.grossProfitAed;
+    deliveryPct = calc.deliveryChargePct;
+    deliveryChargeAed = calc.deliveryChargeAed;
+    netProfitAed = calc.netProfitAed;
+  } else {
+    const dubaiCalc = calculateDubaiClientTransfer({
+      total,
+      manualRate,
+      paidAmount: Number(data.paid_amount ?? data.paid_aed ?? existing.paid_aed ?? 0),
+    });
+    inrAmount = dubaiCalc.total;
+    customerRate = dubaiCalc.manualRate;
+    baseRate = dubaiCalc.wholesaleRate;
+    aedAmount = dubaiCalc.inDhirams;
+    costAed = dubaiCalc.inDhirams;
+    grossProfitAed = 0;
+    deliveryPct = 0;
+    deliveryChargeAed = 0;
+    netProfitAed = 0;
+  }
 
   await execute(`
     UPDATE transactions
@@ -1658,19 +1846,43 @@ export async function updateTransaction(id: string, data: {
         updated_at = NOW()
     WHERE id = $13
   `, [
-    transactionDate, customerId, calc.inrAmount,
-    calc.customerRate, calc.aedAmount, calc.baseRate,
-    calc.costAed, calc.grossProfitAed, calc.deliveryChargePct,
-    calc.deliveryChargeAed, calc.netProfitAed, notes || null,
+    transactionDate, customerId, inrAmount,
+    customerRate, aedAmount, baseRate,
+    costAed, grossProfitAed, deliveryPct,
+    deliveryChargeAed, netProfitAed, notes || null,
     id
   ]);
+
+  if (data.paid_amount !== undefined || data.paid_aed !== undefined) {
+    const newPaid = Number(data.paid_amount ?? data.paid_aed ?? 0);
+    const existingPmt = await queryOne(`SELECT id FROM customer_payments WHERE transaction_id = $1 LIMIT 1`, [id]);
+    if (existingPmt) {
+      if (newPaid > 0) {
+        await execute(`UPDATE customer_payments SET amount_aed = $1, payment_date = $2, customer_id = $3 WHERE id = $4`, [newPaid, transactionDate, customerId, existingPmt.id]);
+      } else {
+        await execute(`DELETE FROM customer_payments WHERE id = $1`, [existingPmt.id]);
+      }
+    } else if (newPaid > 0) {
+      const pmtId = crypto.randomUUID();
+      const pmtNumber = `PMT-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
+      await execute(`
+        INSERT INTO customer_payments (
+          id, payment_number, payment_date, customer_id, transaction_id,
+          amount_aed, payment_method, notes, is_demo
+        ) VALUES (
+          $1, $2, $3, $4, $5,
+          $6, 'CASH', 'Payment recorded on update', false
+        )
+      `, [pmtId, pmtNumber, transactionDate, customerId, id, newPaid]);
+    }
+  }
 
   // Log audit
   await execute(`
     INSERT INTO audit_logs (id, entity_name, entity_id, action, old_values, new_values, reason)
     VALUES ($1, 'TRANSACTION', $2, 'UPDATE', $3, $4, $5)
   `, [
-    crypto.randomUUID(), id, JSON.stringify(existing), JSON.stringify(calc),
+    crypto.randomUUID(), id, JSON.stringify(existing), JSON.stringify({ inrAmount, customerRate, baseRate, aedAmount }),
     data.reason || "User updated transaction"
   ]);
 
@@ -1695,6 +1907,7 @@ export async function updateCustomer(id: string, data: {
   phone?: string;
   default_rate?: number;
   status?: string;
+  party_type?: "DUBAI" | "INDIA" | string;
 }): Promise<Customer> {
   const existing = await getCustomer(id);
   if (!existing) throw new Error("Customer not found");
@@ -1704,12 +1917,13 @@ export async function updateCustomer(id: string, data: {
   const phone = data.phone !== undefined ? data.phone.trim() : existing.phone;
   const defaultRate = data.default_rate !== undefined ? data.default_rate : existing.default_rate;
   const status = data.status !== undefined ? data.status : existing.status;
+  const partyType = data.party_type !== undefined ? data.party_type : existing.party_type;
 
   await execute(`
     UPDATE customers
-    SET name = $1, code = $2, phone = $3, default_rate = $4, status = $5, updated_at = NOW()
-    WHERE id = $6
-  `, [name, code, phone || null, defaultRate || 38.25, status, id]);
+    SET name = $1, code = $2, phone = $3, default_rate = $4, status = $5, party_type = $6, updated_at = NOW()
+    WHERE id = $7
+  `, [name, code, phone || null, defaultRate || 38.25, status, partyType || null, id]);
 
   invalidatePartyTransfersCache();
   return (await getCustomer(id))!;

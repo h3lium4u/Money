@@ -208,8 +208,12 @@ export default function PartyDetailPage() {
               <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
                 {party.code}
               </span>
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                PARTY
+              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                party.party_type === "INDIA"
+                  ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800"
+                  : "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950 dark:text-teal-300 dark:border-teal-800"
+              }`}>
+                {party.party_type === "INDIA" ? "🇮🇳 Indian Party" : "🇦🇪 Dubai Party"}
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">

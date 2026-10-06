@@ -8,6 +8,7 @@ const updatePartySchema = z.object({
   phone: z.string().optional(),
   default_rate: z.number().positive().optional(),
   status: z.string().optional(),
+  party_type: z.enum(["DUBAI", "INDIA"]).optional(),
 });
 
 export async function GET(

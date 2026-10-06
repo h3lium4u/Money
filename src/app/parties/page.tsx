@@ -41,9 +41,11 @@ export default function PartiesPage() {
   const [search, setSearch] = useState("");
   const [partyFilter, setPartyFilter] = useState("all");
   const [balanceFilter, setBalanceFilter] = useState("all");
+  const [regionFilter, setRegionFilter] = useState<"all" | "DUBAI" | "INDIA">("all");
 
   // Create Party Modal State
   const [showModal, setShowModal] = useState(false);
+  const [newPartyType, setNewPartyType] = useState<"DUBAI" | "INDIA">("DUBAI");
   const [newName, setNewName] = useState("");
   const [newCode, setNewCode] = useState("");
   const [newPhone, setNewPhone] = useState("");
@@ -53,6 +55,7 @@ export default function PartiesPage() {
 
   // Edit Party Modal State
   const [editParty, setEditParty] = useState<any | null>(null);
+  const [editPartyType, setEditPartyType] = useState<"DUBAI" | "INDIA">("DUBAI");
   const [editName, setEditName] = useState("");
   const [editCode, setEditCode] = useState("");
   const [editPhone, setEditPhone] = useState("");
@@ -135,6 +138,7 @@ export default function PartiesPage() {
           code: newCode.trim() || undefined,
           phone: newPhone.trim() || undefined,
           default_rate: newRate ? parseFloat(newRate) : 38.25,
+          party_type: newPartyType,
         }),
       });
 
@@ -144,6 +148,7 @@ export default function PartiesPage() {
       }
 
       setShowModal(false);
+      setNewPartyType("DUBAI");
       setNewName("");
       setNewCode("");
       setNewPhone("");
@@ -159,6 +164,7 @@ export default function PartiesPage() {
 
   function openEditModal(party: any) {
     setEditParty(party);
+    setEditPartyType(party.party_type === "INDIA" ? "INDIA" : "DUBAI");
     setEditName(party.name);
     setEditCode(party.code || "");
     setEditPhone(party.phone || "");
@@ -181,6 +187,7 @@ export default function PartiesPage() {
           code: editCode.trim() || undefined,
           phone: editPhone.trim() || undefined,
           default_rate: editRate ? parseFloat(editRate) : 38.25,
+          party_type: editPartyType,
         }),
       });
 
@@ -325,6 +332,8 @@ export default function PartiesPage() {
 
   // Filter parties for accounts view
   const filteredParties = parties.filter((p) => {
+    if (regionFilter === "DUBAI" && p.party_type === "INDIA") return false;
+    if (regionFilter === "INDIA" && p.party_type !== "INDIA") return false;
     if (
       search &&
       !p.name.toLowerCase().includes(search.toLowerCase()) &&
@@ -346,14 +355,14 @@ export default function PartiesPage() {
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-              INR Parties & Distribution Splits
+              Parties & Remittance Settlement
             </h2>
             <span className="px-2.5 py-0.5 text-[11px] font-bold rounded-full bg-teal-100 dark:bg-teal-950/80 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
-              India Settlement Partners
+              Dubai & India Partners
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Separately tracks India-side parties (AWAFI, BASID, HAJA, NF2, SARABU) and customer split allocations with live grand totals.
+            Tracks Dubai settlement parties (HAJA, SARAB, NF2) and India payout partners (MK, SALA) with live balance ledgers and grand totals.
           </p>
         </div>
 
@@ -1129,7 +1138,7 @@ export default function PartiesPage() {
       {selectedPeriod === "accounts" && (
         <div className="space-y-4">
           {/* Filter Bar */}
-          <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="relative flex-1 max-w-sm">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -1141,24 +1150,70 @@ export default function PartiesPage() {
               />
             </div>
 
-            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-              {[
-                { id: "all", label: "All Parties" },
-                { id: "owing", label: "Has Balance" },
-                { id: "cleared", label: "Settled / Cleared" },
-              ].map((tab) => (
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Region Filter */}
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
                 <button
-                  key={tab.id}
-                  onClick={() => setBalanceFilter(tab.id)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                    balanceFilter === tab.id
+                  type="button"
+                  onClick={() => setRegionFilter("all")}
+                  className={`px-2.5 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                    regionFilter === "all"
                       ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-xs"
                       : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
                   }`}
                 >
-                  {tab.label}
+                  All ({parties.length})
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => setRegionFilter("DUBAI")}
+                  className={`px-2.5 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                    regionFilter === "DUBAI"
+                      ? "bg-teal-600 text-white shadow-xs"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                  }`}
+                >
+                  <span>🇦🇪 Dubai</span>
+                  <span className="text-[10px] opacity-80 font-mono">
+                    ({parties.filter((p) => p.party_type !== "INDIA").length})
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRegionFilter("INDIA")}
+                  className={`px-2.5 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                    regionFilter === "INDIA"
+                      ? "bg-orange-600 text-white shadow-xs"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                  }`}
+                >
+                  <span>🇮🇳 India</span>
+                  <span className="text-[10px] opacity-80 font-mono">
+                    ({parties.filter((p) => p.party_type === "INDIA").length})
+                  </span>
+                </button>
+              </div>
+
+              {/* Status / Balance Filter */}
+              <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                {[
+                  { id: "all", label: "All Balances" },
+                  { id: "owing", label: "Has Balance" },
+                  { id: "cleared", label: "Settled / Cleared" },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setBalanceFilter(tab.id)}
+                    className={`px-2.5 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                      balanceFilter === tab.id
+                        ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-xs"
+                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -1199,11 +1254,20 @@ export default function PartiesPage() {
                               <Handshake className="w-3.5 h-3.5 text-teal-600 shrink-0" />
                               <span>{party.name}</span>
                             </Link>
-                            {party.code && (
-                              <div className="text-[10px] font-mono text-slate-400 mt-0.5">
-                                {party.code}
-                              </div>
-                            )}
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold border ${
+                                party.party_type === "INDIA"
+                                  ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/70 dark:text-orange-300 dark:border-orange-800"
+                                  : "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/70 dark:text-teal-300 dark:border-teal-800"
+                              }`}>
+                                {party.party_type === "INDIA" ? "🇮🇳 India" : "🇦🇪 Dubai"}
+                              </span>
+                              {party.code && (
+                                <span className="text-[10px] font-mono text-slate-400">
+                                  {party.code}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="py-2.5 px-3 font-mono font-semibold text-slate-600 dark:text-slate-300">
                             {party.default_rate ? Number(party.default_rate).toFixed(2) : "38.25"}
@@ -1305,13 +1369,51 @@ export default function PartiesPage() {
 
             <form onSubmit={handleCreateParty} className="space-y-4">
               <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                  Party Region & Settlement Currency *
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewPartyType("DUBAI")}
+                    className={`p-2.5 rounded-lg border text-left text-xs font-bold transition-all cursor-pointer ${
+                      newPartyType === "DUBAI"
+                        ? "bg-teal-50 dark:bg-teal-950/70 border-teal-500 text-teal-900 dark:text-teal-200 ring-2 ring-teal-500/20"
+                        : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>🇦🇪</span>
+                      <span>Dubai Party (AED)</span>
+                    </div>
+                    <div className="text-[10px] font-normal text-slate-500 mt-0.5">e.g. HAJA, SARAB, NF2</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewPartyType("INDIA")}
+                    className={`p-2.5 rounded-lg border text-left text-xs font-bold transition-all cursor-pointer ${
+                      newPartyType === "INDIA"
+                        ? "bg-orange-50 dark:bg-orange-950/70 border-orange-500 text-orange-900 dark:text-orange-200 ring-2 ring-orange-500/20"
+                        : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>🇮🇳</span>
+                      <span>Indian Party (INR)</span>
+                    </div>
+                    <div className="text-[10px] font-normal text-slate-500 mt-0.5">e.g. MK, SALA</div>
+                  </button>
+                </div>
+              </div>
+
+              <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                   Party Name *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. AWAFI, BASID, HAJA, NF2, SARABU..."
+                  placeholder={newPartyType === "DUBAI" ? "e.g. HAJA, SARAB, NF2..." : "e.g. MK, SALA..."}
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   className="w-full text-xs font-medium p-2.5 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
@@ -1325,7 +1427,7 @@ export default function PartiesPage() {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. AWF"
+                    placeholder={newPartyType === "DUBAI" ? "e.g. HJA" : "e.g. MK"}
                     value={newCode}
                     onChange={(e) => setNewCode(e.target.value)}
                     className="w-full text-xs font-medium p-2.5 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
@@ -1407,6 +1509,41 @@ export default function PartiesPage() {
             )}
 
             <form onSubmit={handleSaveEditParty} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                  Party Region
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditPartyType("DUBAI")}
+                    className={`p-2.5 rounded-lg border text-left text-xs font-bold transition-all cursor-pointer ${
+                      editPartyType === "DUBAI"
+                        ? "bg-teal-50 dark:bg-teal-950/70 border-teal-500 text-teal-900 dark:text-teal-200 ring-2 ring-teal-500/20"
+                        : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>🇦🇪</span>
+                      <span>Dubai Party (AED)</span>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditPartyType("INDIA")}
+                    className={`p-2.5 rounded-lg border text-left text-xs font-bold transition-all cursor-pointer ${
+                      editPartyType === "INDIA"
+                        ? "bg-orange-50 dark:bg-orange-950/70 border-orange-500 text-orange-900 dark:text-orange-200 ring-2 ring-orange-500/20"
+                        : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>🇮🇳</span>
+                      <span>Indian Party (INR)</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                   Party Name *

@@ -69,16 +69,24 @@ export function generateTransactionReceipt(txn: any, businessName = "REMITTANCE 
   }
   doc.setTextColor(15, 23, 42);
 
+  const totalInr = Number(txn.total ?? txn.inr_amount ?? 0);
+  const manualRate = Number(txn.manual_rate ?? txn.customer_rate ?? 0);
+  const wholesaleRate = Number(txn.wholesale_rate ?? (manualRate > 0 ? (1000 / manualRate) : 0));
+  const inDhirams = Number(txn.in_dhirams ?? txn.aed_amount ?? 0);
+  const paidAmt = Number(txn.paid_amount ?? txn.paid_aed ?? 0);
+  const balanceToPaid = Number(txn.balance_to_paid ?? (inDhirams - paidAmt));
+
   // Amounts Table
   const tableData = [
-    ["Transfer Amount (INR)", `Rs. ${Number(txn.inr_amount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-    ["Exchange Rate", String(txn.customer_rate)],
-    ["Total Payable (AED)", `${Number(txn.aed_amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED`]
+    ["Total Amount (INR)", `Rs. ${totalInr.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+    ["Manual Rate Value", `${manualRate.toFixed(4)} AED/1000`],
+    ["Whole Sale Rate (=1000/Rate)", wholesaleRate.toFixed(4)],
+    ["In Dhirams (=Total/Wholesale)", `${inDhirams.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED`]
   ];
 
-  if ((txn.paid_aed || 0) > 0) {
-    tableData.push(["Amount Paid (AED)", `${Number(txn.paid_aed).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED`]);
-    tableData.push(["Amount Due (AED)", `${Number(txn.pending_aed).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED`]);
+  if (paidAmt > 0 || balanceToPaid > 0) {
+    tableData.push(["Paid Amount (AED)", `${paidAmt.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED`]);
+    tableData.push(["Balance to Paid (AED)", `${balanceToPaid.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED`]);
   }
 
   autoTable(doc, {
