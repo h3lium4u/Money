@@ -124,7 +124,7 @@ export default function AIAssistantPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-2rem)] max-w-5xl mx-auto p-4 md:p-6 space-y-4">
+    <div className="flex flex-col h-[calc(100vh-9rem)] min-h-[500px] max-w-5xl mx-auto space-y-4">
       {/* Top Header Card */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 md:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
         <div className="flex items-center gap-3">

@@ -134,16 +134,9 @@ export default function SystemHealthPage() {
         { label: "Settings" },
         { label: "System Health" },
       ]} />
-      {/* Breadcrumbs & Header */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1">
-            <Link href="/settings" className="hover:text-slate-800">
-              Settings
-            </Link>
-            <span>/</span>
-            <span className="text-teal-700 font-bold">System Health</span>
-          </div>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
             <span>System Health & Infrastructure</span>
           </h2>

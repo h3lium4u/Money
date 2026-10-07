@@ -44,32 +44,32 @@ const navigationGroups: NavGroup[] = [
   {
     label: "TRANSFERS",
     items: [
-      { name: "Dubai Client", href: "/transactions", icon: Building2 },
       { name: "Customer Remittances", href: "/remittances", icon: Receipt },
+      { name: "Dubai Client (AED)", href: "/transactions", icon: Building2 },
       { name: "Party Transfers", href: "/party-transfers", icon: ArrowRightLeft },
     ],
   },
   {
-    label: "PEOPLE",
+    label: "PEOPLE & PARTNERS",
     items: [
-      { name: "Customers", href: "/customers", icon: Users },
-      { name: "Parties", href: "/parties", icon: Handshake },
-      { name: "Distributors", href: "/distributors", icon: Split },
+      { name: "Retail Customers", href: "/customers", icon: Users },
+      { name: "Parties & Ledger", href: "/parties", icon: Handshake },
+      { name: "India Distribution", href: "/distributors", icon: Split },
     ],
   },
   {
     label: "SETTLEMENT",
     items: [
-      { name: "Receivables", href: "/receivables", icon: Wallet },
-      { name: "Bank Settlement", href: "/bank-distrip", icon: Landmark },
+      { name: "Bank Distribution (IND)", href: "/bank-distrip", icon: Landmark },
+      { name: "Receivables & Dues", href: "/receivables", icon: Wallet },
     ],
   },
   {
     label: "TOOLS",
     items: [
-      { name: "Reports", href: "/reports", icon: FileSpreadsheet },
+      { name: "Reports & Export", href: "/reports", icon: FileSpreadsheet },
       { name: "AI Assistant", href: "/ai-assistant", icon: Bot },
-      { name: "Settings", href: "/settings/system-health", icon: Settings },
+      { name: "System Health", href: "/settings/system-health", icon: Settings },
     ],
   },
 ];

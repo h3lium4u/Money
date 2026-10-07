@@ -432,33 +432,40 @@ export async function listTransactions(filters?: {
     WHERE COALESCE(c.entity_type, 'CUSTOMER') = 'PARTY'
   `
     : `
-    SELECT 
+    WITH split_agg AS (
+      SELECT s2.transaction_id,
+             STRING_AGG(DISTINCT d2.name, ', ' ORDER BY d2.name) AS distributor_names,
+             STRING_AGG(d2.name || ' (\u20b9' || ROUND(s2.inr_amount)::text || ')', ', ') AS distributor_split_details,
+             SUM(s2.inr_amount) AS total_distributed_inr
+      FROM distribution_splits s2
+      JOIN distributors d2 ON d2.id = s2.distributor_id
+      GROUP BY s2.transaction_id
+    ),
+    pay_agg AS (
+      SELECT cp.transaction_id, SUM(cp.amount_aed) AS paid_aed
+      FROM customer_payments cp
+      GROUP BY cp.transaction_id
+    )
+    SELECT
       t.*,
       c.code as customer_code,
       c.name as customer_name,
       c.entity_type,
       c.party_type,
       d.name as distributor_name,
-      COALESCE((
-        SELECT STRING_AGG(DISTINCT d2.name, ', ' ORDER BY d2.name)
-        FROM distribution_splits s2
-        JOIN distributors d2 ON d2.id = s2.distributor_id
-        WHERE s2.transaction_id = t.id
-      ), d.name, '-') as distributor_names,
-      COALESCE((
-        SELECT STRING_AGG(d2.name || ' (₹' || ROUND(s2.inr_amount)::text || ')', ', ')
-        FROM distribution_splits s2
-        JOIN distributors d2 ON d2.id = s2.distributor_id
-        WHERE s2.transaction_id = t.id
-      ), '-') as distributor_split_details,
-      COALESCE((SELECT SUM(s.inr_amount) FROM distribution_splits s WHERE s.transaction_id = t.id), 0) as total_distributed_inr,
-      COALESCE((SELECT SUM(cp.amount_aed) FROM customer_payments cp WHERE cp.transaction_id = t.id), 0) as paid_aed
+      COALESCE(sa.distributor_names, d.name, '-') as distributor_names,
+      COALESCE(sa.distributor_split_details, '-') as distributor_split_details,
+      COALESCE(sa.total_distributed_inr, 0) as total_distributed_inr,
+      COALESCE(pa.paid_aed, 0) as paid_aed
     FROM transactions t
     JOIN customers c ON c.id = t.customer_id
     LEFT JOIN distributors d ON d.id = t.distributor_id
+    LEFT JOIN split_agg sa ON sa.transaction_id = t.id
+    LEFT JOIN pay_agg pa ON pa.transaction_id = t.id
     WHERE 1=1
   `;
   const params: any[] = [];
+
 
   if (filters?.from) {
     params.push(filters.from);
@@ -503,7 +510,9 @@ let partyTransfersMemoryCache: {
 
 export function invalidatePartyTransfersCache(): void {
   partyTransfersMemoryCache = null;
+  bankDistripMemoryCache = null;
 }
+
 
 export async function getPartyTransfersData(forceRefresh = false): Promise<{
   transfers: TransactionRecord[];
@@ -697,6 +706,13 @@ export async function createTransaction(data: {
         s.inr_amount, baseRate, baseRate > 0 ? roundTo(s.inr_amount / baseRate, 2) : 0, s.notes || null
       ]);
     }
+    // Automatically recalculate India party running orders & balances
+    const distIds = [...new Set(data.splits.map(s => s.distributor_id))];
+    for (const did of distIds) {
+      await recalculateBankDistripBalances(did).catch(err => console.error("Error updating bank distrip on create:", err));
+    }
+  } else if (data.distributor_id) {
+    await recalculateBankDistripBalances(data.distributor_id).catch(err => console.error("Error updating bank distrip on create:", err));
   }
 
   // Record audit log
@@ -724,6 +740,17 @@ export async function voidTransaction(id: string, reason: string): Promise<Trans
     INSERT INTO audit_logs (id, entity_name, entity_id, action, old_values, reason)
     VALUES ($1, 'TRANSACTION', $2, 'VOID', $3, $4)
   `, [crypto.randomUUID(), id, JSON.stringify(existing), reason || "User voided transaction"]);
+
+  // Recalculate affected distributors so voided order is deducted
+  const splits = await query(`SELECT DISTINCT distributor_id FROM distribution_splits WHERE transaction_id = $1`, [id]);
+  for (const s of splits) {
+    if (s.distributor_id) {
+      await recalculateBankDistripBalances(s.distributor_id).catch(err => console.error("Error updating bank distrip on void:", err));
+    }
+  }
+  if (existing.distributor_id) {
+    await recalculateBankDistripBalances(existing.distributor_id).catch(err => console.error("Error updating bank distrip on void:", err));
+  }
 
   invalidatePartyTransfersCache();
   const updated = await getTransaction(id);
@@ -1165,25 +1192,13 @@ export async function createDistributor(data: {
 }
 
 export async function listBankDistripAccounts(): Promise<BankDistripAccountRecord[]> {
-  // Ensure only IND distributors are represented in bank_distrip_accounts
-  try {
-    await execute(`
-      INSERT INTO bank_distrip_accounts (id, account_code, account_name, status)
-      SELECT d.id, d.code, d.name, 'ACTIVE'
-      FROM distributors d
-      WHERE d.group_type = 'IND'
-      ON CONFLICT (id) DO UPDATE SET account_name = EXCLUDED.account_name, account_code = EXCLUDED.account_code;
-    `);
-  } catch (err) {
-    // Non-fatal
-  }
-
   const rows = await query(`
     SELECT b.*,
            (SELECT balance_inr FROM bank_distrip_records r WHERE r.account_id = b.id ORDER BY r.record_date DESC, r.created_at DESC, r.id DESC LIMIT 1) as current_balance
     FROM bank_distrip_accounts b
     ORDER BY b.account_name ASC
   `);
+
 
   return rows.map(r => ({
     ...r,
@@ -1198,13 +1213,24 @@ export async function createBankDistripAccount(data: {
   bank_name?: string;
   account_number?: string;
 }): Promise<BankDistripAccountRecord> {
-  const id = `dist-${data.account_code.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+  const code = data.account_code.trim().toUpperCase();
+  const name = data.account_name.trim();
+  const id = `dist-${code.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+
+  // Mirror into distributors table as IND group
+  await execute(`
+    INSERT INTO distributors (id, code, name, partner_type, group_type, default_settlement_currency, status)
+    VALUES ($1, $2, $3, 'INDIA_DISTRIBUTOR', 'IND', 'INR', 'ACTIVE')
+    ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, code = EXCLUDED.code;
+  `, [id, code, name]);
+
   await execute(`
     INSERT INTO bank_distrip_accounts (id, account_code, account_name, bank_name, account_number, status)
     VALUES ($1, $2, $3, $4, $5, 'ACTIVE')
     ON CONFLICT (id) DO UPDATE SET account_name = EXCLUDED.account_name, account_code = EXCLUDED.account_code;
-  `, [id, data.account_code.trim(), data.account_name.trim(), data.bank_name || null, data.account_number || null]);
+  `, [id, code, name, data.bank_name || null, data.account_number || null]);
 
+  invalidateBankDistripCache();
   const acc = await queryOne(`SELECT * FROM bank_distrip_accounts WHERE id = $1`, [id]);
   return {
     ...acc,
@@ -1216,9 +1242,8 @@ export async function createBankDistripAccount(data: {
 /**
  * Returns the authoritative ORDER amount for a distributor on a specific date.
  * ORDER is strictly read-only and automatically aggregated from:
- * 1. distribution_splits (from customer remittance transactions)
- * 2. distributor_allocations (from historical Collection & Profit / bank orders)
- * 3. direct transactions assigned to this distributor
+ * 1. distribution_splits (from confirmed customer remittance transactions)
+ * 2. direct transactions assigned to this distributor (without splits)
  */
 export async function getDistributorOrderForDate(accountId: string, date: string): Promise<number> {
   const row = await queryOne(`
@@ -1226,21 +1251,27 @@ export async function getDistributorOrderForDate(accountId: string, date: string
       COALESCE((
         SELECT SUM(s.inr_amount) 
         FROM distribution_splits s 
-        WHERE (s.distributor_id = $1 OR s.distributor_id IN (SELECT id FROM distributors WHERE code = (SELECT account_code FROM bank_distrip_accounts WHERE id = $1)))
-          AND s.split_date = $2
-      ), 0) +
-      COALESCE((
-        SELECT SUM(a.inr_amount) 
-        FROM distributor_allocations a 
-        WHERE (a.distributor_id = $1 OR a.distributor_id IN (SELECT id FROM distributors WHERE code = (SELECT account_code FROM bank_distrip_accounts WHERE id = $1)))
-          AND a.allocation_date = $2
+        JOIN transactions t ON t.id = s.transaction_id
+        WHERE t.status = 'CONFIRMED'
+          AND (
+            s.distributor_id = $1 
+            OR s.distributor_id IN (SELECT id FROM distributors WHERE code = (SELECT account_code FROM bank_distrip_accounts WHERE id = $1))
+            OR s.distributor_id IN (SELECT account_code FROM bank_distrip_accounts WHERE id = $1)
+            OR s.distributor_id IN (SELECT id FROM bank_distrip_accounts WHERE account_code = $1 OR id = $1)
+          )
+          AND s.split_date::text = $2
       ), 0) +
       COALESCE((
         SELECT SUM(t.inr_amount) 
         FROM transactions t 
-        WHERE (t.distributor_id = $1 OR t.distributor_id IN (SELECT id FROM distributors WHERE code = (SELECT account_code FROM bank_distrip_accounts WHERE id = $1)))
-          AND t.transaction_date = $2 
-          AND t.status = 'CONFIRMED'
+        WHERE t.status = 'CONFIRMED'
+          AND (
+            t.distributor_id = $1 
+            OR t.distributor_id IN (SELECT id FROM distributors WHERE code = (SELECT account_code FROM bank_distrip_accounts WHERE id = $1))
+            OR t.distributor_id IN (SELECT account_code FROM bank_distrip_accounts WHERE id = $1)
+            OR t.distributor_id IN (SELECT id FROM bank_distrip_accounts WHERE account_code = $1 OR id = $1)
+          )
+          AND t.transaction_date::text = $2 
           AND t.id NOT IN (SELECT transaction_id FROM distribution_splits)
       ), 0)
     ) as total_order
@@ -1254,35 +1285,57 @@ export async function getDistributorOrderForDate(accountId: string, date: string
  * Re-evaluates every transaction in strict chronological sequence:
  * BAL(row) = BAL(previous row) + ORDER(row) + COM(row) - PAID(row)
  * with BAL(initial) = 0.
- * Automatically synchronizes ORDER from allocations/splits and propagates to all subsequent transactions.
+ * Automatically synchronizes ORDER from customer remittance splits and propagates to all subsequent transactions.
  */
 export async function recalculateBankDistripBalances(accountId: string): Promise<void> {
-  // 1. Get all distinct dates for this account
+  const today = getTodayDateString();
+  // 1. Get all distinct dates for this account (including customer splits, direct txns, existing records, and today)
   const dates = await query(`
     SELECT DISTINCT d::text as record_date FROM (
-      SELECT allocation_date as d FROM distributor_allocations 
-      WHERE distributor_id = $1 OR distributor_id IN (SELECT id FROM distributors WHERE code = (SELECT account_code FROM bank_distrip_accounts WHERE id = $1))
+      SELECT s.split_date::text as d 
+      FROM distribution_splits s
+      JOIN transactions t ON t.id = s.transaction_id
+      WHERE t.status = 'CONFIRMED'
+        AND (
+          s.distributor_id = $1 
+          OR s.distributor_id IN (SELECT id FROM distributors WHERE code = (SELECT account_code FROM bank_distrip_accounts WHERE id = $1))
+          OR s.distributor_id IN (SELECT account_code FROM bank_distrip_accounts WHERE id = $1)
+          OR s.distributor_id IN (SELECT id FROM bank_distrip_accounts WHERE account_code = $1 OR id = $1)
+        )
       UNION
-      SELECT split_date as d FROM distribution_splits 
-      WHERE distributor_id = $1 OR distributor_id IN (SELECT id FROM distributors WHERE code = (SELECT account_code FROM bank_distrip_accounts WHERE id = $1))
+      SELECT t.transaction_date::text as d
+      FROM transactions t
+      WHERE t.status = 'CONFIRMED'
+        AND (
+          t.distributor_id = $1 
+          OR t.distributor_id IN (SELECT id FROM distributors WHERE code = (SELECT account_code FROM bank_distrip_accounts WHERE id = $1))
+          OR t.distributor_id IN (SELECT account_code FROM bank_distrip_accounts WHERE id = $1)
+          OR t.distributor_id IN (SELECT id FROM bank_distrip_accounts WHERE account_code = $1 OR id = $1)
+        )
+        AND t.id NOT IN (SELECT transaction_id FROM distribution_splits)
       UNION
-      SELECT record_date as d FROM bank_distrip_records WHERE account_id = $1
+      SELECT record_date::text as d FROM bank_distrip_records WHERE account_id = $1
+      UNION
+      SELECT $2::text as d
     ) combined
+    WHERE d IS NOT NULL AND d != ''
     ORDER BY record_date ASC
-  `, [accountId]);
+  `, [accountId, today]);
 
   let runningBal = 0;
   for (const { record_date } of dates) {
+    if (!record_date) continue;
     const order = await getDistributorOrderForDate(accountId, record_date);
     const existing = await queryOne(`
       SELECT id, commission_inr, paid_inr, balance_inr, order_inr
       FROM bank_distrip_records
-      WHERE account_id = $1 AND record_date = $2
+      WHERE account_id = $1 AND record_date::text = $2
       LIMIT 1
     `, [accountId, record_date]);
 
     const com = Number(existing?.commission_inr || 0);
     const paid = Number(existing?.paid_inr || 0);
+    // Formula from Excel: Balance = Previous Balance + Order + Commission - Paid
     runningBal = roundTo(runningBal + order + com - paid, 2);
 
     if (existing) {
@@ -1360,6 +1413,7 @@ export async function saveBankDistributionEntry(data: {
 
   // Recalculate this account's running balance
   await recalculateBankDistripBalances(accountId);
+  invalidateBankDistripCache();
 }
 
 export async function createBankDistripRecord(data: {
@@ -1387,6 +1441,16 @@ export async function createBankDistripRecord(data: {
   `, [data.account_id, data.record_date]);
 
   return mapBankDistripRecord(record);
+}
+
+// ---------------- BANK DISTRIP IN-MEMORY CACHE ----------------
+let bankDistripMemoryCache: {
+  timestamp: number;
+  data: Map<string, any>;
+} | null = null;
+
+export function invalidateBankDistripCache(): void {
+  bankDistripMemoryCache = null;
 }
 
 export async function getBankDistributionSettlement(
@@ -1432,17 +1496,28 @@ export async function getBankDistributionSettlement(
     }[];
   };
 }> {
-  // 1. Ensure all accounts in distributors table are mirrored
-  await listBankDistripAccounts();
+  const cacheKey = `${accountId || "DEFAULT"}_${options?.from || ""}_${options?.to || ""}_${options?.sortOrder || "asc"}`;
+  const now = Date.now();
+  if (bankDistripMemoryCache && (now - bankDistripMemoryCache.timestamp < 30000)) {
+    const cached = bankDistripMemoryCache.data.get(cacheKey);
+    if (cached) return cached;
+  }
 
-  // 2. Fetch all accounts with aggregated order, commission, paid, and record count in a single query
-  const accountsData = await query(`
+  // 1. Single query for all accounts with aggregated metrics AND closing balance
+  const accountsSql = `
     SELECT 
       a.id, a.account_code, a.account_name, a.bank_name, a.account_number, a.status, a.created_at,
       COALESCE(SUM(r.order_inr), 0) as total_order,
       COALESCE(SUM(r.commission_inr), 0) as total_commission,
       COALESCE(SUM(r.paid_inr), 0) as total_paid,
-      COUNT(r.id)::int as record_count
+      COUNT(r.id)::int as record_count,
+      COALESCE((
+        SELECT r2.balance_inr 
+        FROM bank_distrip_records r2 
+        WHERE r2.account_id = a.id 
+        ORDER BY r2.record_date DESC, r2.created_at DESC, r2.id DESC 
+        LIMIT 1
+      ), 0) as closing_balance
     FROM bank_distrip_accounts a
     LEFT JOIN bank_distrip_records r ON r.account_id = a.id
     GROUP BY a.id, a.account_code, a.account_name, a.bank_name, a.account_number, a.status, a.created_at
@@ -1458,18 +1533,42 @@ export async function getBankDistributionSettlement(
         ELSE 8
       END,
       a.account_name ASC
-  `);
+  `;
 
-  // 3. Fetch latest closing balance for each account in a single query
-  const closingRows = await query(`
-    SELECT DISTINCT ON (account_id) account_id, balance_inr
-    FROM bank_distrip_records
-    ORDER BY account_id, record_date DESC, created_at DESC, id DESC
-  `);
-  const closingMap = new Map<string, number>();
-  for (const row of closingRows) {
-    closingMap.set(row.account_id, roundTo(Number(row.balance_inr || 0), 2));
+  // 2. Query for chronological records of requested account (or default to MK / first account)
+  let recordsSql = `
+    SELECT r.*, a.account_code, a.account_name
+    FROM bank_distrip_records r
+    JOIN bank_distrip_accounts a ON a.id = r.account_id
+  `;
+  const recordsParams: any[] = [];
+  if (accountId) {
+    recordsParams.push(accountId);
+    recordsSql += ` WHERE r.account_id = $${recordsParams.length}`;
+  } else {
+    recordsSql += ` WHERE r.account_id = (
+      SELECT id FROM bank_distrip_accounts 
+      ORDER BY CASE WHEN account_code = 'MK' THEN 1 ELSE 2 END, account_name LIMIT 1
+    )`;
   }
+
+  if (options?.from) {
+    recordsParams.push(options.from);
+    recordsSql += ` AND r.record_date >= $${recordsParams.length}`;
+  }
+  if (options?.to) {
+    recordsParams.push(options.to);
+    recordsSql += ` AND r.record_date <= $${recordsParams.length}`;
+  }
+
+  const sortDirection = options?.sortOrder?.toUpperCase() === "DESC" ? "DESC" : "ASC";
+  recordsSql += ` ORDER BY r.record_date ${sortDirection}, r.created_at ${sortDirection}, r.id ${sortDirection}`;
+
+  // Execute both queries in parallel with Promise.all
+  const [accountsData, recordsRows] = await Promise.all([
+    query(accountsSql),
+    query(recordsSql, recordsParams),
+  ]);
 
   const distributorSummaries: any[] = [];
   let grandOrder = 0;
@@ -1483,7 +1582,7 @@ export async function getBankDistributionSettlement(
     const total_order = roundTo(Number(acc.total_order || 0), 2);
     const total_commission = roundTo(Number(acc.total_commission || 0), 2);
     const total_paid = roundTo(Number(acc.total_paid || 0), 2);
-    const closing_balance = closingMap.get(acc.id) ?? 0;
+    const closing_balance = roundTo(Number(acc.closing_balance || 0), 2);
 
     grandOrder += total_order;
     grandCom += total_commission;
@@ -1527,29 +1626,6 @@ export async function getBankDistributionSettlement(
   }
 
   const activeAccount = accountsWithTotals.find(a => a.id === targetAccountId) || null;
-
-  // Fetch chronological records for the active account
-  let recordsSql = `
-    SELECT r.*, a.account_code, a.account_name
-    FROM bank_distrip_records r
-    JOIN bank_distrip_accounts a ON a.id = r.account_id
-    WHERE r.account_id = $1
-  `;
-  const params: any[] = [targetAccountId];
-
-  if (options?.from) {
-    params.push(options.from);
-    recordsSql += ` AND r.record_date >= $${params.length}`;
-  }
-  if (options?.to) {
-    params.push(options.to);
-    recordsSql += ` AND r.record_date <= $${params.length}`;
-  }
-
-  const sortDirection = options?.sortOrder?.toUpperCase() === "DESC" ? "DESC" : "ASC";
-  recordsSql += ` ORDER BY r.record_date ${sortDirection}, r.created_at ${sortDirection}, r.id ${sortDirection}`;
-
-  const recordsRows = await query(recordsSql, params);
   const mappedRecords = recordsRows.map(mapBankDistripRecord);
 
   const activeTotals = activeAccount ? {
@@ -1566,7 +1642,7 @@ export async function getBankDistributionSettlement(
     record_count: 0,
   };
 
-  return {
+  const result = {
     accounts: accountsWithTotals,
     activeAccount,
     records: mappedRecords,
@@ -1579,6 +1655,16 @@ export async function getBankDistributionSettlement(
       distributor_summaries: distributorSummaries,
     },
   };
+
+  if (!bankDistripMemoryCache || (now - bankDistripMemoryCache.timestamp >= 30000)) {
+    bankDistripMemoryCache = {
+      timestamp: now,
+      data: new Map(),
+    };
+  }
+  bankDistripMemoryCache.data.set(cacheKey, result);
+
+  return result;
 }
 
 // ---------------- DASHBOARD KPIS ----------------
@@ -1777,6 +1863,12 @@ export async function updateTransaction(id: string, data: {
   delivery_charge_pct?: number;
   notes?: string;
   reason?: string;
+  splits?: Array<{
+    id?: string;
+    distributor_id: string;
+    inr_amount: number;
+    notes?: string;
+  }>;
 }): Promise<TransactionRecord> {
   const existing = await getTransaction(id);
   if (!existing) throw new Error("Transaction not found");
@@ -1787,11 +1879,13 @@ export async function updateTransaction(id: string, data: {
   const customerId = data.customer_id ?? existing.customer_id;
   const notes = data.notes !== undefined ? data.notes : existing.notes;
 
-  // Validate splits if INR amount changed
-  const currentSplits = await listDistributionSplits({ transaction_id: id });
-  const totalSplitsInr = currentSplits.reduce((sum, s) => sum + s.inr_amount, 0);
-  if (total < totalSplitsInr) {
-    throw new Error(`New order amount (₹${total.toLocaleString()}) cannot be less than already allocated splits (₹${totalSplitsInr.toLocaleString()}). Adjust splits first.`);
+  // Validate splits if INR amount changed and splits are not explicitly being replaced
+  if (!data.splits) {
+    const currentSplits = await listDistributionSplits({ transaction_id: id });
+    const totalSplitsInr = currentSplits.reduce((sum, s) => sum + s.inr_amount, 0);
+    if (total < totalSplitsInr) {
+      throw new Error(`New order amount (₹${total.toLocaleString()}) cannot be less than already allocated splits (₹${totalSplitsInr.toLocaleString()}). Adjust splits first.`);
+    }
   }
 
   let inrAmount = total;
@@ -1877,6 +1971,42 @@ export async function updateTransaction(id: string, data: {
     }
   }
 
+  // Update/re-allocate splits if provided
+  if (data.splits && data.splits.length > 0) {
+    let totalSplitInr = 0;
+    for (const s of data.splits) {
+      totalSplitInr += Number(s.inr_amount);
+    }
+    if (totalSplitInr > inrAmount) {
+      throw new Error(`Total distribution (₹${totalSplitInr.toLocaleString()}) cannot exceed customer order (₹${inrAmount.toLocaleString()})`);
+    }
+
+    await execute(`DELETE FROM distribution_splits WHERE transaction_id = $1`, [id]);
+    for (const s of data.splits) {
+      const splitId = s.id && !s.id.startsWith("new-") ? s.id : crypto.randomUUID();
+      const aedEq = baseRate > 0 ? roundTo(s.inr_amount / baseRate, 2) : 0;
+      await execute(`
+        INSERT INTO distribution_splits (
+          id, transaction_id, distributor_id, split_date,
+          inr_amount, wholesale_rate, aed_equivalent, paid_amount_inr,
+          balance_inr, status, notes
+        ) VALUES (
+          $1, $2, $3, $4,
+          $5, $6, $7, 0.00,
+          $5, 'ALLOCATED', $8
+        )
+      `, [
+        splitId, id, s.distributor_id, transactionDate,
+        roundTo(s.inr_amount, 2), baseRate, aedEq, s.notes || null
+      ]);
+    }
+
+    const distIds = [...new Set(data.splits.map(s => s.distributor_id))];
+    for (const did of distIds) {
+      await recalculateBankDistripBalances(did).catch(err => console.error("Error updating bank distrip on txn update:", err));
+    }
+  }
+
   // Log audit
   await execute(`
     INSERT INTO audit_logs (id, entity_name, entity_id, action, old_values, new_values, reason)
@@ -1894,11 +2024,21 @@ export async function deleteTransaction(id: string): Promise<void> {
   const existing = await getTransaction(id);
   if (!existing) throw new Error("Transaction not found");
 
+  const splits = await query(`SELECT DISTINCT distributor_id FROM distribution_splits WHERE transaction_id = $1`, [id]);
   await execute(`DELETE FROM distribution_splits WHERE transaction_id = $1`, [id]);
   await execute(`UPDATE customer_payments SET transaction_id = NULL WHERE transaction_id = $1`, [id]);
   await execute(`DELETE FROM audit_logs WHERE entity_id = $1`, [id]);
   await execute(`DELETE FROM transactions WHERE id = $1`, [id]);
   invalidatePartyTransfersCache();
+
+  for (const s of splits) {
+    if (s.distributor_id) {
+      await recalculateBankDistripBalances(s.distributor_id).catch(err => console.error("Error updating bank distrip on delete:", err));
+    }
+  }
+  if (existing.distributor_id) {
+    await recalculateBankDistripBalances(existing.distributor_id).catch(err => console.error("Error updating bank distrip on delete:", err));
+  }
 }
 
 export async function updateCustomer(id: string, data: {
@@ -1988,6 +2128,11 @@ export async function updateDistributionSplit(id: string, data: {
     id
   ]);
 
+  await recalculateBankDistripBalances(distId).catch(err => console.error("Error updating bank distrip on split update:", err));
+  if (existingSplit.distributor_id !== distId) {
+    await recalculateBankDistripBalances(existingSplit.distributor_id).catch(err => console.error("Error updating bank distrip on split update:", err));
+  }
+
   const updatedRows = await listDistributionSplits({ transaction_id: txn.id });
   return updatedRows.find(s => s.id === id)!;
 }
@@ -1999,6 +2144,7 @@ export async function deleteBankDistripRecord(id: string): Promise<void> {
   await execute(`DELETE FROM bank_distrip_records WHERE id = $1`, [id]);
   // Recalculate all remaining records for this account so subsequent running balances are accurate
   await recalculateBankDistripBalances(existing.account_id);
+  invalidateBankDistripCache();
 }
 
 export async function updateBankDistripRecord(id: string, data: {
@@ -2031,6 +2177,7 @@ export async function updateBankDistripRecord(id: string, data: {
   if (existing.account_id !== accountId) {
     await recalculateBankDistripBalances(existing.account_id);
   }
+  invalidateBankDistripCache();
 
   const updated = await queryOne(`
     SELECT r.*, a.account_code, a.account_name

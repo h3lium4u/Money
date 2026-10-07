@@ -204,24 +204,33 @@ function DashboardContent() {
             Real-time Dubai → India remittance volume, margins, profit, and receivables tracking.
           </p>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          {/* Fresh Teal "New Transfer" button */}
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          {/* New Customer Remittance (Retail) */}
           <Link
-            href="/transactions/new"
-            className="inline-flex items-center justify-center gap-1.5 flex-1 sm:flex-initial px-4 py-2 text-[13.5px] font-medium transition-colors cursor-pointer"
-            style={{ background: "#0F766E", color: "#ffffff", borderRadius: 100, fontFamily: "var(--font-body)", border: "none", letterSpacing: "-0.01em", boxShadow: "0 1px 3px rgba(15,118,110,0.15)" }}
+            href="/remittances/new"
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-[13px] font-semibold transition-all cursor-pointer shadow-sm hover:shadow"
+            style={{ background: "#0F766E", color: "#ffffff", borderRadius: 100, border: "none" }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#0D9488"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "#0F766E"; }}
           >
             <PlusCircle className="w-4 h-4" />
-            <span>New Transfer</span>
+            <span>+ New Remittance</span>
+          </Link>
+          {/* New Dubai Client Transfer (Wholesale) */}
+          <Link
+            href="/transactions/new"
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-[13px] font-semibold transition-colors bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-200 border border-teal-200 dark:border-teal-800 hover:bg-teal-100 dark:hover:bg-teal-900/60"
+            style={{ borderRadius: 100 }}
+          >
+            <Building2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+            <span>+ Dubai Client</span>
           </Link>
           <Link
             href="/reports"
-            className="inline-flex items-center justify-center gap-1.5 flex-1 sm:flex-initial px-4 py-2 text-[13.5px] font-medium transition-colors bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/60"
-            style={{ borderRadius: 100, fontFamily: "var(--font-body)", letterSpacing: "-0.01em" }}
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-[13px] font-medium transition-colors bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/60"
+            style={{ borderRadius: 100 }}
           >
-            <FileSpreadsheet className="w-4 h-4" />
+            <FileSpreadsheet className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
             <span>Excel Export</span>
           </Link>
         </div>

@@ -341,11 +341,11 @@ export default function NewDubaiClientTransactionPage() {
           
           {/* Section 1: Date & Dubai Client */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Date Choosing */}
+            {/* Choose Date */}
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400" />
-                <span>Date choosing</span>
+                <span>Choose Date</span>
               </label>
               <div className="relative flex items-center">
                 <input
@@ -367,12 +367,12 @@ export default function NewDubaiClientTransactionPage() {
               </div>
             </div>
 
-            {/* Dubai Client Choose */}
+            {/* Choose Dubai Client */}
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                   <Building2 className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400" />
-                  <span>Dubai client choose</span>
+                  <span>Choose Dubai Client</span>
                 </label>
                 <button
                   type="button"
@@ -407,7 +407,7 @@ export default function NewDubaiClientTransactionPage() {
           <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             <div className="flex flex-wrap items-center justify-between gap-1">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Total (INR) - Manual Value Entry
+                Total (INR) - Manual Entry
               </label>
               <button
                 type="button"
@@ -561,7 +561,7 @@ export default function NewDubaiClientTransactionPage() {
                 <p className="text-base font-extrabold text-teal-900 dark:text-teal-200 font-mono">
                   AED {preview.inDhirams.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
-                <span className="text-[10px] text-teal-600 dark:text-teal-400 block font-mono">= Total / Wholesale</span>
+                <span className="text-[10px] text-teal-600 dark:text-teal-400 block font-mono">= Total / Whole sale rate</span>
               </div>
 
               {/* 3. Paid Amount */}
@@ -587,7 +587,7 @@ export default function NewDubaiClientTransactionPage() {
                 <p className="text-base font-extrabold font-mono">
                   AED {preview.balanceToPaid.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
-                <span className="text-[10px] opacity-80 block font-mono">= In Dhirams - Paid</span>
+                <span className="text-[10px] opacity-80 block font-mono">= In Dhirams - Paid amount</span>
               </div>
             </div>
           </div>

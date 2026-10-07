@@ -24,6 +24,7 @@ import {
   ArrowRightLeft,
   Building2,
   X,
+  Ban,
 } from "lucide-react";
 import { numberToIndianWords } from "@/lib/number-to-words";
 import { generateTransactionReceipt } from "@/lib/pdf-generator";
@@ -370,6 +371,36 @@ function DubaiClientTransactionsContent() {
     0
   );
 
+  // Cumulative Daily Balance calculation (Formula from Excel INDIA DISTRIBUTION: Daily Balance = Balance to be Paid + Previous Day's Daily Balance)
+  const clientRunningBalances: Record<string, number> = {};
+  const dailyBalanceMap = new Map<string, number>();
+
+  // Sort chronological ascending (oldest first) to accumulate running balance per client
+  const chronological = [...filtered]
+    .filter((t) => t.status === "CONFIRMED")
+    .sort((a, b) => {
+      const cmp = (a.transaction_date || "").localeCompare(b.transaction_date || "");
+      if (cmp !== 0) return cmp;
+      return (a.created_at || "").localeCompare(b.created_at || "");
+    });
+
+  chronological.forEach((t) => {
+    const cId = t.customer_id;
+    const inDhiramsVal = t.in_dhirams ?? t.aed_amount ?? 0;
+    const paidAmountVal = t.paid_amount ?? t.paid_aed ?? 0;
+    const balanceToPaidVal = t.balance_to_paid ?? (inDhiramsVal - paidAmountVal);
+
+    const prevBal = clientRunningBalances[cId] || 0;
+    const newDailyBal = Math.round((prevBal + balanceToPaidVal) * 100) / 100;
+    clientRunningBalances[cId] = newDailyBal;
+    dailyBalanceMap.set(t.id, newDailyBal);
+  });
+
+  const totalClosingDailyBalance = Object.values(clientRunningBalances).reduce(
+    (sum, val) => sum + val,
+    0
+  );
+
   return (
     <PageTransition>
       <div className="space-y-5 max-w-7xl mx-auto">
@@ -404,29 +435,29 @@ function DubaiClientTransactionsContent() {
         </div>
 
         {/* Module Separation Banner */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-50 border border-slate-200/80 p-3 rounded-xl shadow-2xs">
-          <div className="flex items-center gap-2 text-xs text-slate-700">
-            <Building2 className="w-4 h-4 text-teal-700 shrink-0" />
-            <span className="font-semibold text-slate-900">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-3 rounded-xl shadow-2xs">
+          <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+            <Building2 className="w-4 h-4 text-teal-700 dark:text-teal-400 shrink-0" />
+            <span className="font-semibold text-slate-900 dark:text-slate-100">
               Dubai Client Transfers
             </span>
             <span className="text-slate-400 hidden sm:inline">•</span>
-            <span className="text-slate-500 text-[11px] hidden sm:inline">
+            <span className="text-slate-500 dark:text-slate-400 text-[11px] hidden sm:inline">
               Strictly Dubai parties (HAJA, SARAB, NF2). Normal customer remittances are displayed separately.
             </span>
           </div>
           <div className="flex items-center gap-3">
             <Link
               href="/remittances"
-              className="text-xs font-semibold text-teal-700 hover:text-teal-900 hover:underline inline-flex items-center gap-1"
+              className="text-xs font-semibold text-teal-700 dark:text-teal-400 hover:text-teal-900 hover:underline inline-flex items-center gap-1"
             >
               <span>Customer Remittances</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </Link>
-            <span className="text-slate-300">|</span>
+            <span className="text-slate-300 dark:text-slate-700">|</span>
             <Link
               href="/party-transfers"
-              className="text-xs font-semibold text-teal-700 hover:text-teal-900 hover:underline inline-flex items-center gap-1"
+              className="text-xs font-semibold text-teal-700 dark:text-teal-400 hover:text-teal-900 hover:underline inline-flex items-center gap-1"
             >
               <span>Party Transfers (IND)</span>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -434,70 +465,85 @@ function DubaiClientTransactionsContent() {
           </div>
         </div>
 
-        {/* 4 Key Financial Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* 5 Key Financial Summary Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {/* Card 1: Total Volume INR */}
-          <div className="bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-2xs space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+          <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
               Total Volume (INR)
             </span>
-            <div className="text-base sm:text-lg font-black text-slate-900 font-mono tracking-tight">
+            <div className="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 font-mono tracking-tight">
               {formatINR(totalVolumeInr)}
             </div>
-            <span className="text-[10px] text-slate-400 block font-medium">
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 block font-medium">
               Confirmed Transfers: {confirmedTransfers.length}
             </span>
           </div>
 
           {/* Card 2: Total In Dhirams */}
-          <div className="bg-white p-3.5 rounded-xl border border-teal-200/90 shadow-2xs space-y-1 bg-teal-50/20">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-teal-800 block">
+          <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-teal-200/90 dark:border-teal-800 shadow-2xs space-y-1 bg-teal-50/20 dark:bg-teal-950/20">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-teal-800 dark:text-teal-300 block">
               Total In Dhirams (AED)
             </span>
-            <div className="text-base sm:text-lg font-black text-teal-900 font-mono tracking-tight">
+            <div className="text-base sm:text-lg font-black text-teal-900 dark:text-teal-100 font-mono tracking-tight">
               {formatAED(totalInDhirams)}
             </div>
-            <span className="text-[10px] text-teal-600 block font-medium">
-              Billed to Dubai Clients
+            <span className="text-[10px] text-teal-600 dark:text-teal-400 block font-medium">
+              = Total / Wholesale Rate
             </span>
           </div>
 
           {/* Card 3: Total Paid Amount */}
-          <div className="bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-2xs space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+          <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
               Total Paid Amount (AED)
             </span>
-            <div className="text-base sm:text-lg font-black text-emerald-700 font-mono tracking-tight">
+            <div className="text-base sm:text-lg font-black text-emerald-700 dark:text-emerald-400 font-mono tracking-tight">
               {formatAED(totalPaidAed)}
             </div>
-            <span className="text-[10px] text-emerald-600 block font-medium">
+            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-medium">
               Settled Collections
             </span>
           </div>
 
-          {/* Card 4: Total Balance to Paid */}
-          <div className="bg-white p-3.5 rounded-xl border border-amber-200/90 shadow-2xs space-y-1 bg-amber-50/20">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block">
-              Total Balance to Paid (AED)
+          {/* Card 4: Balance to Paid */}
+          <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-amber-200/90 dark:border-amber-800 shadow-2xs space-y-1 bg-amber-50/20 dark:bg-amber-950/20">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 block">
+              Balance to Paid (AED)
             </span>
             <div className={`text-base sm:text-lg font-black font-mono tracking-tight ${
-              totalBalanceDue > 0 ? "text-amber-800" : "text-emerald-700"
+              totalBalanceDue > 0 ? "text-amber-800 dark:text-amber-300" : "text-emerald-700 dark:text-emerald-400"
             }`}>
               {formatAED(totalBalanceDue)}
             </div>
-            <span className="text-[10px] text-amber-600 block font-medium">
-              Pending Collections
+            <span className="text-[10px] text-amber-600 dark:text-amber-400 block font-medium">
+              = In Dhirams - Paid Amount
+            </span>
+          </div>
+
+          {/* Card 5: Daily Balance (Cumulative) */}
+          <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-blue-200/90 dark:border-blue-800 shadow-2xs space-y-1 bg-blue-50/20 dark:bg-blue-950/20 col-span-2 sm:col-span-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-800 dark:text-blue-300 block">
+              Daily Balance (AED)
+            </span>
+            <div className={`text-base sm:text-lg font-black font-mono tracking-tight ${
+              totalClosingDailyBalance > 0 ? "text-blue-900 dark:text-blue-200" : totalClosingDailyBalance < 0 ? "text-rose-700 dark:text-rose-400" : "text-emerald-700 dark:text-emerald-400"
+            }`}>
+              {formatAED(totalClosingDailyBalance)}
+            </div>
+            <span className="text-[10px] text-blue-600 dark:text-blue-400 block font-medium">
+              = +Today + Prev Bal
             </span>
           </div>
         </div>
 
         {/* Filter Bar */}
         <FadeIn delay={0.1}>
-          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs space-y-3">
+          <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-3">
             {/* Quick Time Presets */}
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider mr-2 flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-teal-700" /> Date:
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mr-2 flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400" /> Date:
               </span>
               {[
                 { id: "all", label: "All Time" },
@@ -510,10 +556,10 @@ function DubaiClientTransactionsContent() {
                 <button
                   key={item.id}
                   onClick={() => setTimeFilter(item.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     timeFilter === item.id
-                      ? "bg-slate-900 text-white shadow-2xs"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      ? "bg-[#0F766E] text-white shadow-2xs"
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
                   }`}
                 >
                   {item.label}
@@ -522,7 +568,7 @@ function DubaiClientTransactionsContent() {
             </div>
 
             {/* Search & Dropdown Filters */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 pt-2 border-t border-slate-100">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
               <div className="relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                 <input
@@ -530,7 +576,7 @@ function DubaiClientTransactionsContent() {
                   placeholder="Search ID, client, notes..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-slate-800"
+                  className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:ring-1 focus:ring-teal-500 focus:outline-none"
                 />
               </div>
 
@@ -538,7 +584,7 @@ function DubaiClientTransactionsContent() {
                 <select
                   value={selectedCustomer}
                   onChange={(e) => setSelectedCustomer(e.target.value)}
-                  className="w-full text-xs font-medium border border-slate-300 rounded-lg p-2 text-slate-800"
+                  className="w-full text-xs font-medium border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg p-2 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-teal-500 focus:outline-none"
                 >
                   <option value="">All Dubai Clients ({clients.length})</option>
                   {clients.map((c) => (
@@ -553,7 +599,7 @@ function DubaiClientTransactionsContent() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full text-xs font-medium border border-slate-300 rounded-lg p-2 text-slate-800"
+                  className="w-full text-xs font-medium border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg p-2 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-teal-500 focus:outline-none"
                 >
                   <option value="">All Statuses</option>
                   <option value="CONFIRMED">CONFIRMED</option>
@@ -567,14 +613,14 @@ function DubaiClientTransactionsContent() {
                     type="date"
                     value={fromDate}
                     onChange={(e) => setFromDate(e.target.value)}
-                    className="w-full text-xs border border-slate-300 rounded-lg p-1.5 text-slate-700"
+                    className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg p-1.5 text-slate-700 dark:text-slate-200"
                   />
                   <span className="text-slate-400 text-xs">➔</span>
                   <input
                     type="date"
                     value={toDate}
                     onChange={(e) => setToDate(e.target.value)}
-                    className="w-full text-xs border border-slate-300 rounded-lg p-1.5 text-slate-700"
+                    className="w-full text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg p-1.5 text-slate-700 dark:text-slate-200"
                   />
                 </div>
               )}
@@ -584,21 +630,21 @@ function DubaiClientTransactionsContent() {
 
         {/* Dubai Client Registry Table */}
         <FadeIn delay={0.2}>
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
             <div className="w-full overflow-x-auto">
-              <table className="w-full text-left text-xs table-fixed">
-                <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200 text-[10px]">
+              <table className="w-full text-left text-xs table-fixed min-w-[1360px]">
+                <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800 text-[10px]">
                   <tr>
-                    <th className="px-3 py-3 w-[11%]">Date</th>
-                    <th className="px-3 py-3 w-[15%]">Dubai Client</th>
-                    <th className="px-3 py-3 w-[13%]">Total (INR)</th>
-                    <th className="px-3 py-3 w-[10%]">Manual Rate</th>
-                    <th className="px-3 py-3 w-[11%]">Wholesale Rate</th>
-                    <th className="px-3 py-3 w-[12%]">In Dhirams</th>
-                    <th className="px-3 py-3 w-[11%]">Paid Amount</th>
-                    <th className="px-3 py-3 w-[11%]">Balance to Paid</th>
-                    <th className="px-2 py-3 w-[6%] text-center">Status</th>
-                    <th className="px-3 py-3 text-right w-[10%]">Actions</th>
+                    <th className="px-3 py-3 w-[9%]">Date</th>
+                    <th className="px-3 py-3 w-[13%]">Dubai Client</th>
+                    <th className="px-3 py-3 w-[10%]">Total (INR)</th>
+                    <th className="px-3 py-3 w-[8%]">Manual Rate</th>
+                    <th className="px-3 py-3 w-[9%]">Wholesale Rate</th>
+                    <th className="px-3 py-3 w-[10%]">In Dhirams</th>
+                    <th className="px-3 py-3 w-[9%]">Paid Amount</th>
+                    <th className="px-3 py-3 w-[10%]">Balance to Paid</th>
+                    <th className="px-3 py-3 w-[10%]">Daily Balance</th>
+                    <th className="px-3 py-3 text-right w-[12%]">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
@@ -634,73 +680,84 @@ function DubaiClientTransactionsContent() {
                       const inDhiramsVal = t.in_dhirams ?? t.aed_amount ?? 0;
                       const paidAmountVal = t.paid_amount ?? t.paid_aed ?? 0;
                       const balanceToPaidVal =
-                        t.balance_to_paid ?? Math.max(0, inDhiramsVal - paidAmountVal);
+                        t.balance_to_paid ?? (inDhiramsVal - paidAmountVal);
+                      const dailyBalanceVal =
+                        dailyBalanceMap.get(t.id) ?? balanceToPaidVal;
 
                       return (
                         <tr
                           key={t.id}
-                          className={`hover:bg-slate-50/80 transition-colors ${
-                            t.status === "VOIDED" ? "opacity-60 bg-slate-50/40" : ""
+                          className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors ${
+                            t.status === "VOIDED" ? "opacity-60 bg-slate-50/40 dark:bg-slate-900/40" : ""
                           }`}
                         >
                           {/* 1. Date */}
                           <td className="px-3 py-2.5 font-mono">
-                            <div className="font-bold text-slate-900 text-xs">
-                              {t.transaction_date}
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-slate-900 dark:text-slate-100 text-xs">
+                                {t.transaction_date}
+                              </span>
+                              {t.status === "VOIDED" && (
+                                <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
+                                  Voided
+                                </span>
+                              )}
                             </div>
-                            <div className="text-[10px] text-slate-400 mt-0.5 truncate" title={t.transaction_number}>
+                            <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 truncate" title={t.transaction_number}>
                               {t.transaction_number}
                             </div>
                           </td>
 
                           {/* 2. Dubai Client */}
                           <td className="px-3 py-2.5">
-                            <div className="font-bold text-slate-800 flex items-center gap-1 text-xs truncate">
-                              <Building2 className="w-3.5 h-3.5 text-teal-700 shrink-0" />
+                            <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1 text-xs truncate">
+                              <Building2 className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400 shrink-0" />
                               <span className="truncate" title={t.customer_name}>
                                 {t.customer_name}
                               </span>
                             </div>
-                            {t.customer_code && (
-                              <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                                {t.customer_code}
-                              </div>
-                            )}
+                            {t.customer_code &&
+                              t.customer_code.trim().toUpperCase() !==
+                                t.customer_name?.trim().toUpperCase() && (
+                                <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">
+                                  {t.customer_code}
+                                </div>
+                              )}
                           </td>
 
                           {/* 3. Total (INR) */}
                           <td className="px-3 py-2.5 font-mono whitespace-nowrap">
-                            <div className="font-bold text-slate-900 text-xs">
+                            <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">
                               {formatINR(totalVal)}
                             </div>
                           </td>
 
                           {/* 4. Manual Rate Value */}
                           <td className="px-3 py-2.5 font-mono whitespace-nowrap">
-                            <div className="font-bold text-slate-800 text-xs">
+                            <div className="font-bold text-slate-800 dark:text-slate-200 text-xs">
                               {Number(manualRateVal).toFixed(4)}
                             </div>
-                            <span className="text-[9px] text-slate-400">AED/1000</span>
+                            <span className="text-[9px] text-slate-400 dark:text-slate-500">AED/1000</span>
                           </td>
 
                           {/* 5. Whole Sale Rate */}
                           <td className="px-3 py-2.5 font-mono whitespace-nowrap">
-                            <div className="font-bold text-teal-700 text-xs">
+                            <div className="font-bold text-teal-700 dark:text-teal-400 text-xs">
                               {Number(wholesaleRateVal).toFixed(4)}
                             </div>
-                            <span className="text-[9px] text-slate-400">= 1000/Rate</span>
+                            <span className="text-[9px] text-slate-400 dark:text-slate-500">= 1000/Rate</span>
                           </td>
 
                           {/* 6. In Dhirams */}
                           <td className="px-3 py-2.5 font-mono whitespace-nowrap">
-                            <div className="font-extrabold text-slate-900 text-xs">
+                            <div className="font-extrabold text-slate-900 dark:text-slate-100 text-xs">
                               {formatAED(inDhiramsVal)}
                             </div>
                           </td>
 
                           {/* 7. Paid Amount */}
                           <td className="px-3 py-2.5 font-mono whitespace-nowrap">
-                            <div className="font-bold text-emerald-700 text-xs">
+                            <div className="font-bold text-emerald-700 dark:text-emerald-400 text-xs">
                               {formatAED(paidAmountVal)}
                             </div>
                           </td>
@@ -708,34 +765,32 @@ function DubaiClientTransactionsContent() {
                           {/* 8. Balance to Paid */}
                           <td className="px-3 py-2.5 font-mono whitespace-nowrap">
                             <div className={`font-bold text-xs ${
-                              balanceToPaidVal > 0 ? "text-amber-700 font-extrabold" : "text-emerald-700"
+                              balanceToPaidVal > 0 ? "text-amber-700 dark:text-amber-400 font-extrabold" : balanceToPaidVal < 0 ? "text-rose-700 dark:text-rose-400 font-extrabold" : "text-emerald-700 dark:text-emerald-400"
                             }`}>
                               {formatAED(balanceToPaidVal)}
                             </div>
+                            <span className="text-[9px] text-slate-400 dark:text-slate-500">= In Dhirams - Paid</span>
                           </td>
 
-                          {/* 9. Status */}
-                          <td className="px-2 py-2.5 text-center">
-                            <span
-                              className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
-                                t.status === "CONFIRMED"
-                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                  : "bg-rose-50 text-rose-700 border border-rose-200"
-                              }`}
-                            >
-                              {t.status}
-                            </span>
+                          {/* 9. Daily Balance */}
+                          <td className="px-3 py-2.5 font-mono whitespace-nowrap">
+                            <div className={`font-bold text-xs ${
+                              dailyBalanceVal > 0 ? "text-blue-900 dark:text-blue-300 font-extrabold" : dailyBalanceVal < 0 ? "text-rose-700 dark:text-rose-400 font-extrabold" : "text-emerald-700 dark:text-emerald-400 font-bold"
+                            }`}>
+                              {formatAED(dailyBalanceVal)}
+                            </div>
+                            <span className="text-[9px] text-blue-600 dark:text-blue-400 font-semibold">= +Today + Prev Bal</span>
                           </td>
 
                           {/* 10. Actions */}
                           <td className="px-3 py-2.5 text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-1">
+                            <div className="flex items-center justify-end gap-1.5 shrink-0">
                               {/* Quick Pay */}
                               {t.status === "CONFIRMED" && balanceToPaidVal > 0 && (
                                 <button
                                   onClick={() => handleOpenPayModal(t)}
                                   title="Record Payment in AED"
-                                  className="flex items-center gap-1 text-[10px] font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-300 px-2 py-1 rounded shadow-2xs transition-colors"
+                                  className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-300 px-2 py-1 rounded shadow-2xs transition-colors shrink-0"
                                 >
                                   <CreditCard className="w-3 h-3" />
                                   <span>+ Pay</span>
@@ -768,9 +823,9 @@ function DubaiClientTransactionsContent() {
                                     setVoidReason("");
                                   }}
                                   title="Void Transfer"
-                                  className="px-1.5 py-0.5 rounded text-[10px] font-semibold text-slate-500 hover:text-amber-700 hover:bg-amber-50"
+                                  className="p-1 rounded text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
                                 >
-                                  Void
+                                  <Ban className="w-3.5 h-3.5" />
                                 </button>
                               )}
 

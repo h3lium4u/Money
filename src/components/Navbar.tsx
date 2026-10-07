@@ -13,17 +13,19 @@ export default function Navbar() {
   const isDark = theme === "dark";
 
   let title = "Dashboard";
-  if (pathname.startsWith("/transactions/new")) title = "New Remittance";
-  else if (pathname.startsWith("/transactions"))  title = "Transactions Registry";
-  else if (pathname.startsWith("/customers"))     title = "Customers & Balances";
+  if (pathname.startsWith("/remittances/new")) title = "New Customer Remittance";
+  else if (pathname.startsWith("/remittances")) title = "Customer Remittances";
+  else if (pathname.startsWith("/transactions/new")) title = "New Dubai Client Transfer";
+  else if (pathname.startsWith("/transactions")) title = "Dubai Client Transfers";
+  else if (pathname.startsWith("/customers")) title = "Customers & Balances";
   else if (pathname.startsWith("/party-transfers") || pathname.startsWith("/parties/transfers")) title = "Party Transfers";
-  else if (pathname.startsWith("/parties"))       title = "Registered Parties & Ledger";
-  else if (pathname.startsWith("/distributors"))  title = "India & AED Distributions";
+  else if (pathname.startsWith("/parties")) title = "Registered Parties & Ledger";
+  else if (pathname.startsWith("/distributors")) title = "India & AED Distributions";
   else if (pathname.startsWith("/bank-distrip") || pathname.startsWith("/bank-distribution-settlement")) title = "Bank Distribution Settlement";
-  else if (pathname.startsWith("/receivables"))   title = "Receivables & Cash on Hand";
-  else if (pathname.startsWith("/reports"))       title = "Financial Reports & Exports";
-  else if (pathname.startsWith("/ai-assistant"))  title = "AI Business Assistant";
-  else if (pathname.startsWith("/settings"))      title = "System Settings & Health";
+  else if (pathname.startsWith("/receivables")) title = "Receivables & Cash on Hand";
+  else if (pathname.startsWith("/reports")) title = "Financial Reports & Exports";
+  else if (pathname.startsWith("/ai-assistant")) title = "AI Business Assistant";
+  else if (pathname.startsWith("/settings")) title = "System Settings & Health";
 
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "short", year: "numeric", month: "short", day: "numeric",

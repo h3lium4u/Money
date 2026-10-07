@@ -16,6 +16,12 @@ const updateSchema = z.object({
   delivery_charge_pct: z.number().min(0).max(1).optional(),
   notes: z.string().optional(),
   reason: z.string().optional(),
+  splits: z.array(z.object({
+    id: z.string().optional(),
+    distributor_id: z.string().min(1, "Party / Distributor is required"),
+    inr_amount: z.number().positive("Split amount must be greater than 0"),
+    notes: z.string().optional(),
+  })).optional(),
 });
 
 export async function GET(

@@ -22,6 +22,7 @@ import {
   ArrowRightLeft,
   Building2,
   X,
+  Split,
 } from "lucide-react";
 import { numberToIndianWords } from "@/lib/number-to-words";
 import { generateTransactionReceipt } from "@/lib/pdf-generator";
@@ -83,6 +84,11 @@ function CustomerRemittancesContent() {
   const [editReason, setEditReason] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+
+  // India Parties & Splits editing state
+  const [indiaParties, setIndiaParties] = useState<any[]>([]);
+  const [editSplits, setEditSplits] = useState<Array<{ id: string; distributor_id: string; inr_amount: string; notes?: string }>>([]);
+  const [loadingEditSplits, setLoadingEditSplits] = useState(false);
 
   // Quick payment modal state
   const [payingTxn, setPayingTxn] = useState<any | null>(null);
@@ -157,12 +163,18 @@ function CustomerRemittancesContent() {
 
   async function fetchMetadata() {
     try {
-      const res = await fetch("/api/customers");
-      const cData = await res.json();
+      const [cRes, dRes] = await Promise.all([
+        fetch("/api/customers"),
+        fetch("/api/distributors?group=IND"),
+      ]);
+      const cData = await cRes.json();
+      const dData = await dRes.json();
       setCustomers(Array.isArray(cData) ? cData : []);
+      setIndiaParties(Array.isArray(dData) ? dData : []);
     } catch (err) {
       console.error(err);
       setCustomers([]);
+      setIndiaParties([]);
     }
   }
 
@@ -203,7 +215,7 @@ function CustomerRemittancesContent() {
     }
   }
 
-  function handleOpenEdit(t: any) {
+  async function handleOpenEdit(t: any) {
     setEditingTxn(t);
     setEditDate(t.transaction_date);
     setEditCustomerId(t.customer_id);
@@ -213,11 +225,127 @@ function CustomerRemittancesContent() {
     setEditNotes(t.notes || "");
     setEditReason("");
     setEditError(null);
+    setLoadingEditSplits(true);
+
+    try {
+      const res = await fetch(`/api/distribution-splits?transaction_id=${t.id}`);
+      const splitsData = await res.json();
+      if (Array.isArray(splitsData) && splitsData.length > 0) {
+        setEditSplits(
+          splitsData.map((s: any) => ({
+            id: s.id,
+            distributor_id: s.distributor_id,
+            inr_amount: String(s.inr_amount),
+            notes: s.notes || "",
+          }))
+        );
+      } else {
+        setEditSplits([
+          {
+            id: `new-${Date.now()}`,
+            distributor_id: indiaParties[0]?.id || "",
+            inr_amount: String(t.inr_amount),
+            notes: "",
+          },
+        ]);
+      }
+    } catch (err) {
+      console.error(err);
+      setEditSplits([
+        {
+          id: `new-${Date.now()}`,
+          distributor_id: indiaParties[0]?.id || "",
+          inr_amount: String(t.inr_amount),
+          notes: "",
+        },
+      ]);
+    } finally {
+      setLoadingEditSplits(false);
+    }
+  }
+
+  function handleAddEditSplit() {
+    if (indiaParties.length === 0) return;
+    const currentOrder = parseFloat(editInr) || 0;
+    const currentAllocated = editSplits.reduce((sum, s) => sum + (parseFloat(s.inr_amount) || 0), 0);
+    const rem = Math.max(0, currentOrder - currentAllocated);
+    const usedDistIds = new Set(editSplits.map((s) => s.distributor_id));
+    const nextParty = indiaParties.find((p) => !usedDistIds.has(p.id)) || indiaParties[0];
+
+    setEditSplits((prev) => [
+      ...prev,
+      {
+        id: `new-${Date.now()}-${Math.random()}`,
+        distributor_id: nextParty.id,
+        inr_amount: rem > 0 ? String(rem) : "",
+      },
+    ]);
+  }
+
+  function handleRemoveEditSplit(index: number) {
+    if (editSplits.length <= 1) return;
+    setEditSplits((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function handleEditSplitPartyChange(index: number, distId: string) {
+    setEditSplits((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], distributor_id: distId };
+      return next;
+    });
+  }
+
+  function handleEditSplitAmountChange(index: number, amount: string) {
+    setEditSplits((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], inr_amount: amount };
+      return next;
+    });
+  }
+
+  function handleAllocateEditRemaining(index: number) {
+    const currentOrder = parseFloat(editInr) || 0;
+    const otherAllocated = editSplits.reduce(
+      (sum, s, i) => (i === index ? sum : sum + (parseFloat(s.inr_amount) || 0)),
+      0
+    );
+    const rem = Math.max(0, currentOrder - otherAllocated);
+    handleEditSplitAmountChange(index, String(rem));
   }
 
   async function handleSaveEdit(e: React.FormEvent) {
     e.preventDefault();
     if (!editingTxn) return;
+
+    const parsedEditInr = parseFloat(editInr);
+    if (!parsedEditInr || parsedEditInr <= 0) {
+      setEditError("Please enter a valid order amount");
+      return;
+    }
+
+    const totalEditSplits = editSplits.reduce((sum, s) => sum + (parseFloat(s.inr_amount) || 0), 0);
+    if (editSplits.length === 0) {
+      setEditError("Distribution split is mandatory. At least one party must be allocated.");
+      return;
+    }
+    for (let i = 0; i < editSplits.length; i++) {
+      const s = editSplits[i];
+      if (!s.distributor_id) {
+        setEditError(`Please select an India party for split line #${i + 1}`);
+        return;
+      }
+      const amt = parseFloat(s.inr_amount);
+      if (!amt || amt <= 0) {
+        setEditError(`Please enter a valid amount (> 0) for split line #${i + 1}`);
+        return;
+      }
+    }
+    if (Math.abs(parsedEditInr - totalEditSplits) >= 0.01) {
+      setEditError(
+        `Total splits (₹${totalEditSplits.toLocaleString("en-IN", { minimumFractionDigits: 2 })}) must equal order amount (₹${parsedEditInr.toLocaleString("en-IN", { minimumFractionDigits: 2 })}). Difference: ₹${Math.abs(parsedEditInr - totalEditSplits).toLocaleString("en-IN", { minimumFractionDigits: 2 })}.`
+      );
+      return;
+    }
 
     setIsUpdating(true);
     setEditError(null);
@@ -228,11 +356,17 @@ function CustomerRemittancesContent() {
         body: JSON.stringify({
           transaction_date: editDate,
           customer_id: editCustomerId,
-          inr_amount: parseFloat(editInr),
+          inr_amount: parsedEditInr,
           customer_rate: parseFloat(editCustRate),
           paid_amount: parseFloat(editPaidAmount || "0"),
           notes: editNotes || undefined,
           reason: editReason || undefined,
+          splits: editSplits.map((s) => ({
+            id: s.id.startsWith("new-") ? undefined : s.id,
+            distributor_id: s.distributor_id,
+            inr_amount: parseFloat(s.inr_amount),
+            notes: s.notes || undefined,
+          })),
         }),
       });
 
@@ -241,7 +375,7 @@ function CustomerRemittancesContent() {
 
       setEditingTxn(null);
       fetchTransactions();
-      toast.success("Customer remittance updated successfully");
+      toast.success("Customer remittance and party splits updated successfully");
     } catch (err: any) {
       setEditError(err.message || "Failed to update transaction");
       toast.error(err.message || "Failed to update transaction");
@@ -532,25 +666,25 @@ function CustomerRemittancesContent() {
 
         {/* Customer Remittances Table */}
         <FadeIn delay={0.2}>
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
             <div className="w-full overflow-x-auto">
-              <table className="w-full text-left text-xs table-fixed">
-                <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200 text-[10px]">
+              <table className="w-full text-left text-xs min-w-[1100px]">
+                <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800 text-[10px]">
                   <tr>
-                    <th className="px-3 py-3 w-[14%]">Txn ID / Date</th>
-                    <th className="px-3 py-3 w-[18%]">Customer</th>
-                    <th className="px-3 py-3 w-[16%]">INR Amount</th>
-                    <th className="px-3 py-3 w-[12%]">Rate (AED/1000)</th>
-                    <th className="px-3 py-3 w-[14%]">AED Billed</th>
-                    <th className="px-3 py-3 w-[14%]">Payment Status</th>
-                    <th className="px-3 py-3 text-right w-[12%]">Actions</th>
+                    <th className="px-3.5 py-3 w-[15%]">Txn ID / Date</th>
+                    <th className="px-3.5 py-3 w-[16%]">Customer</th>
+                    <th className="px-3.5 py-3 w-[16%]">INR Amount</th>
+                    <th className="px-3.5 py-3 w-[10%]">Rate</th>
+                    <th className="px-3.5 py-3 w-[12%]">AED Billed</th>
+                    <th className="px-3.5 py-3 w-[16%]">Payment Status</th>
+                    <th className="px-3.5 py-3 text-right w-[15%]">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-medium">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
                   {loading ? (
                     <tr>
                       <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
-                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-teal-700" />
+                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-teal-700 dark:text-teal-400" />
                         <span>Loading customer remittances...</span>
                       </td>
                     </tr>
@@ -558,8 +692,8 @@ function CustomerRemittancesContent() {
                     <tr>
                       <td colSpan={7} className="px-6 py-14 text-center">
                         <div className="flex flex-col items-center gap-2">
-                          <Users className="w-8 h-8 text-slate-300" />
-                          <p className="text-sm font-semibold text-slate-600">No customer remittances recorded</p>
+                          <Users className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+                          <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">No customer remittances recorded</p>
                           <Link
                             href="/remittances/new"
                             className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 transition"
@@ -574,22 +708,22 @@ function CustomerRemittancesContent() {
                     filtered.map((t) => (
                       <tr
                         key={t.id}
-                        className={`hover:bg-slate-50/80 transition-colors ${
-                          t.status === "VOIDED" ? "opacity-60 bg-slate-50/40" : ""
+                        className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors ${
+                          t.status === "VOIDED" ? "opacity-60 bg-slate-50/40 dark:bg-slate-900/40" : ""
                         }`}
                       >
-                        <td className="px-3 py-2.5 font-mono">
-                          <div className="font-bold text-slate-900 text-xs">
+                        <td className="px-3.5 py-2.5 font-mono">
+                          <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">
                             {t.transaction_number}
                           </div>
-                          <div className="text-[10px] text-slate-400 mt-0.5">
+                          <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
                             {t.transaction_date}
                           </div>
                         </td>
 
-                        <td className="px-3 py-2.5">
-                          <div className="font-bold text-slate-800 flex items-center gap-1 text-xs truncate">
-                            <Users className="w-3.5 h-3.5 text-teal-700 shrink-0" />
+                        <td className="px-3.5 py-2.5">
+                          <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1 text-xs truncate">
+                            <Users className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400 shrink-0" />
                             <Link
                               href={`/customers/${t.customer_id}`}
                               className="hover:underline truncate"
@@ -599,46 +733,60 @@ function CustomerRemittancesContent() {
                             </Link>
                           </div>
                           {t.customer_code && (
-                            <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                            <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">
                               {t.customer_code}
                             </div>
                           )}
                         </td>
 
-                        <td className="px-3 py-2.5 font-mono whitespace-nowrap">
-                          <div className="font-bold text-slate-900 text-xs">
+                        <td className="px-3.5 py-2.5 font-mono whitespace-nowrap">
+                          <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">
                             {formatINR(t.inr_amount)}
                           </div>
+                          {t.distributor_split_details && t.distributor_split_details !== "-" ? (
+                            <div
+                              className="text-[10px] text-teal-700 dark:text-teal-400 font-semibold font-sans mt-0.5 truncate flex items-center gap-1"
+                              title={t.distributor_split_details}
+                            >
+                              <Split className="w-2.5 h-2.5 text-teal-600 dark:text-teal-400 shrink-0" />
+                              <span className="truncate max-w-[160px]">{t.distributor_split_details}</span>
+                            </div>
+                          ) : (
+                            <div className="text-[10px] text-amber-600 dark:text-amber-400 font-sans mt-0.5">
+                              No party split
+                            </div>
+                          )}
                         </td>
 
-                        <td className="px-3 py-2.5 font-mono whitespace-nowrap">
-                          <div className="font-bold text-slate-800 text-xs">
+                        <td className="px-3.5 py-2.5 font-mono whitespace-nowrap">
+                          <div className="font-bold text-slate-800 dark:text-slate-200 text-xs">
                             {Number(t.customer_rate).toFixed(4)}
                           </div>
+                          <span className="text-[9px] text-slate-400">AED/1000</span>
                         </td>
 
-                        <td className="px-3 py-2.5 font-mono whitespace-nowrap">
-                          <div className="font-extrabold text-slate-900 text-xs">
+                        <td className="px-3.5 py-2.5 font-mono whitespace-nowrap">
+                          <div className="font-extrabold text-slate-900 dark:text-slate-100 text-xs">
                             {formatAED(t.aed_amount)}
                           </div>
                         </td>
 
-                        <td className="px-3 py-2.5 whitespace-nowrap">
+                        <td className="px-3.5 py-2.5">
                           {(t.paid_aed || 0) >= t.aed_amount ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
-                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-2 py-1 rounded-md">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
                               <span>Paid in Full</span>
                             </span>
                           ) : (t.paid_aed || 0) > 0 ? (
-                            <div className="text-[10px] font-semibold text-amber-900 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded inline-block font-mono">
-                              <span>Paid: {formatAED(t.paid_aed)}</span>
-                              <span className="mx-1 text-slate-400">•</span>
-                              <span className="text-rose-700 font-bold">Due: {formatAED(t.pending_aed)}</span>
+                            <div className="inline-flex flex-col gap-0.5 text-[10px] font-semibold text-amber-900 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 px-2 py-1 rounded-md font-mono whitespace-nowrap">
+                              <span className="text-slate-600 dark:text-slate-400 text-[9px]">Paid: {formatAED(t.paid_aed)}</span>
+                              <span className="text-rose-700 dark:text-rose-400 font-bold">Due: {formatAED(t.pending_aed)}</span>
                             </div>
                           ) : (
-                            <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded inline-block font-mono">
-                              Unpaid (Due: {formatAED(t.aed_amount)})
-                            </span>
+                            <div className="inline-flex flex-col gap-0.5 text-[10px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded-md font-mono whitespace-nowrap">
+                              <span className="text-slate-500 dark:text-slate-400 text-[9px] uppercase tracking-wider font-sans font-bold">Unpaid</span>
+                              <span className="text-rose-700 dark:text-rose-400 font-bold">Due: {formatAED(t.aed_amount)}</span>
+                            </div>
                           )}
                         </td>
 
@@ -785,6 +933,128 @@ function CustomerRemittancesContent() {
                     onChange={(e) => setEditPaidAmount(e.target.value)}
                     className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900"
                   />
+                </div>
+
+                {/* Mandatory India Party Splits Editing */}
+                <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
+                        <Split className="w-3.5 h-3.5 text-teal-700" />
+                        <span>India Party Splits</span>
+                        <span className="text-rose-600 font-extrabold text-[10px]">* (MANDATORY)</span>
+                      </label>
+                      <p className="text-[11px] text-slate-500">
+                        Choose different party or adjust amounts to match order total.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddEditSplit}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-2 py-1 rounded shadow-2xs transition cursor-pointer"
+                    >
+                      <PlusCircle className="w-3 h-3" />
+                      <span>+ Add Split</span>
+                    </button>
+                  </div>
+
+                  {loadingEditSplits ? (
+                    <div className="p-3 text-center text-xs text-slate-400 bg-slate-50 rounded-lg">
+                      <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-1 text-teal-700" />
+                      <span>Loading party splits...</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      {editSplits.map((s, idx) => (
+                        <div
+                          key={s.id}
+                          className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5"
+                        >
+                          <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase">
+                            <span>Party Split #{idx + 1}</span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleAllocateEditRemaining(idx)}
+                                className="text-teal-700 hover:underline cursor-pointer"
+                              >
+                                Fill Remaining
+                              </button>
+                              {editSplits.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveEditSplit(idx)}
+                                  className="text-rose-600 hover:text-rose-800 cursor-pointer"
+                                >
+                                  Remove
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <select
+                                required
+                                value={s.distributor_id}
+                                onChange={(e) => handleEditSplitPartyChange(idx, e.target.value)}
+                                className="w-full text-xs font-bold border border-slate-300 rounded p-1.5 text-slate-900 bg-white"
+                              >
+                                <option value="">-- Choose Party --</option>
+                                {indiaParties.map((p) => (
+                                  <option key={p.id} value={p.id}>
+                                    {p.name} {p.code ? `(${p.code})` : ""}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="relative">
+                              <span className="absolute left-2 top-1.5 text-slate-400 font-bold text-xs">₹</span>
+                              <input
+                                type="number"
+                                step="any"
+                                required
+                                placeholder="Amount"
+                                value={s.inr_amount}
+                                onChange={(e) => handleEditSplitAmountChange(idx, e.target.value)}
+                                className="w-full text-xs font-bold pl-5 pr-2 py-1.5 border border-slate-300 rounded text-slate-900 bg-white"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Splits vs Order Total Match Indicator */}
+                  {(() => {
+                    const currentOrder = parseFloat(editInr) || 0;
+                    const allocated = editSplits.reduce((sum, s) => sum + (parseFloat(s.inr_amount) || 0), 0);
+                    const diff = currentOrder - allocated;
+                    const isMatched = currentOrder > 0 && Math.abs(diff) < 0.01;
+
+                    return (
+                      <div
+                        className={`p-2 rounded-lg border text-[11px] flex items-center justify-between font-mono ${
+                          isMatched
+                            ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                            : diff > 0
+                            ? "bg-amber-50 border-amber-200 text-amber-800"
+                            : "bg-rose-50 border-rose-200 text-rose-800"
+                        }`}
+                      >
+                        <span className="font-sans font-semibold">
+                          {isMatched
+                            ? "✓ Splits match order total exactly."
+                            : diff > 0
+                            ? `⚠️ Unallocated: ₹${diff.toLocaleString("en-IN", { minimumFractionDigits: 2 })} remaining.`
+                            : `⛔ Over-allocated by ₹${Math.abs(diff).toLocaleString("en-IN", { minimumFractionDigits: 2 })}.`}
+                        </span>
+                        <span className="font-bold">
+                          ₹{allocated.toLocaleString("en-IN")} / ₹{currentOrder.toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div>

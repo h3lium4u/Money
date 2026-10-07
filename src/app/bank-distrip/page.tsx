@@ -77,18 +77,31 @@ interface GrandTotals {
   distributor_summaries: DistributorSummary[];
 }
 
+// In-memory client cache for instant (0ms) account switching and page navigation
+let clientBankDistripCache: {
+  accounts: BankAccount[];
+  recordsByAccount: Record<string, BankRecord[]>;
+  grandTotals: GrandTotals | null;
+} | null = null;
+
 export default function BankDistripPage() {
-  const [accounts, setAccounts] = useState<BankAccount[]>([]);
-  const [records, setRecords] = useState<BankRecord[]>([]);
+  const [accounts, setAccounts] = useState<BankAccount[]>(() => clientBankDistripCache?.accounts || []);
+  const [records, setRecords] = useState<BankRecord[]>(() => {
+    if (!clientBankDistripCache) return [];
+    const firstAcc = clientBankDistripCache.accounts[0]?.id || "";
+    return clientBankDistripCache.recordsByAccount[firstAcc] || [];
+  });
   const [activeAccountData, setActiveAccountData] = useState<BankAccount | null>(null);
-  const [grandTotals, setGrandTotals] = useState<GrandTotals | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedAccount, setSelectedAccount] = useState<string>("");
+  const [grandTotals, setGrandTotals] = useState<GrandTotals | null>(() => clientBankDistripCache?.grandTotals || null);
+  const [loading, setLoading] = useState(() => !clientBankDistripCache);
+  const [selectedAccount, setSelectedAccount] = useState<string>(() => clientBankDistripCache?.accounts[0]?.id || "");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [searchFilter, setSearchFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [activeTab, setActiveTab] = useState<"ledger" | "grand-total">("ledger");
+
+  const lastFetchKeyRef = useRef<string>("");
 
   // Date picker refs
   const addDateRef = useRef<HTMLInputElement>(null);
@@ -148,7 +161,8 @@ export default function BankDistripPage() {
   };
 
   useEffect(() => {
-    fetchBankData();
+    const hasData = records.length > 0 || accounts.length > 0;
+    fetchBankData(selectedAccount, hasData);
   }, [selectedAccount, sortOrder, dateFrom, dateTo]);
 
   // Fetch automatic order when date or account changes in Add modal
@@ -173,11 +187,23 @@ export default function BankDistripPage() {
     }
   }
 
-  async function fetchBankData() {
-    setLoading(true);
+  async function fetchBankData(targetAcc?: string, isBackground = false) {
+    const accToFetch = targetAcc !== undefined ? targetAcc : selectedAccount;
+    const fetchKey = `${accToFetch}_${sortOrder}_${dateFrom}_${dateTo}`;
+
+    // Avoid duplicate fetch
+    if (lastFetchKeyRef.current === fetchKey && !isBackground) {
+      return;
+    }
+    lastFetchKeyRef.current = fetchKey;
+
+    if (!isBackground && records.length === 0) {
+      setLoading(true);
+    }
+
     try {
       let url = `/api/bank-distrip?sort=${sortOrder}`;
-      if (selectedAccount) url += `&accountId=${selectedAccount}`;
+      if (accToFetch) url += `&accountId=${accToFetch}`;
       if (dateFrom) url += `&from=${dateFrom}`;
       if (dateTo) url += `&to=${dateTo}`;
 
@@ -193,17 +219,30 @@ export default function BankDistripPage() {
         setGrandTotals(json.grandTotals);
       }
 
+      // Update client cache
+      const effectiveAcc = accToFetch || validAccounts[0]?.id || "";
+      const existingRecords = clientBankDistripCache?.recordsByAccount || {};
+      clientBankDistripCache = {
+        accounts: validAccounts,
+        recordsByAccount: {
+          ...existingRecords,
+          [effectiveAcc]: validRecords,
+        },
+        grandTotals: json.grandTotals || null,
+      };
+
       // Auto-select the first account if none is selected yet
-      if (!selectedAccount && validAccounts.length > 0) {
-        setSelectedAccount(validAccounts[0].id);
-        setAddAccountId(validAccounts[0].id);
-      } else if (selectedAccount && !addAccountId) {
-        setAddAccountId(selectedAccount);
+      if (!accToFetch && validAccounts.length > 0) {
+        const defaultId = validAccounts[0].id;
+        // Suppress duplicate fetch when setSelectedAccount triggers useEffect
+        lastFetchKeyRef.current = `${defaultId}_${sortOrder}_${dateFrom}_${dateTo}`;
+        setSelectedAccount(defaultId);
+        setAddAccountId(defaultId);
+      } else if (accToFetch && !addAccountId) {
+        setAddAccountId(accToFetch);
       }
     } catch (err) {
       console.error("Failed to load bank distrip data:", err);
-      setAccounts([]);
-      setRecords([]);
     } finally {
       setLoading(false);
     }
@@ -230,6 +269,14 @@ export default function BankDistripPage() {
   const totalPaid = activeAccount?.total_paid ?? records.reduce((sum, r) => sum + (Number(r.paid_inr) || 0), 0);
   const closingBalance = activeAccount?.closing_balance ?? (records.length > 0 ? records[records.length - 1].balance_inr : 0);
 
+  // Today's metrics for active account
+  const todayStr = getTodayDateString();
+  const todayRecord = records.find((r) => r.record_date === todayStr);
+  const todayOrder = todayRecord ? Number(todayRecord.order_inr || 0) : 0;
+  const todayCom = todayRecord ? Number(todayRecord.commission_inr || 0) : 0;
+  const todayPaid = todayRecord ? Number(todayRecord.paid_inr || 0) : 0;
+  const todayBalance = todayRecord ? Number(todayRecord.balance_inr || 0) : closingBalance;
+
   // Previous balance for Add Modal live preview
   const prevBalForAdd = records.length > 0
     ? (sortOrder === "asc" ? records[records.length - 1].balance_inr : records[0].balance_inr)
@@ -239,13 +286,20 @@ export default function BankDistripPage() {
   const addPaidNum = parseFloat(addPaid) || 0;
   const addCalculatedBalance = prevBalForAdd + addOrder + addComNum - addPaidNum;
 
+  // Previous balance for Edit Modal live preview
+  const editRecordIdx = editRecord ? records.findIndex(r => r.id === editRecord.id) : -1;
+  const editPrevBal = editRecordIdx > 0 ? Number(records[editRecordIdx - 1].balance_inr || 0) : 0;
+  const editComNum = parseFloat(editCom) || 0;
+  const editPaidNum = parseFloat(editPaid) || 0;
+  const editCalculatedBalance = editPrevBal + editOrder + editComNum - editPaidNum;
+
   // Open Edit Modal
   function openEditModal(record: BankRecord) {
     setEditRecord(record);
     setEditDateVal(record.record_date);
     setEditOrder(Number(record.order_inr || 0));
-    setEditCom(record.commission_inr === 0 ? "0" : String(record.commission_inr || ""));
-    setEditPaid(String(record.paid_inr || ""));
+    setEditCom(record.commission_inr && Number(record.commission_inr) !== 0 ? String(record.commission_inr) : "");
+    setEditPaid(record.paid_inr && Number(record.paid_inr) !== 0 ? String(record.paid_inr) : "");
     setEditNotes(record.notes || "");
     setEditError(null);
   }
@@ -557,6 +611,9 @@ export default function BankDistripPage() {
                   setSelectedAccount(acc.id);
                   setAddAccountId(acc.id);
                   if (activeTab === "grand-total") setActiveTab("ledger");
+                  if (clientBankDistripCache?.recordsByAccount[acc.id]) {
+                    setRecords(clientBankDistripCache.recordsByAccount[acc.id]);
+                  }
                 }}
                 className={`flex items-center gap-2.5 px-3.5 py-2 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer border ${
                   isSelected
@@ -786,13 +843,108 @@ export default function BankDistripPage() {
         /* DISTRIBUTOR LEDGER SECTION */
         <FadeIn delay={0.2}>
         <div className="space-y-6">
-          {/* Active Distributor KPI Cards */}
+          {/* Today's Live Status Section */}
+          <div className="bg-gradient-to-r from-teal-500/10 via-teal-500/5 to-transparent dark:from-teal-950/40 dark:via-teal-950/20 p-4 rounded-xl border border-teal-200 dark:border-teal-800 shadow-xs space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-teal-100 dark:border-teal-900/60 pb-2.5">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-teal-600 animate-pulse"></span>
+                <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+                  Today's Live Orders & Settlement ({formatDateReadable(todayStr)}) — {activeAccount?.account_code || "Party"}
+                </h3>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                {todayRecord ? (
+                  <button
+                    type="button"
+                    onClick={() => openEditModal(todayRecord)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-[#0F766E] hover:bg-[#0D9488] transition shadow-xs cursor-pointer"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Enter Today's COM & PAID</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAddAccountId(selectedAccount || (accounts[0]?.id || ""));
+                      setAddDate(todayStr);
+                      setAddCom("");
+                      setAddPaid("");
+                      setAddNotes("");
+                      setAddError(null);
+                      setShowAddModal(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-[#0F766E] hover:bg-[#0D9488] transition shadow-xs cursor-pointer"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" />
+                    <span>Record Today's Settlement</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-teal-100 dark:border-teal-900/60 shadow-2xs">
+                <div className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                  <span>Today's Total Order</span>
+                  <Lock className="w-3 h-3 text-slate-400" />
+                </div>
+                <div className="text-lg font-bold font-mono text-teal-800 dark:text-teal-200 mt-1">
+                  {loading ? <div className="h-6 w-20 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" /> : formatINR(todayOrder)}
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5">
+                  Sum of all customer remittance splits today
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-teal-100 dark:border-teal-900/60 shadow-2xs">
+                <div className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                  <span>Today's Commission</span>
+                  <span className="text-[9px] px-1 rounded bg-teal-50 dark:bg-teal-950 text-teal-600 font-mono">Manual</span>
+                </div>
+                <div className="text-lg font-bold font-mono text-slate-800 dark:text-slate-200 mt-1">
+                  {loading ? <div className="h-6 w-20 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" /> : formatINR(todayCom)}
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5">
+                  Commission entered for today
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-teal-100 dark:border-teal-900/60 shadow-2xs">
+                <div className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                  <span>Today's Paid</span>
+                  <span className="text-[9px] px-1 rounded bg-teal-50 dark:bg-teal-950 text-teal-600 font-mono">Manual</span>
+                </div>
+                <div className="text-lg font-bold font-mono text-slate-800 dark:text-slate-200 mt-1">
+                  {loading ? <div className="h-6 w-20 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" /> : formatINR(todayPaid)}
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5">
+                  Payment amount transferred today
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-teal-200 dark:border-teal-800 bg-gradient-to-br from-teal-50/50 dark:from-teal-950/50 shadow-2xs">
+                <div className="text-[10px] uppercase font-bold text-teal-800 dark:text-teal-300 flex items-center justify-between">
+                  <span>Today's Running Bal</span>
+                  <Calculator className="w-3 h-3 text-teal-600" />
+                </div>
+                <div className="text-lg font-bold font-mono text-teal-700 dark:text-teal-300 mt-1">
+                  {loading ? <div className="h-6 w-24 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" /> : formatINR(todayBalance)}
+                </div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Prev Bal + Order + COM - Paid
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* All-Time Historical Summary KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Total Order (Auto) */}
             <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
               <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
                 <span className="flex items-center gap-1.5">
-                  <span>TOTAL ORDER</span>
+                  <span>ALL-TIME ORDERS</span>
                   <span className="px-1.5 py-0.2 rounded text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono">
                     Auto
                   </span>
@@ -808,7 +960,7 @@ export default function BankDistripPage() {
               )}
               <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
                 <Lock className="w-3 h-3 text-slate-400" />
-                <span>Derived from splits & allocations</span>
+                <span>Total across all history</span>
               </div>
             </div>
 
@@ -816,7 +968,7 @@ export default function BankDistripPage() {
             <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
               <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
                 <span className="flex items-center gap-1.5">
-                  <span>TOTAL COM</span>
+                  <span>ALL-TIME COM</span>
                   <span className="px-1.5 py-0.2 rounded text-[10px] bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 font-mono">
                     Manual
                   </span>
@@ -831,7 +983,7 @@ export default function BankDistripPage() {
                 </div>
               )}
               <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                Total commission entered for {activeAccount?.account_code || "party"}
+                Total commission entered
               </div>
             </div>
 
@@ -839,7 +991,7 @@ export default function BankDistripPage() {
             <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
               <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
                 <span className="flex items-center gap-1.5">
-                  <span>TOTAL PAID</span>
+                  <span>ALL-TIME PAID</span>
                   <span className="px-1.5 py-0.2 rounded text-[10px] bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 font-mono">
                     Manual
                   </span>
@@ -854,14 +1006,14 @@ export default function BankDistripPage() {
                 </div>
               )}
               <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                Net paid amounts (supports negatives)
+                Net paid amounts across all history
               </div>
             </div>
 
             {/* Closing Balance */}
             <div className="bg-gradient-to-br from-teal-900 to-slate-900 text-white p-4 rounded-xl border border-teal-800 shadow-md">
               <div className="flex items-center justify-between text-xs text-teal-200 font-medium">
-                <span className="tracking-wide">CLOSING BALANCE</span>
+                <span className="tracking-wide">FINAL CLOSING BAL</span>
                 <Landmark className="w-4 h-4 text-teal-300" />
               </div>
               {loading ? (
@@ -873,7 +1025,7 @@ export default function BankDistripPage() {
               )}
               <div className="text-[11px] text-teal-200/90 mt-1 flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3 text-teal-400" />
-                <span>Latest chronological settlement balance</span>
+                <span>Current authoritative ledger balance</span>
               </div>
             </div>
           </div>
@@ -956,7 +1108,7 @@ export default function BankDistripPage() {
 
                 <button
                   type="button"
-                  onClick={fetchBankData}
+                  onClick={() => fetchBankData()}
                   disabled={loading}
                   className="p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                   title="Refresh Data"
@@ -1053,21 +1205,33 @@ export default function BankDistripPage() {
                     filteredRecords.map((r, idx) => {
                       const isPaidNeg = r.paid_inr < 0;
                       const isBalNeg = r.balance_inr < 0;
+                      const isTodayRow = r.record_date === todayStr;
                       return (
                         <tr
                           key={r.id || idx}
-                          className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors group"
+                          className={`transition-colors group ${
+                            isTodayRow
+                              ? "bg-teal-50/50 dark:bg-teal-950/30 border-l-4 border-l-[#0F766E]"
+                              : "hover:bg-slate-50/70 dark:hover:bg-slate-800/50"
+                          }`}
                         >
                           {/* Date */}
                           <td className="py-2.5 px-3 font-mono font-medium text-slate-900 dark:text-slate-100 whitespace-nowrap">
-                            {formatDateReadable(r.record_date)}
+                            <div className="flex items-center gap-2">
+                              <span>{formatDateReadable(r.record_date)}</span>
+                              {isTodayRow && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#0F766E] text-white shadow-2xs">
+                                  TODAY
+                                </span>
+                              )}
+                            </div>
                           </td>
 
                           {/* ORDER (INR) - Read-only badge */}
                           <td className="py-2.5 px-3 text-right font-mono text-slate-800 dark:text-slate-200 whitespace-nowrap">
                             <div className="flex items-center justify-end gap-1.5">
                               {r.order_inr > 0 ? (
-                                <span className="font-semibold">{formatINR(r.order_inr)}</span>
+                                <span className="font-semibold text-teal-950 dark:text-teal-100">{formatINR(r.order_inr)}</span>
                               ) : (
                                 <span className="text-slate-400">₹ 0.00</span>
                               )}
@@ -1124,14 +1288,26 @@ export default function BankDistripPage() {
                           {/* Actions */}
                           <td className="py-2.5 px-3 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => openEditModal(r)}
-                                className="p-1 text-slate-500 hover:text-teal-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
-                                title="Edit Commission or Paid"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
+                              {isTodayRow && r.commission_inr === 0 && r.paid_inr === 0 ? (
+                                <button
+                                  type="button"
+                                  onClick={() => openEditModal(r)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold text-white bg-[#0F766E] hover:bg-[#0D9488] shadow-xs cursor-pointer transition-colors"
+                                  title="Enter Commission or Payment for Today"
+                                >
+                                  <Edit3 className="w-3 h-3" />
+                                  <span>+ Enter COM / PAID</span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => openEditModal(r)}
+                                  className="p-1 text-slate-500 hover:text-teal-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
+                                  title="Edit Commission or Paid"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 onClick={() => setDeleteTarget(r)}
@@ -1494,6 +1670,23 @@ export default function BankDistripPage() {
                   onChange={(e) => setEditNotes(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
                 />
+              </div>
+
+              {/* LIVE BALANCE PREVIEW */}
+              <div className="p-3 bg-teal-50/70 dark:bg-teal-950/40 rounded-xl border border-teal-200 dark:border-teal-800 space-y-1.5 text-[11px]">
+                <div className="font-bold text-teal-900 dark:text-teal-200 flex items-center justify-between">
+                  <span>Excel Balance Formula:</span>
+                  <span className="font-mono text-xs font-bold text-teal-800 dark:text-teal-300">{formatINR(editCalculatedBalance)}</span>
+                </div>
+                <div className="text-slate-600 dark:text-slate-400 font-mono space-y-0.5">
+                  <div>Prev Bal: {formatINR(editPrevBal)}</div>
+                  <div>+ Order: {formatINR(editOrder)}</div>
+                  <div>+ Commission: {formatINR(editComNum)}</div>
+                  <div>- Paid: {formatINR(editPaidNum)}</div>
+                  <div className="border-t border-teal-200 dark:border-teal-800 pt-0.5 font-bold text-teal-800 dark:text-teal-300">
+                    = (Prev Bal + Order + COM - Paid) = {formatINR(editCalculatedBalance)}
+                  </div>
+                </div>
               </div>
 
               <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-300 text-[11px] flex items-start gap-2">
