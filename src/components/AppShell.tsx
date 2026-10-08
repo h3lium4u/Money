@@ -3,6 +3,7 @@
 import React, { useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import Navbar from "@/components/Navbar";
+import ScheduledWipeBanner from "@/components/ScheduledWipeBanner";
 import { useTheme } from "@/context/ThemeContext";
 import { Toaster } from "sonner";
 
@@ -36,6 +37,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Navbar />
+        <ScheduledWipeBanner />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 lg:p-10">
           <Toaster position="top-right" richColors closeButton duration={3000} toastOptions={{ className: 'font-sans' }} />
           {children}

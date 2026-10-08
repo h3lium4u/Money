@@ -20,7 +20,7 @@ export default function Navbar() {
   else if (pathname.startsWith("/customers")) title = "Customers & Balances";
   else if (pathname.startsWith("/party-transfers") || pathname.startsWith("/parties/transfers")) title = "Party Transfers";
   else if (pathname.startsWith("/parties")) title = "Registered Parties & Ledger";
-  else if (pathname.startsWith("/distributors")) title = "India & AED Distributions";
+  else if (pathname.startsWith("/distributors")) title = "India Distribution & Splits";
   else if (pathname.startsWith("/bank-distrip") || pathname.startsWith("/bank-distribution-settlement")) title = "Bank Distribution Settlement";
   else if (pathname.startsWith("/receivables")) title = "Receivables & Cash on Hand";
   else if (pathname.startsWith("/reports")) title = "Financial Reports & Exports";

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { recordCustomerPayment, deleteCustomerPayment } from "@/lib/repository";
+import { recordCustomerPayment, deleteCustomerPayment, listCustomerPayments } from "@/lib/repository";
 import { z } from "zod";
 
 const schema = z.object({
@@ -10,6 +10,19 @@ const schema = z.object({
   transaction_id: z.string().optional(),
   notes: z.string().optional(),
 });
+
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const payments = await listCustomerPayments({ customerId: id });
+    return NextResponse.json(payments);
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || "Failed to fetch payments" }, { status: 500 });
+  }
+}
 
 export async function POST(
   request: Request,

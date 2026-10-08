@@ -52,7 +52,6 @@ const navigationGroups: NavGroup[] = [
   {
     label: "PEOPLE & PARTNERS",
     items: [
-      { name: "Retail Customers", href: "/customers", icon: Users },
       { name: "Parties & Ledger", href: "/parties", icon: Handshake },
       { name: "India Distribution", href: "/distributors", icon: Split },
     ],

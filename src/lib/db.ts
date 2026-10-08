@@ -1,5 +1,11 @@
 import { Pool, neon, neonConfig, types } from "@neondatabase/serverless";
 import ws from "ws";
+import dns from "node:dns";
+
+// Prevent Node.js IPv6 connect timeouts on Neon AWS endpoints
+try {
+  dns.setDefaultResultOrder?.("ipv4first");
+} catch {}
 
 // Neon requires ws in Node.js environments if using WebSockets/Pool
 neonConfig.webSocketConstructor = ws;
@@ -22,7 +28,13 @@ export function isNeonEnabled(): boolean {
 export function getNeonHttp() {
   if (!isNeonEnabled()) return null;
   if (!httpSql) {
-    httpSql = neon(process.env.DATABASE_URL!.trim());
+    const rawUrl = process.env.DATABASE_URL!.trim().replace(/^["']|["']$/g, "");
+    // Normalize: Remove pooler hostname and channel_binding to ensure rapid HTTPS connection
+    const cleanUrl = rawUrl
+      .replace("-pooler.", ".")
+      .replace(/[?&]channel_binding=[^&]+/g, "")
+      .replace(/\?$/, "");
+    httpSql = neon(cleanUrl);
   }
   return httpSql;
 }

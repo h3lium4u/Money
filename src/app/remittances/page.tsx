@@ -89,6 +89,7 @@ function CustomerRemittancesContent() {
   const [indiaParties, setIndiaParties] = useState<any[]>([]);
   const [editSplits, setEditSplits] = useState<Array<{ id: string; distributor_id: string; inr_amount: string; notes?: string }>>([]);
   const [loadingEditSplits, setLoadingEditSplits] = useState(false);
+  const [priorTransfersMap, setPriorTransfersMap] = useState<Record<string, any>>({});
 
   // Quick payment modal state
   const [payingTxn, setPayingTxn] = useState<any | null>(null);
@@ -163,14 +164,19 @@ function CustomerRemittancesContent() {
 
   async function fetchMetadata() {
     try {
-      const [cRes, dRes] = await Promise.all([
+      const [cRes, dRes, pRes] = await Promise.all([
         fetch("/api/customers"),
         fetch("/api/distributors?group=IND"),
+        fetch("/api/parties/prior-transfers"),
       ]);
       const cData = await cRes.json();
       const dData = await dRes.json();
+      const pData = await pRes.json().catch(() => ({}));
       setCustomers(Array.isArray(cData) ? cData : []);
       setIndiaParties(Array.isArray(dData) ? dData : []);
+      if (pData && pData.summaries) {
+        setPriorTransfersMap(pData.summaries);
+      }
     } catch (err) {
       console.error(err);
       setCustomers([]);
@@ -361,12 +367,48 @@ function CustomerRemittancesContent() {
           paid_amount: parseFloat(editPaidAmount || "0"),
           notes: editNotes || undefined,
           reason: editReason || undefined,
-          splits: editSplits.map((s) => ({
-            id: s.id.startsWith("new-") ? undefined : s.id,
-            distributor_id: s.distributor_id,
-            inr_amount: parseFloat(s.inr_amount),
-            notes: s.notes || undefined,
-          })),
+          splits: (() => {
+            const remainingPriorTracker: Record<string, number> = {};
+            return editSplits.map((s) => {
+              const splitAmt = parseFloat(s.inr_amount);
+              const pInfo = priorTransfersMap[s.distributor_id];
+
+              if (!pInfo || !pInfo.hasPriorTransfers) {
+                return {
+                  id: s.id.startsWith("new-") ? undefined : s.id,
+                  distributor_id: s.distributor_id,
+                  inr_amount: splitAmt,
+                  paid_amount_inr: 0,
+                  balance_inr: splitAmt,
+                  notes: s.notes || undefined,
+                };
+              }
+
+              const partyKey = pInfo.partyCode || s.distributor_id;
+              const currentPriorAvail = remainingPriorTracker[partyKey] !== undefined
+                ? remainingPriorTracker[partyKey]
+                : pInfo.availablePriorBalanceInr;
+
+              const paidInr = Math.min(splitAmt, currentPriorAvail);
+              const balanceInr = Math.max(0, splitAmt - paidInr);
+              remainingPriorTracker[partyKey] = Math.max(0, currentPriorAvail - paidInr);
+
+              let noteText = s.notes || "";
+              if (paidInr > 0) {
+                const offsetNote = `[Offset ₹${paidInr.toLocaleString("en-IN")} from prior transfer; Remaining to pay: ₹${balanceInr.toLocaleString("en-IN")}]`;
+                noteText = noteText ? `${noteText} • ${offsetNote}` : offsetNote;
+              }
+
+              return {
+                id: s.id.startsWith("new-") ? undefined : s.id,
+                distributor_id: s.distributor_id,
+                inr_amount: splitAmt,
+                paid_amount_inr: paidInr,
+                balance_inr: balanceInr,
+                notes: noteText || undefined,
+              };
+            });
+          })(),
         }),
       });
 
@@ -482,11 +524,11 @@ function CustomerRemittancesContent() {
               <span>+ New Customer Remittance</span>
             </Link>
             <Link
-              href="/customers"
+              href="/receivables"
               className="inline-flex items-center gap-2 px-3 py-2 bg-white text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg hover:bg-slate-50 shadow-2xs transition-colors"
             >
               <Users className="w-4 h-4 text-teal-700" />
-              <span>Customers Directory</span>
+              <span>Receivables & Dues</span>
             </Link>
           </div>
         </div>
@@ -1020,6 +1062,49 @@ function CustomerRemittancesContent() {
                               />
                             </div>
                           </div>
+
+                          {/* Prior Transfer Offset for this party if available */}
+                          {(() => {
+                            const partyInfo = priorTransfersMap[s.distributor_id];
+                            if (!partyInfo || !partyInfo.hasPriorTransfers || partyInfo.availablePriorBalanceInr <= 0) {
+                              return null;
+                            }
+
+                            const splitInr = parseFloat(s.inr_amount) || 0;
+                            const priorAvailable = partyInfo.availablePriorBalanceInr;
+                            const isSplitEntered = splitInr > 0;
+                            const remainingToGive = Math.max(0, splitInr - priorAvailable);
+                            const remainingPriorBalance = Math.max(0, priorAvailable - splitInr);
+                            const isExactMatch = isSplitEntered && Math.abs(splitInr - priorAvailable) < 0.01;
+
+                            return (
+                              <div className="p-2 rounded bg-amber-50/80 border border-amber-200 text-[11px] space-y-1">
+                                <div className="flex justify-between items-center text-amber-900 font-bold">
+                                  <span>Prior Advance Available: ₹{priorAvailable.toLocaleString("en-IN")}</span>
+                                  <span className="text-[10px] text-slate-500 font-mono">
+                                    {partyInfo.partyName}
+                                  </span>
+                                </div>
+                                {isSplitEntered && (
+                                  <div className="pt-1 border-t border-amber-200/60 flex justify-between items-center">
+                                    {remainingToGive > 0 ? (
+                                      <span className="font-bold text-amber-950">
+                                        👉 Remaining to pay: ₹{remainingToGive.toLocaleString("en-IN")}
+                                      </span>
+                                    ) : isExactMatch ? (
+                                      <span className="font-bold text-emerald-800">
+                                        ✓ Settled against advance (₹0 to pay)
+                                      </span>
+                                    ) : (
+                                      <span className="font-semibold text-emerald-800">
+                                        ✓ 100% covered • Party retains ₹{remainingPriorBalance.toLocaleString("en-IN")} advance
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       ))}
                     </div>

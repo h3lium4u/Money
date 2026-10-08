@@ -111,6 +111,7 @@ export default function NewRemittancePage() {
   // Options
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [distributors, setDistributors] = useState<DistributorOption[]>([]);
+  const [priorTransfersMap, setPriorTransfersMap] = useState<Record<string, any>>({});
 
   // Calculation state
   const [preview, setPreview] = useState<CalculationPreview | null>(null);
@@ -128,21 +129,26 @@ export default function NewRemittancePage() {
   const [savingNewCust, setSavingNewCust] = useState(false);
   const [newCustError, setNewCustError] = useState<string | null>(null);
 
-  // Load customers and distributors
+  // Load customers, distributors, and prior party transfers
   useEffect(() => {
     loadOptions();
   }, []);
 
   async function loadOptions() {
     try {
-      const [cRes, dRes] = await Promise.all([
+      const [cRes, dRes, pRes] = await Promise.all([
         fetch("/api/customers"),
         fetch("/api/distributors"),
+        fetch("/api/parties/prior-transfers"),
       ]);
       const cJson = await cRes.json();
       const dJson = await dRes.json();
+      const pJson = await pRes.json().catch(() => ({}));
       const validCustomers = Array.isArray(cJson) ? cJson : [];
       const validDists = Array.isArray(dJson) ? dJson : [];
+      if (pJson && pJson.summaries) {
+        setPriorTransfersMap(pJson.summaries);
+      }
       setCustomers(validCustomers);
       const filteredDists = validDists.filter((d: any) =>
         d.group_type === "IND" || ["INDIA_DISTRIBUTOR", "HYBRID", "BANK_ACCOUNT"].includes(d.partner_type)
@@ -436,13 +442,48 @@ export default function NewRemittancePage() {
     setSaving(true);
     setError(null);
     try {
+      // Track consumed prior balances across split lines
+      const remainingPriorTracker: Record<string, number> = {};
+
       const payloadSplits = splits
         .filter((s) => parseFloat(s.inr_amount) > 0)
-        .map((s) => ({
-          distributor_id: s.distributor_id,
-          inr_amount: parseFloat(s.inr_amount),
-          notes: s.notes || undefined,
-        }));
+        .map((s) => {
+          const splitAmt = parseFloat(s.inr_amount);
+          const pInfo = priorTransfersMap[s.distributor_id];
+
+          if (!pInfo || !pInfo.hasPriorTransfers) {
+            return {
+              distributor_id: s.distributor_id,
+              inr_amount: splitAmt,
+              paid_amount_inr: 0,
+              balance_inr: splitAmt,
+              notes: s.notes || undefined,
+            };
+          }
+
+          const partyKey = pInfo.partyCode || s.distributor_id;
+          const currentPriorAvail = remainingPriorTracker[partyKey] !== undefined
+            ? remainingPriorTracker[partyKey]
+            : pInfo.availablePriorBalanceInr;
+
+          const paidInr = Math.min(splitAmt, currentPriorAvail);
+          const balanceInr = Math.max(0, splitAmt - paidInr);
+          remainingPriorTracker[partyKey] = Math.max(0, currentPriorAvail - paidInr);
+
+          let noteText = s.notes || "";
+          if (paidInr > 0) {
+            const offsetNote = `[Offset ₹${paidInr.toLocaleString("en-IN")} from prior transfer; Remaining to pay: ₹${balanceInr.toLocaleString("en-IN")}]`;
+            noteText = noteText ? `${noteText} • ${offsetNote}` : offsetNote;
+          }
+
+          return {
+            distributor_id: s.distributor_id,
+            inr_amount: splitAmt,
+            paid_amount_inr: paidInr,
+            balance_inr: balanceInr,
+            notes: noteText || undefined,
+          };
+        });
 
       // Breakdown of only entered amounts (empty fields omitted)
       const breakdownText =
@@ -940,6 +981,83 @@ export default function NewRemittancePage() {
                     />
                   </div>
                 </div>
+
+                {/* Clean Prior Transfer Offset Display — Only appears if party has prior advance */}
+                {(() => {
+                  const partyInfo = priorTransfersMap[s.distributor_id];
+                  if (!partyInfo || !partyInfo.hasPriorTransfers || partyInfo.availablePriorBalanceInr <= 0) {
+                    return null;
+                  }
+
+                  const splitInr = parseFloat(s.inr_amount) || 0;
+                  const priorAvailable = partyInfo.availablePriorBalanceInr;
+                  const isSplitEntered = splitInr > 0;
+                  const remainingToGive = Math.max(0, splitInr - priorAvailable);
+                  const remainingPriorBalance = Math.max(0, priorAvailable - splitInr);
+                  const isExactMatch = isSplitEntered && Math.abs(splitInr - priorAvailable) < 0.01;
+
+                  return (
+                    <div className="mt-2.5 p-3 rounded-lg border bg-gradient-to-r from-amber-50/90 to-teal-50/60 border-amber-300/80 text-xs space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-amber-200 pb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                          <span className="font-bold text-amber-900">
+                            Prior Transfer Available: ₹{priorAvailable.toLocaleString("en-IN")}
+                          </span>
+                          <span className="text-[10px] font-bold bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded">
+                            Pre-paid to {partyInfo.partyName}
+                          </span>
+                        </div>
+
+                        {partyInfo.transfers && partyInfo.transfers.length > 0 && (
+                          <div className="text-[10px] text-slate-600 font-mono flex items-center gap-1">
+                            <span>When: {partyInfo.transfers[partyInfo.transfers.length - 1].transaction_date}</span>
+                            <span>•</span>
+                            <span>Ref: {partyInfo.transfers[partyInfo.transfers.length - 1].transaction_number}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {isSplitEntered ? (
+                        <div className="space-y-1.5">
+                          <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-700">
+                            <span>New Order Split: <strong>₹{splitInr.toLocaleString("en-IN")}</strong></span>
+                            <span>Prior Advance Deducted: <strong>-₹{Math.min(splitInr, priorAvailable).toLocaleString("en-IN")}</strong></span>
+                          </div>
+
+                          {remainingToGive > 0 ? (
+                            <div className="p-2 bg-amber-100/90 rounded border border-amber-300 flex items-center justify-between">
+                              <span className="font-bold text-amber-900">
+                                👉 Remaining to pay {partyInfo.partyName}:
+                              </span>
+                              <span className="text-sm font-mono font-black text-amber-950">
+                                ₹{remainingToGive.toLocaleString("en-IN")}
+                              </span>
+                            </div>
+                          ) : isExactMatch ? (
+                            <div className="p-2 bg-emerald-100/90 rounded border border-emerald-300 flex items-center justify-between text-emerald-900">
+                              <span className="font-bold">✓ Exactly settled against prior transfer:</span>
+                              <span className="font-mono font-black">₹0 to pay</span>
+                            </div>
+                          ) : (
+                            <div className="p-2 bg-emerald-50 rounded border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-emerald-900">
+                              <span className="font-bold">
+                                ✓ 100% covered by prior transfer (₹0 to pay now)
+                              </span>
+                              <span className="text-[11px] font-semibold text-emerald-800">
+                                Party retains ₹{remainingPriorBalance.toLocaleString("en-IN")} excess advance for future orders
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-slate-500 italic">
+                          Enter split INR amount above to calculate the net remaining payment or party due.
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             ))}
           </div>
@@ -1346,12 +1464,30 @@ export default function NewRemittancePage() {
                 </div>
                 {splits.map((s, idx) => {
                   const d = distributors.find((dist) => dist.id === s.distributor_id);
+                  const pInfo = priorTransfersMap[s.distributor_id];
+                  const splitAmt = parseFloat(s.inr_amount || "0");
+                  const hasPrior = pInfo && pInfo.hasPriorTransfers && pInfo.availablePriorBalanceInr > 0;
+                  const priorAvail = hasPrior ? pInfo.availablePriorBalanceInr : 0;
+                  const remainingToPay = Math.max(0, splitAmt - priorAvail);
+
                   return (
-                    <div key={idx} className="flex justify-between text-slate-700">
-                      <span>{d?.name || "Distributor"} {d?.code ? `(${d?.code})` : ""}</span>
-                      <span className="font-mono font-bold text-slate-900">
-                        ₹ {parseFloat(s.inr_amount || "0").toLocaleString("en-IN")}
-                      </span>
+                    <div key={idx} className="p-2 rounded bg-white border border-slate-200/80 space-y-1">
+                      <div className="flex justify-between items-center text-slate-800 font-medium">
+                        <span>{d?.name || "Distributor"} {d?.code ? `(${d?.code})` : ""}</span>
+                        <span className="font-mono font-bold text-slate-900">
+                          ₹ {splitAmt.toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                      {hasPrior && (
+                        <div className="flex flex-wrap items-center justify-between text-[10px] pt-1 border-t border-slate-100 text-slate-600">
+                          <span className="text-amber-800 font-semibold">
+                            Offset from Prior Advance: -₹{Math.min(splitAmt, priorAvail).toLocaleString("en-IN")}
+                          </span>
+                          <span className={remainingToPay > 0 ? "font-bold text-amber-900" : "font-bold text-emerald-700"}>
+                            {remainingToPay > 0 ? `Net To Pay: ₹${remainingToPay.toLocaleString("en-IN")}` : "✓ Fully Covered by Advance"}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

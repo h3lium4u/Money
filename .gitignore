@@ -41,3 +41,6 @@ data/test_export.xlsx
 # netlify
 .netlify
 
+# runtime state files
+data/scheduled_wipe_state.json
+

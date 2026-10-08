@@ -5,28 +5,19 @@ import Link from "next/link";
 import { numberToIndianWords } from "@/lib/number-to-words";
 import { getTodayDateString } from "@/lib/date-utils";
 import {
-  Building2,
-  Coins,
-  ShieldAlert,
-  ArrowRight,
-  TrendingUp,
-  Banknote,
   Split,
   PlusCircle,
   CheckCircle2,
   AlertTriangle,
-  Layers,
-  HelpCircle,
   Edit3,
   Trash2,
   User,
-  ChevronRight,
   ChevronDown,
   Filter,
+  Landmark,
 } from "lucide-react";
 
 export default function IndiaDistributionPage() {
-  const [activeTab, setActiveTab] = useState<"splits" | "partners" | "aed">("splits");
   const [distributors, setDistributors] = useState<any[]>([]);
   const [splits, setSplits] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -273,13 +264,12 @@ export default function IndiaDistributionPage() {
   const formatAED = (val?: number) =>
     `${(val || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED`;
 
-  // Filter parties by group_type (new structured groups)
-  // IND group = India-side parties for distribution splits
+  // IND group = India-side distributors for distribution splits (MK, SALA)
   const confirmedIndiaParties = distributors.filter((d) => d.group_type === "IND");
-  // AED group = AED-side parties  
-  const aedParties = distributors.filter((d) => d.group_type === "AED" && d.partner_type !== "BANK_ACCOUNT");
-  // SARABU exists in both — clearly visible in each group
-  const unconfirmedParties: any[] = []; // No more UNCONFIRMED — all parties have been confirmed with group_type
+
+  const totalOrdersInr = transactions.reduce((sum, t) => sum + (Number(t.inr_amount) || 0), 0);
+  const totalAllocatedInr = splits.reduce((sum, s) => sum + (Number(s.inr_amount) || 0), 0);
+  const totalPendingInr = transactions.reduce((sum, t) => sum + (Number(t.remaining_inr) || 0), 0);
 
 
   // Selected Txn in page / modal
@@ -480,28 +470,29 @@ export default function IndiaDistributionPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <span>Distribution Partners & Splits</span>
-            <span className="text-xs bg-teal-100 text-teal-800 px-2 py-0.5 rounded font-mono font-bold">
-              Separate from Dubai Accounting
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+            <span>India Distribution & Order Splits</span>
+            <span className="text-xs bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 px-2 py-0.5 rounded font-mono font-bold border border-teal-200 dark:border-teal-800">
+              India Allocation
             </span>
           </h2>
-          <p className="text-xs text-slate-500">
-            How received Dubai customer orders are allocated, split, and distributed across partner parties.
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Allocate customer remittance orders to India distributors (MK · SALA). Date-wise settlement & payouts are tracked in Bank Distribution.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <Link
-            href="/parties"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold rounded-lg hover:bg-teal-100 shadow-2xs transition-colors"
+            href="/bank-distrip"
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 shadow-2xs transition-colors"
           >
-            <span>INR Parties Period Split Matrix ➔</span>
+            <Landmark className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+            <span>Bank Distribution (IND) ➔</span>
           </Link>
 
           <button
             onClick={handleOpenTopAddModal}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-teal-700 text-white text-xs font-bold rounded-lg hover:bg-teal-800 shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-teal-700 text-white text-xs font-bold rounded-lg hover:bg-teal-800 shadow-sm transition-colors cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             <span>
@@ -513,55 +504,93 @@ export default function IndiaDistributionPage() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200">
-        <button
-          onClick={() => setActiveTab("splits")}
-          className={`pb-3 px-3 text-xs font-bold transition-all border-b-2 ${
-            activeTab === "splits"
-              ? "border-teal-700 text-teal-700"
-              : "border-transparent text-slate-500 hover:text-slate-900"
-          }`}
-        >
-          1. Distribution Splits by Order ({splits.length})
-        </button>
-        <button
-          onClick={() => setActiveTab("partners")}
-          className={`pb-3 px-3 text-xs font-bold transition-all border-b-2 ${
-            activeTab === "partners"
-              ? "border-teal-700 text-teal-700"
-              : "border-transparent text-slate-500 hover:text-slate-900"
-          }`}
-        >
-          2. IND Parties ({confirmedIndiaParties.length})
-        </button>
-        <button
-          onClick={() => setActiveTab("aed")}
-          className={`pb-3 px-3 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 ${
-            activeTab === "aed"
-              ? "border-blue-600 text-blue-600"
-              : "border-transparent text-slate-500 hover:text-slate-900"
-          }`}
-        >
-          <span>3. AED Parties</span>
-          <span className="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-bold">
-            {aedParties.length}
-          </span>
-        </button>
+      {/* ─── India Distributors & Allocation Overview ─── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+        {/* Overall Pool Card */}
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+              <Split className="w-3.5 h-3.5 text-teal-600" />
+              <span>Customer Orders Pool</span>
+            </span>
+            <span className="text-[10px] font-mono text-slate-400">
+              {transactions.length} order{transactions.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+          <div className="text-lg font-black text-slate-900 dark:text-slate-100">
+            {formatINR(totalOrdersInr)}
+          </div>
+          <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-100 dark:border-slate-800 text-slate-500">
+            <span>
+              Allocated: <strong className="text-emerald-700 dark:text-emerald-400">{formatINR(totalAllocatedInr)}</strong>
+            </span>
+            <span>
+              Pending:{" "}
+              <strong className={totalPendingInr > 0 ? "text-amber-700 dark:text-amber-400 font-extrabold" : "text-slate-500 font-medium"}>
+                {formatINR(totalPendingInr)}
+              </strong>
+            </span>
+          </div>
+        </div>
+
+        {/* Distributor Cards (MK & SALA) */}
+        {confirmedIndiaParties.map((p) => {
+          const isFiltered = filterDistributor === p.id;
+          const distributorSplits = splits.filter((s) => s.distributor_id === p.id);
+          const totalAllocated = distributorSplits.reduce((sum, s) => sum + (Number(s.inr_amount) || 0), 0);
+
+          return (
+            <div
+              key={p.id}
+              className={`p-4 rounded-xl border transition-all ${
+                isFiltered
+                  ? "bg-teal-50/80 dark:bg-teal-950/40 border-teal-500 ring-2 ring-teal-500/20 shadow-sm"
+                  : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-2xs hover:border-slate-300"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-black text-slate-900 dark:text-slate-100">{p.name}</span>
+                  <span className="text-[10px] font-extrabold bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 border border-teal-300 dark:border-teal-800 px-1.5 py-0.2 rounded font-mono">
+                    IND
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono">({p.code})</span>
+                </div>
+                <Link
+                  href="/bank-distrip"
+                  title={`View ${p.name}'s daily bank running balance & payouts in Bank Distribution`}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 dark:text-teal-400 hover:underline"
+                >
+                  <Landmark className="w-3 h-3" />
+                  <span>Bank Ledger ↗</span>
+                </Link>
+              </div>
+
+              <div className="mt-2 flex items-baseline justify-between">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Allocated</span>
+                  <span className="text-base font-extrabold text-slate-900 dark:text-slate-100">
+                    {formatINR(totalAllocated)}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFilterDistributor(isFiltered ? "all" : p.id)}
+                  className={`text-[10px] font-bold px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                    isFiltered
+                      ? "bg-teal-700 text-white shadow-2xs"
+                      : "bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 text-slate-700 dark:text-slate-300 hover:text-teal-800 border border-slate-200 dark:border-slate-700"
+                  }`}
+                >
+                  {isFiltered ? "✓ Filter Active" : `Filter (${distributorSplits.length} splits)`}
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* TAB 1: DISTRIBUTION SPLITS BY ORDER */}
-      {activeTab === "splits" && (
-        <div className="space-y-4">
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 flex items-start gap-3">
-            <Split className="w-5 h-5 text-teal-700 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-bold text-slate-900">One Customer Transaction ➔ Multiple India Distributions</p>
-              <p className="text-slate-500 mt-0.5">
-                Each Dubai customer order can be split among multiple India parties (e.g. MK, SALA). The system ensures total distribution cannot exceed the customer’s INR order amount.
-              </p>
-            </div>
-          </div>
+      <div className="space-y-4">
 
           {/* Customer Orders & Allocation Selector */}
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
@@ -1237,136 +1266,6 @@ export default function IndiaDistributionPage() {
             )}
           </div>
         </div>
-      )}
-
-      {/* TAB 2: IND DISTRIBUTION PARTIES */}
-      {activeTab === "partners" && (
-        <div className="space-y-4">
-          <div className="p-3.5 bg-teal-50 border border-teal-200 rounded-xl flex items-start gap-3 text-xs text-teal-900">
-            <Layers className="w-5 h-5 text-teal-700 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-extrabold text-teal-950">IND Distribution Group — India-side Parties</p>
-              <p className="text-teal-800 mt-0.5 leading-relaxed">
-                These are the India-side distributors (<strong>MK · SALA</strong>). Dubai customer INR orders are split and allocated to these parties.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {confirmedIndiaParties.map((p) => (
-              <div key={p.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-base font-bold text-slate-900">{p.name}</h4>
-                      <span className="text-[10px] font-extrabold bg-teal-100 text-teal-800 border border-teal-300 px-2 py-0.5 rounded">
-                        IND
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-400 font-mono">{p.code}</p>
-                  </div>
-                  <Building2 className="w-5 h-5 text-slate-400" />
-                </div>
-
-                <div className="pt-3 border-t border-slate-100 space-y-2 text-xs">
-                  <div className="flex justify-between text-slate-500">
-                    <span>Total Distributed:</span>
-                    <span className="font-bold text-slate-900">{formatINR(p.total_splits_inr)}</span>
-                  </div>
-                  <div className="flex justify-between text-slate-500">
-                    <span>Total Paid/Disbursed:</span>
-                    <span className="font-bold text-emerald-600">{formatINR(p.total_splits_paid_inr)}</span>
-                  </div>
-                  <div className="flex justify-between text-slate-500 pt-1 border-t border-slate-100">
-                    <span>Pending Balance:</span>
-                    <span className={`font-bold ${(p.splits_balance_inr || 0) > 0 ? "text-amber-700" : "text-teal-700"}`}>
-                      {formatINR(p.splits_balance_inr)}
-                    </span>
-                  </div>
-                </div>
-
-                {p.client_confirmation_note && (
-                  <p className="text-[11px] text-slate-400 italic pt-1 border-t border-slate-100">
-                    {p.client_confirmation_note}
-                  </p>
-                )}
-              </div>
-            ))}
-
-            {confirmedIndiaParties.length === 0 && (
-              <div className="col-span-3 text-center text-slate-400 text-xs py-8">
-                No IND group parties found.
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 3: AED DISTRIBUTION PARTIES */}
-      {activeTab === "aed" && (
-        <div className="space-y-4">
-          <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3 text-xs text-blue-900">
-            <Coins className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-extrabold text-blue-950">AED Distribution Group — AED-side Parties</p>
-              <p className="text-blue-800 mt-0.5 leading-relaxed">
-                These are the AED-side distribution parties: <strong>HAJA · SARAB · NF2</strong>.
-                TOTAL is automatically calculated — it is never a manual entry.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {aedParties.map((p) => (
-              <div key={p.id} className="bg-white p-5 rounded-xl border border-blue-200 shadow-sm space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-base font-bold text-slate-900">{p.name}</h4>
-                      <span className="text-[10px] font-extrabold bg-blue-100 text-blue-800 border border-blue-300 px-2 py-0.5 rounded">
-                        AED
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-400 font-mono">{p.code}</p>
-                  </div>
-                  <Banknote className="w-5 h-5 text-blue-400" />
-                </div>
-
-                <div className="pt-3 border-t border-slate-100 text-xs text-slate-500">
-                  <p className="text-[11px] text-slate-400 italic">
-                    AED distribution records are tracked separately in the AED distribution workflow.
-                  </p>
-                </div>
-              </div>
-            ))}
-
-            {aedParties.length === 0 && (
-              <div className="col-span-3 text-center text-slate-400 text-xs py-8">
-                No AED group parties found.
-              </div>
-            )}
-          </div>
-
-          {/* TOTAL row — calculated */}
-          {aedParties.length > 0 && (
-            <div className="bg-slate-900 text-white rounded-xl p-4 flex items-center justify-between text-sm font-bold">
-              <span className="uppercase tracking-wider text-slate-300 text-xs">TOTAL (Calculated)</span>
-              <span className="text-lg font-extrabold text-teal-400">
-                Auto-Calculated · Not a manual entry
-              </span>
-            </div>
-          )}
-
-          {/* COMMISON notice */}
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2">
-            <HelpCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <strong>COMMISON</strong> — <span className="italic">REQUIRES CLIENT CONFIRMATION.</span>{" "}
-              Its exact meaning (commission field vs. a separate party) has not been confirmed. Not implemented until clarified.
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ADD DISTRIBUTION SPLIT MODAL */}
       {showAddModal && selectedModalTxn && (

@@ -272,57 +272,331 @@ function mapBankDistripRecord(r: any): BankDistripRecord {
   };
 }
 
-// ---------------- CUSTOMERS & PARTIES ----------------
+// ---------------- GLOBAL CACHES (PERSISTENT ACROSS NEXT.JS HOT-RELOAD & ROUTE SEGMENTS) ----------------
+interface CacheStore {
+  customers: { timestamp: number; data: Record<string, Customer[]> } | null;
+  customerLedger: Map<string, { timestamp: number; data: any }>;
+  customerPayments: { timestamp: number; data: any[] } | null;
+  partyTransfers: { timestamp: number; data: { transfers: TransactionRecord[]; parties: Customer[] } } | null;
+  bankDistrip: { timestamp: number; data: Map<string, any> } | null;
+  dashboardKpi: { timestamp: number; key: string; data: any } | null;
+  partySplitSummary: { timestamp: number; key: string; data: any } | null;
+}
+
+const g = globalThis as any;
+if (!g.__PETTI_CACHE_STORE__) {
+  g.__PETTI_CACHE_STORE__ = {
+    customers: null,
+    customerLedger: new Map(),
+    customerPayments: null,
+    partyTransfers: null,
+    bankDistrip: null,
+    dashboardKpi: null,
+    partySplitSummary: null,
+  };
+}
+const cacheStore: CacheStore = g.__PETTI_CACHE_STORE__;
+
+type DataChangeCallback = () => void;
+const dataChangeCallbacks: Set<DataChangeCallback> = new Set();
+
+export function onDataChange(cb: DataChangeCallback): () => void {
+  dataChangeCallbacks.add(cb);
+  return () => dataChangeCallbacks.delete(cb);
+}
+
+export function notifyDataChange(): void {
+  dataChangeCallbacks.forEach((cb) => {
+    try {
+      cb();
+    } catch (err) {
+      console.error("[DataChange] Callback error:", err);
+    }
+  });
+
+  // Automatically trigger disk workbook synchronization
+  if (typeof window === "undefined") {
+    import("@/lib/reports/normalized-master-generator")
+      .then((m) => {
+        if (typeof m.triggerMasterWorkbookSync === "function") {
+          m.triggerMasterWorkbookSync();
+        }
+      })
+      .catch((err) => {
+        console.error("[DataChange] Error invoking triggerMasterWorkbookSync:", err);
+      });
+  }
+}
+
+export function invalidateAllCaches(): void {
+  cacheStore.customers = null;
+  cacheStore.customerLedger.clear();
+  cacheStore.customerPayments = null;
+  cacheStore.partyTransfers = null;
+  cacheStore.bankDistrip = null;
+  cacheStore.dashboardKpi = null;
+  cacheStore.partySplitSummary = null;
+  notifyDataChange();
+}
+
+export function invalidateCustomersCache(): void {
+  invalidateAllCaches();
+}
+
+export function invalidatePartyTransfersCache(): void {
+  invalidateAllCaches();
+}
+
+export function invalidateBankDistripCache(): void {
+  invalidateAllCaches();
+}
+
 export async function listCustomers(entityType: string = "CUSTOMER"): Promise<Customer[]> {
+  const now = Date.now();
+  if (cacheStore.customers && (now - cacheStore.customers.timestamp < 30000)) {
+    if (cacheStore.customers.data[entityType]) {
+      return cacheStore.customers.data[entityType];
+    }
+  }
+
   let whereClause = "";
   const params: any[] = [];
   if (entityType !== "ALL") {
     params.push(entityType);
     whereClause = `WHERE COALESCE(c.entity_type, 'CUSTOMER') = $1`;
   }
+
   const rows = await query(`
+    WITH txn_agg AS (
+      SELECT customer_id, 
+             SUM(inr_amount) AS total_inr, 
+             SUM(aed_amount) AS total_aed
+      FROM transactions 
+      WHERE status = 'CONFIRMED'
+      GROUP BY customer_id
+    ),
+    pay_agg AS (
+      SELECT customer_id, 
+             SUM(amount_aed) AS total_paid
+      FROM customer_payments
+      GROUP BY customer_id
+    )
     SELECT 
       c.*,
-      COALESCE((SELECT SUM(t.inr_amount) FROM transactions t WHERE t.customer_id = c.id AND t.status = 'CONFIRMED'), 0) as total_inr,
-      COALESCE((SELECT SUM(t.aed_amount) FROM transactions t WHERE t.customer_id = c.id AND t.status = 'CONFIRMED'), 0) as total_aed,
-      COALESCE((SELECT SUM(p.amount_aed) FROM customer_payments p WHERE p.customer_id = c.id), 0) as total_paid
+      COALESCE(ta.total_inr, 0) as total_inr,
+      COALESCE(ta.total_aed, 0) as total_aed,
+      COALESCE(pa.total_paid, 0) as total_paid
     FROM customers c
+    LEFT JOIN txn_agg ta ON ta.customer_id = c.id
+    LEFT JOIN pay_agg pa ON pa.customer_id = c.id
     ${whereClause}
     ORDER BY c.name ASC
   `, params);
 
-  return rows.map(mapCustomerRecord);
+  const result = rows.map(mapCustomerRecord);
+  if (!cacheStore.customers || (now - cacheStore.customers.timestamp >= 30000)) {
+    cacheStore.customers = { timestamp: now, data: {} };
+  }
+  cacheStore.customers.data[entityType] = result;
+  return result;
 }
 
 export async function listParties(partyType?: "DUBAI" | "INDIA" | "ALL"): Promise<Customer[]> {
+  const cacheKey = `PARTY_${partyType || "ALL"}`;
+  const now = Date.now();
+  if (cacheStore.customers && (now - cacheStore.customers.timestamp < 30000)) {
+    if (cacheStore.customers.data[cacheKey]) {
+      return cacheStore.customers.data[cacheKey];
+    }
+  }
+
   let whereClause = "WHERE COALESCE(c.entity_type, 'CUSTOMER') = 'PARTY'";
   const params: any[] = [];
   if (partyType && partyType !== "ALL") {
     params.push(partyType);
     whereClause += ` AND COALESCE(c.party_type, 'DUBAI') = $1`;
   }
+
   const rows = await query(`
+    WITH txn_agg AS (
+      SELECT customer_id, 
+             SUM(inr_amount) AS total_inr, 
+             SUM(aed_amount) AS total_aed
+      FROM transactions 
+      WHERE status = 'CONFIRMED'
+      GROUP BY customer_id
+    ),
+    pay_agg AS (
+      SELECT customer_id, 
+             SUM(amount_aed) AS total_paid
+      FROM customer_payments
+      GROUP BY customer_id
+    )
     SELECT 
       c.*,
-      COALESCE((SELECT SUM(t.inr_amount) FROM transactions t WHERE t.customer_id = c.id AND t.status = 'CONFIRMED'), 0) as total_inr,
-      COALESCE((SELECT SUM(t.aed_amount) FROM transactions t WHERE t.customer_id = c.id AND t.status = 'CONFIRMED'), 0) as total_aed,
-      COALESCE((SELECT SUM(p.amount_aed) FROM customer_payments p WHERE p.customer_id = c.id), 0) as total_paid
+      COALESCE(ta.total_inr, 0) as total_inr,
+      COALESCE(ta.total_aed, 0) as total_aed,
+      COALESCE(pa.total_paid, 0) as total_paid
     FROM customers c
+    LEFT JOIN txn_agg ta ON ta.customer_id = c.id
+    LEFT JOIN pay_agg pa ON pa.customer_id = c.id
     ${whereClause}
     ORDER BY c.name ASC
   `, params);
 
-  return rows.map(mapCustomerRecord);
+  const result = rows.map(mapCustomerRecord);
+  if (!cacheStore.customers || (now - cacheStore.customers.timestamp >= 30000)) {
+    cacheStore.customers = { timestamp: now, data: {} };
+  }
+  cacheStore.customers.data[cacheKey] = result;
+  return result;
+}
+
+export interface PartyPriorTransferItem {
+  id: string;
+  transaction_number: string;
+  transaction_date: string;
+  inr_amount: number;
+  notes?: string | null;
+}
+
+export interface PartyPriorTransferSummary {
+  partyId: string;
+  partyCode: string;
+  partyName: string;
+  distributorId?: string;
+  totalTransferredInr: number;
+  totalSplitsAssignedInr: number;
+  availablePriorBalanceInr: number;
+  hasPriorTransfers: boolean;
+  transfers: PartyPriorTransferItem[];
+}
+
+export async function getPartiesPriorTransfersSummary(): Promise<{
+  summaries: Record<string, PartyPriorTransferSummary>;
+  list: PartyPriorTransferSummary[];
+}> {
+  const [parties, distributors, partyTxns, splits] = await Promise.all([
+    listParties("ALL"),
+    listDistributors(),
+    query(`
+      SELECT t.id, t.transaction_number, t.transaction_date, t.inr_amount, t.customer_id, t.notes
+      FROM transactions t
+      JOIN customers c ON c.id = t.customer_id
+      WHERE COALESCE(c.entity_type, 'CUSTOMER') = 'PARTY' AND t.status = 'CONFIRMED'
+      ORDER BY t.transaction_date ASC, t.created_at ASC
+    `),
+    query(`
+      SELECT s.id, s.distributor_id, s.inr_amount, s.paid_amount_inr, s.balance_inr, s.transaction_id
+      FROM distribution_splits s
+      JOIN transactions t ON t.id = s.transaction_id
+      WHERE t.status = 'CONFIRMED'
+    `),
+  ]);
+
+  // Code to distributor mapping
+  const codeToDistMap = new Map<string, string>();
+  for (const d of distributors) {
+    if (d.code) codeToDistMap.set(d.code.toUpperCase(), d.id);
+  }
+
+  // Distributor ID to code
+  const distIdToCodeMap = new Map<string, string>();
+  for (const d of distributors) {
+    distIdToCodeMap.set(d.id, (d.code || d.name).toUpperCase());
+  }
+
+  // Party ID to code
+  const partyIdToCodeMap = new Map<string, string>();
+  for (const p of parties) {
+    partyIdToCodeMap.set(p.id, (p.code || p.name).toUpperCase());
+  }
+
+  const list: PartyPriorTransferSummary[] = [];
+  const summaries: Record<string, PartyPriorTransferSummary> = {};
+
+  for (const p of parties) {
+    const pCode = (p.code || p.name).toUpperCase();
+    const distId = codeToDistMap.get(pCode) || p.id;
+
+    // Filter party transfers sent to this party
+    const pTxns = partyTxns.filter((t: any) => {
+      const tCode = partyIdToCodeMap.get(t.customer_id);
+      return t.customer_id === p.id || t.customer_id === distId || (tCode && tCode === pCode);
+    });
+
+    const totalTransferred = pTxns.reduce((sum: number, t: any) => sum + Number(t.inr_amount || 0), 0);
+
+    // Filter splits assigned to this party
+    const pSplits = splits.filter((s: any) => {
+      const sCode = distIdToCodeMap.get(s.distributor_id) || partyIdToCodeMap.get(s.distributor_id);
+      return s.distributor_id === distId || s.distributor_id === p.id || (sCode && sCode === pCode);
+    });
+
+    const totalSplits = pSplits.reduce((sum: number, s: any) => sum + Number(s.inr_amount || 0), 0);
+
+    const availablePriorBalance = Math.max(0, roundTo(totalTransferred - totalSplits, 2));
+    const hasPriorTransfers = availablePriorBalance > 0;
+
+    const item: PartyPriorTransferSummary = {
+      partyId: p.id,
+      partyCode: p.code || p.name,
+      partyName: p.name,
+      distributorId: distId,
+      totalTransferredInr: roundTo(totalTransferred, 2),
+      totalSplitsAssignedInr: roundTo(totalSplits, 2),
+      availablePriorBalanceInr: availablePriorBalance,
+      hasPriorTransfers,
+      transfers: pTxns.map((t: any) => ({
+        id: t.id,
+        transaction_number: t.transaction_number,
+        transaction_date: t.transaction_date,
+        inr_amount: Number(t.inr_amount || 0),
+        notes: t.notes || null,
+      })),
+    };
+
+    list.push(item);
+
+    // Index by multiple keys for resilient lookup
+    summaries[p.id] = item;
+    if (distId) summaries[distId] = item;
+    summaries[pCode] = item;
+    summaries[p.name.toLowerCase()] = item;
+  }
+
+  return { summaries, list };
 }
 
 export async function getCustomer(id: string): Promise<Customer | null> {
+  const cachedLedger = cacheStore.customerLedger.get(id);
+  if (cachedLedger && (Date.now() - cachedLedger.timestamp < 30000)) {
+    return cachedLedger.data.customer;
+  }
   const r = await queryOne(`
+    WITH txn_agg AS (
+      SELECT customer_id, 
+             SUM(inr_amount) AS total_inr, 
+             SUM(aed_amount) AS total_aed
+      FROM transactions 
+      WHERE status = 'CONFIRMED' AND (customer_id = $1 OR customer_id IN (SELECT id FROM customers WHERE code = $2))
+      GROUP BY customer_id
+    ),
+    pay_agg AS (
+      SELECT customer_id, 
+             SUM(amount_aed) AS total_paid
+      FROM customer_payments
+      WHERE customer_id = $1 OR customer_id IN (SELECT id FROM customers WHERE code = $2)
+      GROUP BY customer_id
+    )
     SELECT 
       c.*,
-      COALESCE((SELECT SUM(t.inr_amount) FROM transactions t WHERE t.customer_id = c.id AND t.status = 'CONFIRMED'), 0) as total_inr,
-      COALESCE((SELECT SUM(t.aed_amount) FROM transactions t WHERE t.customer_id = c.id AND t.status = 'CONFIRMED'), 0) as total_aed,
-      COALESCE((SELECT SUM(p.amount_aed) FROM customer_payments p WHERE p.customer_id = c.id), 0) as total_paid
+      COALESCE(ta.total_inr, 0) as total_inr,
+      COALESCE(ta.total_aed, 0) as total_aed,
+      COALESCE(pa.total_paid, 0) as total_paid
     FROM customers c
+    LEFT JOIN txn_agg ta ON ta.customer_id = c.id
+    LEFT JOIN pay_agg pa ON pa.customer_id = c.id
     WHERE c.id = $1 OR c.code = $2
   `, [id, id]);
 
@@ -415,6 +689,11 @@ export async function listTransactions(filters?: {
   const isPartyOnly = filters?.entityType === "PARTY";
   let sql = isPartyOnly
     ? `
+    WITH pay_agg AS (
+      SELECT cp.transaction_id, SUM(cp.amount_aed) AS paid_aed
+      FROM customer_payments cp
+      GROUP BY cp.transaction_id
+    )
     SELECT 
       t.*,
       c.code as customer_code,
@@ -425,10 +704,11 @@ export async function listTransactions(filters?: {
       '-' as distributor_names,
       '-' as distributor_split_details,
       0 as total_distributed_inr,
-      COALESCE((SELECT SUM(cp.amount_aed) FROM customer_payments cp WHERE cp.transaction_id = t.id), 0) as paid_aed
+      COALESCE(pa.paid_aed, 0) as paid_aed
     FROM transactions t
     JOIN customers c ON c.id = t.customer_id
     LEFT JOIN distributors d ON d.id = t.distributor_id
+    LEFT JOIN pay_agg pa ON pa.transaction_id = t.id
     WHERE COALESCE(c.entity_type, 'CUSTOMER') = 'PARTY'
   `
     : `
@@ -499,19 +779,7 @@ export async function listTransactions(filters?: {
   return rows.map(mapTransactionRecord);
 }
 
-// ---------------- PARTY TRANSFERS IN-MEMORY CACHE & COMBINED FETCHER ----------------
-let partyTransfersMemoryCache: {
-  timestamp: number;
-  data: {
-    transfers: TransactionRecord[];
-    parties: Customer[];
-  };
-} | null = null;
-
-export function invalidatePartyTransfersCache(): void {
-  partyTransfersMemoryCache = null;
-  bankDistripMemoryCache = null;
-}
+// ---------------- PARTY TRANSFERS COMBINED FETCHER ----------------
 
 
 export async function getPartyTransfersData(forceRefresh = false): Promise<{
@@ -520,8 +788,8 @@ export async function getPartyTransfersData(forceRefresh = false): Promise<{
 }> {
   const now = Date.now();
   // Fast cache for 30 seconds unless invalidated by any mutation
-  if (!forceRefresh && partyTransfersMemoryCache && (now - partyTransfersMemoryCache.timestamp < 30000)) {
-    return partyTransfersMemoryCache.data;
+  if (!forceRefresh && cacheStore.partyTransfers && (now - cacheStore.partyTransfers.timestamp < 30000)) {
+    return cacheStore.partyTransfers.data;
   }
 
   // Parallel fetch using Promise.all on server
@@ -531,7 +799,7 @@ export async function getPartyTransfersData(forceRefresh = false): Promise<{
   ]);
 
   const result = { transfers, parties };
-  partyTransfersMemoryCache = {
+  cacheStore.partyTransfers = {
     timestamp: now,
     data: result,
   };
@@ -591,6 +859,8 @@ export async function createTransaction(data: {
   splits?: Array<{
     distributor_id: string;
     inr_amount: number;
+    paid_amount_inr?: number;
+    balance_inr?: number;
     notes?: string;
   }>;
 }): Promise<TransactionRecord> {
@@ -690,6 +960,10 @@ export async function createTransaction(data: {
       if (totalSplitInr > inrAmount) {
         throw new Error(`Total distribution (₹${totalSplitInr.toLocaleString()}) cannot exceed customer order (₹${inrAmount.toLocaleString()})`);
       }
+      const splitInr = Number(s.inr_amount);
+      const paidInr = s.paid_amount_inr !== undefined ? Number(s.paid_amount_inr) : 0.00;
+      const balanceInr = s.balance_inr !== undefined ? Number(s.balance_inr) : roundTo(splitInr - paidInr, 2);
+      const splitStatus = balanceInr <= 0 ? 'SETTLED' : (paidInr > 0 ? 'PARTIAL' : 'ALLOCATED');
       const splitId = crypto.randomUUID();
       await execute(`
         INSERT INTO distribution_splits (
@@ -698,12 +972,13 @@ export async function createTransaction(data: {
           balance_inr, status, notes
         ) VALUES (
           $1, $2, $3, $4,
-          $5, $6, $7, 0.00,
-          $5, 'ALLOCATED', $8
+          $5, $6, $7, $8,
+          $9, $10, $11
         )
       `, [
         splitId, id, s.distributor_id, data.transaction_date,
-        s.inr_amount, baseRate, baseRate > 0 ? roundTo(s.inr_amount / baseRate, 2) : 0, s.notes || null
+        splitInr, baseRate, baseRate > 0 ? roundTo(splitInr / baseRate, 2) : 0,
+        paidInr, balanceInr, splitStatus, s.notes || null
       ]);
     }
     // Automatically recalculate India party running orders & balances
@@ -846,6 +1121,12 @@ export interface PartySplitSummaryResult {
 }
 
 export async function getPartySplitSummary(todayParam?: string): Promise<PartySplitSummaryResult> {
+  const cacheKey = todayParam || "default";
+  const now = Date.now();
+  if (cacheStore.partySplitSummary && cacheStore.partySplitSummary.key === cacheKey && (now - cacheStore.partySplitSummary.timestamp < 30000)) {
+    return cacheStore.partySplitSummary.data;
+  }
+
   const today = todayParam || getTodayDateString();
   const yesterday = getYesterdayDateString();
   const weekStart = getStartOfWeekDateString();
@@ -902,7 +1183,7 @@ export async function getPartySplitSummary(todayParam?: string): Promise<PartySp
 
   const recent_assignments = await listDistributionSplits({ limit: 150 });
 
-  return {
+  const result: PartySplitSummaryResult = {
     parties,
     grand_totals,
     recent_assignments,
@@ -914,6 +1195,14 @@ export async function getPartySplitSummary(todayParam?: string): Promise<PartySp
       year_start: yearStart,
     },
   };
+
+  cacheStore.partySplitSummary = {
+    timestamp: now,
+    key: cacheKey,
+    data: result,
+  };
+
+  return result;
 }
 
 export async function createDistributionSplit(data: {
@@ -954,12 +1243,14 @@ export async function createDistributionSplit(data: {
     roundTo(data.inr_amount, 2), wholesaleRate, aedEq, data.notes || null
   ]);
 
+  invalidateAllCaches();
   const rows = await listDistributionSplits({ transaction_id: data.transaction_id });
   return rows.find(r => r.id === id)!;
 }
 
 export async function deleteDistributionSplit(id: string): Promise<void> {
   await execute(`DELETE FROM distribution_splits WHERE id = $1`, [id]);
+  invalidateAllCaches();
 }
 
 // ---------------- CUSTOMER PAYMENTS ----------------
@@ -1005,6 +1296,12 @@ export async function listCustomerPayments(filters?: {
   from?: string;
   to?: string;
 }): Promise<any[]> {
+  const hasFilters = Boolean(filters?.customerId || filters?.from || filters?.to);
+  const now = Date.now();
+  if (!hasFilters && cacheStore.customerPayments && (now - cacheStore.customerPayments.timestamp < 30000)) {
+    return cacheStore.customerPayments.data;
+  }
+
   let sql = `
     SELECT cp.*, c.code as customer_code, c.name as customer_name, t.transaction_number
     FROM customer_payments cp
@@ -1028,7 +1325,7 @@ export async function listCustomerPayments(filters?: {
   sql += ` ORDER BY cp.payment_date DESC, cp.created_at DESC`;
 
   const rows = await query(sql, params);
-  return rows.map((r: any) => ({
+  const result = rows.map((r: any) => ({
     id: r.id,
     payment_number: r.payment_number,
     payment_date: formatDate(r.payment_date),
@@ -1043,6 +1340,15 @@ export async function listCustomerPayments(filters?: {
     notes: r.notes || null,
     created_at: formatDateTime(r.created_at),
   }));
+
+  if (!hasFilters) {
+    cacheStore.customerPayments = {
+      timestamp: now,
+      data: result,
+    };
+  }
+
+  return result;
 }
 
 export async function getCustomerLedger(customerId: string): Promise<{
@@ -1058,40 +1364,76 @@ export async function getCustomerLedger(customerId: string): Promise<{
     running_balance_aed: number;
   }>;
 }> {
-  const customer = await getCustomer(customerId);
-  if (!customer) throw new Error("Customer not found");
+  const now = Date.now();
+  const cached = cacheStore.customerLedger.get(customerId);
+  if (cached && (now - cached.timestamp < 30000)) {
+    return cached.data;
+  }
 
-  const txns = await query(`
-    SELECT id, transaction_date as date, 'TRANSACTION' as type, transaction_number as reference,
-           'Order ' || inr_amount || ' INR @ ' || customer_rate as description,
-           aed_amount as debit_aed, 0.0 as credit_aed, created_at
-    FROM transactions
-    WHERE customer_id = $1 AND status = 'CONFIRMED'
-  `, [customerId]);
+  // Parallel fetch: customer, confirmed transactions, and payments
+  const [custRow, txns, pays] = await Promise.all([
+    queryOne(`SELECT * FROM customers WHERE id = $1 OR code = $2`, [customerId, customerId]),
+    query(`
+      SELECT id, transaction_date as date, 'TRANSACTION' as type, transaction_number as reference,
+             'Order ' || inr_amount || ' INR @ ' || customer_rate as description,
+             aed_amount as debit_aed, 0.0 as credit_aed, created_at,
+             inr_amount, aed_amount
+      FROM transactions
+      WHERE (customer_id = $1 OR customer_id IN (SELECT id FROM customers WHERE code = $2)) 
+        AND status = 'CONFIRMED'
+      ORDER BY transaction_date ASC, created_at ASC
+    `, [customerId, customerId]),
+    query(`
+      SELECT id, payment_date as date, 'PAYMENT' as type, payment_number as reference,
+             'Payment (' || payment_method || ')' as description,
+             0.0 as debit_aed, amount_aed as credit_aed, created_at,
+             amount_aed
+      FROM customer_payments
+      WHERE (customer_id = $1 OR customer_id IN (SELECT id FROM customers WHERE code = $2))
+      ORDER BY payment_date ASC, created_at ASC
+    `, [customerId, customerId]),
+  ]);
 
-  const pays = await query(`
-    SELECT id, payment_date as date, 'PAYMENT' as type, payment_number as reference,
-           'Payment (' || payment_method || ')' as description,
-           0.0 as debit_aed, amount_aed as credit_aed, created_at
-    FROM customer_payments
-    WHERE customer_id = $1
-  `, [customerId]);
+  if (!custRow) throw new Error("Customer not found");
+
+  const totalInr = roundTo(txns.reduce((sum: number, t: any) => sum + Number(t.inr_amount || 0), 0), 2);
+  const totalAed = roundTo(txns.reduce((sum: number, t: any) => sum + Number(t.aed_amount || 0), 0), 2);
+  const totalPaid = roundTo(pays.reduce((sum: number, p: any) => sum + Number(p.amount_aed || 0), 0), 2);
+  const outstandingBalance = roundTo(totalAed - totalPaid, 2);
+
+  const customer: Customer = {
+    id: custRow.id,
+    code: custRow.code,
+    name: custRow.name,
+    phone: custRow.phone || null,
+    default_rate: custRow.default_rate != null ? Number(custRow.default_rate) : null,
+    status: custRow.status,
+    entity_type: custRow.entity_type || "CUSTOMER",
+    party_type: custRow.party_type || (custRow.entity_type === "PARTY" ? "DUBAI" : undefined),
+    total_inr: totalInr,
+    total_aed: totalAed,
+    total_paid: totalPaid,
+    outstanding_balance: outstandingBalance,
+    created_at: formatDateTime(custRow.created_at),
+  };
 
   // Merge & sort chronologically
-  const allEvents = [...txns, ...pays].map(e => ({
-    ...e,
+  const allEvents = [...txns, ...pays].map((e: any) => ({
     id: e.id,
     date: formatDate(e.date),
+    type: e.type as 'TRANSACTION' | 'PAYMENT',
+    reference: e.reference,
+    description: e.description,
     debit_aed: roundTo(Number(e.debit_aed || 0), 2),
     credit_aed: roundTo(Number(e.credit_aed || 0), 2),
     created_at: formatDateTime(e.created_at),
-  })).sort((a, b) => {
+  })).sort((a: any, b: any) => {
     if (a.date !== b.date) return a.date.localeCompare(b.date);
     return a.created_at.localeCompare(b.created_at);
   });
 
   let running = 0;
-  const entries = allEvents.map(e => {
+  const entries = allEvents.map((e: any) => {
     running = roundTo(running + e.debit_aed - e.credit_aed, 2);
     return {
       id: e.id,
@@ -1105,7 +1447,16 @@ export async function getCustomerLedger(customerId: string): Promise<{
     };
   });
 
-  return { customer, entries };
+  const result = { customer, entries };
+  cacheStore.customerLedger.set(customerId, { timestamp: now, data: result });
+  if (custRow.id !== customerId) {
+    cacheStore.customerLedger.set(custRow.id, { timestamp: now, data: result });
+  }
+  if (custRow.code && custRow.code !== customerId) {
+    cacheStore.customerLedger.set(custRow.code, { timestamp: now, data: result });
+  }
+
+  return result;
 }
 
 // ---------------- DISTRIBUTORS & INDIA PARTIES ----------------
@@ -1443,15 +1794,7 @@ export async function createBankDistripRecord(data: {
   return mapBankDistripRecord(record);
 }
 
-// ---------------- BANK DISTRIP IN-MEMORY CACHE ----------------
-let bankDistripMemoryCache: {
-  timestamp: number;
-  data: Map<string, any>;
-} | null = null;
-
-export function invalidateBankDistripCache(): void {
-  bankDistripMemoryCache = null;
-}
+// ---------------- BANK DISTRIP SETTLEMENT ----------------
 
 export async function getBankDistributionSettlement(
   accountId?: string,
@@ -1498,8 +1841,8 @@ export async function getBankDistributionSettlement(
 }> {
   const cacheKey = `${accountId || "DEFAULT"}_${options?.from || ""}_${options?.to || ""}_${options?.sortOrder || "asc"}`;
   const now = Date.now();
-  if (bankDistripMemoryCache && (now - bankDistripMemoryCache.timestamp < 30000)) {
-    const cached = bankDistripMemoryCache.data.get(cacheKey);
+  if (cacheStore.bankDistrip && (now - cacheStore.bankDistrip.timestamp < 30000)) {
+    const cached = cacheStore.bankDistrip.data.get(cacheKey);
     if (cached) return cached;
   }
 
@@ -1656,19 +1999,25 @@ export async function getBankDistributionSettlement(
     },
   };
 
-  if (!bankDistripMemoryCache || (now - bankDistripMemoryCache.timestamp >= 30000)) {
-    bankDistripMemoryCache = {
+  if (!cacheStore.bankDistrip || (now - cacheStore.bankDistrip.timestamp >= 30000)) {
+    cacheStore.bankDistrip = {
       timestamp: now,
       data: new Map(),
     };
   }
-  bankDistripMemoryCache.data.set(cacheKey, result);
+  cacheStore.bankDistrip.data.set(cacheKey, result);
 
   return result;
 }
 
 // ---------------- DASHBOARD KPIS ----------------
 export async function getDashboardKPIs(filters?: { from?: string; to?: string; timeframe?: string }) {
+  const cacheKey = `${filters?.from || ""}_${filters?.to || ""}_${filters?.timeframe || ""}`;
+  const now = Date.now();
+  if (cacheStore.dashboardKpi && cacheStore.dashboardKpi.key === cacheKey && (now - cacheStore.dashboardKpi.timestamp < 30000)) {
+    return cacheStore.dashboardKpi.data;
+  }
+
   let txnWhere = "WHERE status = 'CONFIRMED'";
   let payWhere = "WHERE 1=1";
   const txnParams: any[] = [];
@@ -1791,7 +2140,7 @@ export async function getDashboardKPIs(filters?: { from?: string; to?: string; t
     `, txnParams),
   ]);
 
-  return {
+  const result = {
     kpis: {
       // Primary Cards
       todayInr: roundTo(Number(todaySummary?.total_inr || 0), 2),
@@ -1823,6 +2172,14 @@ export async function getDashboardKPIs(filters?: { from?: string; to?: string; t
       count: Number(d.txn_count || 0),
     }))
   };
+
+  cacheStore.dashboardKpi = {
+    timestamp: now,
+    key: cacheKey,
+    data: result,
+  };
+
+  return result;
 }
 
 export async function getAuditLogs(entityName: string, entityId: string): Promise<any[]> {
@@ -2133,6 +2490,7 @@ export async function updateDistributionSplit(id: string, data: {
     await recalculateBankDistripBalances(existingSplit.distributor_id).catch(err => console.error("Error updating bank distrip on split update:", err));
   }
 
+  invalidateAllCaches();
   const updatedRows = await listDistributionSplits({ transaction_id: txn.id });
   return updatedRows.find(s => s.id === id)!;
 }

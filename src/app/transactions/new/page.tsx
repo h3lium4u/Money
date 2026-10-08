@@ -55,7 +55,7 @@ export default function NewDubaiClientTransactionPage() {
   // Total entry
   const [inrAmounts, setInrAmounts] = useState<string[]>([""]);
   const [manualRate, setManualRate] = useState<string>("");
-  const [paidAmount, setPaidAmount] = useState<string>("");
+  const [paidAmounts, setPaidAmounts] = useState<string[]>([""]);
   const [notes, setNotes] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
@@ -108,6 +108,24 @@ export default function NewDubaiClientTransactionPage() {
       return;
     }
     setInrAmounts((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function handlePaidAmountChange(index: number, value: string) {
+    const next = [...paidAmounts];
+    next[index] = value;
+    setPaidAmounts(next);
+  }
+
+  function handleAddPaidAmount() {
+    setPaidAmounts((prev) => [...prev, ""]);
+  }
+
+  function handleRemovePaidAmount(index: number) {
+    if (paidAmounts.length <= 1) {
+      setPaidAmounts([""]);
+      return;
+    }
+    setPaidAmounts((prev) => prev.filter((_, i) => i !== index));
   }
 
   // Load Dubai clients and parties
@@ -191,11 +209,16 @@ export default function NewDubaiClientTransactionPage() {
     .filter((num) => !isNaN(num) && num > 0);
   const totalOrderInr = Math.round((validAmounts.reduce((sum, num) => sum + num, 0) + Number.EPSILON) * 100) / 100;
 
+  // Calculate total paid AED from multiple fields
+  const validPaidAmounts = paidAmounts
+    .map((val) => parseFloat(val))
+    .filter((num) => !isNaN(num) && num > 0);
+  const totalPaidAed = Math.round((validPaidAmounts.reduce((sum, num) => sum + num, 0) + Number.EPSILON) * 100) / 100;
+
   // Live Server Backend Calculation
   useEffect(() => {
     const total = totalOrderInr;
     const mRate = parseFloat(manualRate);
-    const pAmt = paidAmount ? parseFloat(paidAmount) : 0;
 
     if (!total || total <= 0 || !mRate || mRate <= 0) {
       setPreview(null);
@@ -212,7 +235,7 @@ export default function NewDubaiClientTransactionPage() {
           body: JSON.stringify({
             total,
             manualRate: mRate,
-            paidAmount: isNaN(pAmt) ? 0 : pAmt,
+            paidAmount: totalPaidAed,
           }),
         });
         const data = await res.json();
@@ -227,7 +250,7 @@ export default function NewDubaiClientTransactionPage() {
     }, 150);
 
     return () => clearTimeout(timer);
-  }, [inrAmounts, manualRate, paidAmount, totalOrderInr]);
+  }, [inrAmounts, manualRate, paidAmounts, totalOrderInr, totalPaidAed]);
 
   // Form submit handler - open confirmation
   function handleSubmit(e: React.FormEvent) {
@@ -241,11 +264,11 @@ export default function NewDubaiClientTransactionPage() {
     const mRate = parseFloat(manualRate);
 
     if (!total || total <= 0) {
-      setError("Please enter a valid Total INR amount");
+      setError("Please enter a valid Total Order Amount");
       return;
     }
     if (!mRate || mRate <= 0) {
-      setError("Please enter a valid Manual Rate value");
+      setError("Please enter a valid Exchange Rate value");
       return;
     }
 
@@ -260,7 +283,6 @@ export default function NewDubaiClientTransactionPage() {
 
     const total = totalOrderInr;
     const mRate = parseFloat(manualRate);
-    const pAmt = paidAmount ? parseFloat(paidAmount) : 0;
 
     try {
       const res = await fetch("/api/transactions", {
@@ -271,7 +293,7 @@ export default function NewDubaiClientTransactionPage() {
           customer_id: customerId,
           total,
           manual_rate: mRate,
-          paid_amount: isNaN(pAmt) ? 0 : pAmt,
+          paid_amount: totalPaidAed,
           notes: notes || undefined,
         }),
       });
@@ -293,6 +315,7 @@ export default function NewDubaiClientTransactionPage() {
 
   const selectedClient = clients.find((c) => c.id === customerId);
   const inrWords = totalOrderInr > 0 ? numberToIndianWords(totalOrderInr) : null;
+
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -404,11 +427,11 @@ export default function NewDubaiClientTransactionPage() {
             </div>
           </div>
 
-          {/* Section 2: Total (INR) Entry */}
+          {/* Section 2: Total Order Amount (INR) Entry */}
           <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             <div className="flex flex-wrap items-center justify-between gap-1">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Total (INR) - Manual Entry
+                Total Order Amount (INR)
               </label>
               <button
                 type="button"
@@ -470,12 +493,12 @@ export default function NewDubaiClientTransactionPage() {
             )}
           </div>
 
-          {/* Section 3: Manual Rate Value & Paid Amount */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
-            {/* Manual Rate Value */}
+          {/* Section 3: Client Exchange Rate & Paid Amount (Multi-field) */}
+          <div className="space-y-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+            {/* Client Exchange Rate */}
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 flex items-center justify-between">
-                <span>Manual Rate Value</span>
+                <span>Client Exchange Rate (Rate per 1000)</span>
                 <span className="text-[10px] text-teal-700 dark:text-teal-400 font-bold">AED / 1000 INR</span>
               </label>
               <input
@@ -488,27 +511,71 @@ export default function NewDubaiClientTransactionPage() {
                 className="w-full text-sm font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
               <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
-                Whole sale rate will be computed as 1000 / manual value.
+                Wholesale rate is computed as <strong>1000 / Exchange Rate</strong>.
               </p>
             </div>
 
-            {/* Paid Amount */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 flex items-center justify-between">
-                <span>Paid Amount (AED)</span>
-                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">Manual Entry</span>
-              </label>
-              <input
-                type="number"
-                step="any"
-                placeholder="e.g. 1000 (leave 0 if unpaid)"
-                value={paidAmount}
-                onChange={(e) => setPaidAmount(e.target.value)}
-                className="w-full text-sm font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
-              />
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
-                Amount already paid in Dhirams by the client.
-              </p>
+            {/* Paid Amount (AED) - Multi-field additive */}
+            <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex flex-wrap items-center justify-between gap-1">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Paid Amount (AED)
+                  </label>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                    Add multiple payment entries if paid in installments; all entries are summed automatically.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAddPaidAmount}
+                  className="text-xs font-bold text-emerald-700 hover:text-emerald-800 dark:text-emerald-300 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 px-2.5 py-1 rounded border border-emerald-200 dark:border-emerald-800 flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  <PlusCircle className="w-3.5 h-3.5" />
+                  <span>+ Add Paid Amount Field</span>
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {paidAmounts.map((amt, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-slate-400 dark:text-slate-500 font-bold text-xs select-none">
+                        <span>AED</span>
+                      </div>
+                      <input
+                        type="number"
+                        step="any"
+                        placeholder={idx === 0 ? "Enter paid amount in AED (e.g. 5000)" : "Additional paid amount (AED)"}
+                        value={amt}
+                        onChange={(e) => handlePaidAmountChange(idx, e.target.value)}
+                        className="w-full text-sm font-bold pl-12 pr-3 py-2.5 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs font-mono"
+                      />
+                    </div>
+                    {paidAmounts.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePaidAmount(idx)}
+                        className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shrink-0"
+                        title="Remove paid amount line"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {totalPaidAed > 0 && (
+                <div className="p-2.5 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center justify-between text-xs">
+                  <span className="font-bold text-emerald-900 dark:text-emerald-200 uppercase tracking-wider">
+                    Total Paid Sum ({validPaidAmounts.length} {validPaidAmounts.length === 1 ? "entry" : "entries"}):
+                  </span>
+                  <span className="font-mono font-extrabold text-emerald-800 dark:text-emerald-300 text-sm">
+                    AED {totalPaidAed.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -650,15 +717,15 @@ export default function NewDubaiClientTransactionPage() {
             <div className="space-y-1.5 text-[11px] text-slate-600 dark:text-slate-400">
               <div className="flex items-start gap-1.5">
                 <span className="text-teal-700 font-bold">•</span>
-                <span><strong>Wholesale Rate</strong> = 1000 / Manual Rate Value (e.g. 1000 / 38.25 = 26.1438)</span>
+                <span><strong>Wholesale Rate</strong> = 1000 / Client Exchange Rate (e.g. 1000 / 38.25 = 26.1438)</span>
               </div>
               <div className="flex items-start gap-1.5">
                 <span className="text-teal-700 font-bold">•</span>
-                <span><strong>In Dhirams (AED)</strong> = Total Order (INR) / Wholesale Rate</span>
+                <span><strong>In Dhirams (AED)</strong> = Total Order Amount (INR) / Wholesale Rate</span>
               </div>
               <div className="flex items-start gap-1.5">
                 <span className="text-teal-700 font-bold">•</span>
-                <span><strong>Balance to Paid</strong> = In Dhirams - Paid Amount (AED)</span>
+                <span><strong>Balance to Paid (Due Payment)</strong> = In Dhirams - Paid Amount (AED)</span>
               </div>
             </div>
           </div>
@@ -706,17 +773,17 @@ export default function NewDubaiClientTransactionPage() {
 
               <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl space-y-2 border border-slate-200/80 dark:border-slate-700">
                 <div className="flex justify-between items-center text-sm font-bold">
-                  <span className="text-slate-600 dark:text-slate-400">Total (INR):</span>
+                  <span className="text-slate-600 dark:text-slate-400">Total Order Amount (INR):</span>
                   <span className="font-mono text-slate-900 dark:text-slate-100">
                     ₹ {totalOrderInr.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-400">Manual Value (Rate):</span>
+                  <span className="text-slate-600 dark:text-slate-400">Client Exchange Rate:</span>
                   <span className="font-mono font-bold text-slate-900 dark:text-slate-100">{manualRate} AED/1000</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-400">Whole Sale Rate (1000/Rate):</span>
+                  <span className="text-slate-600 dark:text-slate-400">Wholesale Rate (1000 / Rate):</span>
                   <span className="font-mono font-bold text-teal-700 dark:text-teal-400">{preview?.wholesaleRate.toFixed(4)}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm font-bold pt-1 border-t border-slate-200 dark:border-slate-700">
@@ -726,13 +793,20 @@ export default function NewDubaiClientTransactionPage() {
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-400">Paid Amount (AED):</span>
+                  <div>
+                    <span className="text-slate-600 dark:text-slate-400 block">Paid Amount (AED):</span>
+                    {validPaidAmounts.length > 1 && (
+                      <span className="text-[10px] text-slate-400 block font-mono">
+                        Sum of {validPaidAmounts.length} fields: {validPaidAmounts.map(a => Number(a).toFixed(2)).join(" + ")}
+                      </span>
+                    )}
+                  </div>
                   <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
                     AED {(preview?.paidAmount || 0).toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center font-bold text-sm pt-1 border-t border-slate-200 dark:border-slate-700">
-                  <span className="text-slate-800 dark:text-slate-200">Balance to Paid:</span>
+                  <span className="text-slate-800 dark:text-slate-200">Balance to Paid (Due Payment):</span>
                   <span className={`font-mono ${
                     (preview?.balanceToPaid || 0) > 0 ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400"
                   }`}>

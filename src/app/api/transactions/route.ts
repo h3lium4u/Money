@@ -19,6 +19,8 @@ const createSchema = z.object({
   splits: z.array(z.object({
     distributor_id: z.string().min(1),
     inr_amount: z.number().positive(),
+    paid_amount_inr: z.number().min(0).optional(),
+    balance_inr: z.number().min(0).optional(),
     notes: z.string().optional()
   })).optional(),
 }).refine(data => data.total !== undefined || data.inr_amount !== undefined, {
