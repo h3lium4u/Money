@@ -420,15 +420,13 @@ export default function PartyDetailPage() {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Payment Method</label>
-                  <select
+                  <input
+                    type="text"
                     value={payMethod}
                     onChange={(e) => setPayMethod(e.target.value)}
+                    placeholder="Payment Method"
                     className="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  >
-                    <option value="CASH">CASH (Physical)</option>
-                    <option value="BANK_TRANSFER">BANK TRANSFER</option>
-                    <option value="CHEQUE">CHEQUE</option>
-                  </select>
+                  />
                 </div>
               </div>
 

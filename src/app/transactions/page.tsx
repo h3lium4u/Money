@@ -93,7 +93,7 @@ function DubaiClientTransactionsContent() {
   const [payingTxn, setPayingTxn] = useState<any | null>(null);
   const [payDate, setPayDate] = useState(getTodayDateString());
   const [payAmount, setPayAmount] = useState("");
-  const [payMethod, setPayMethod] = useState("CASH");
+  const [payMethod, setPayMethod] = useState("Payment Method");
   const [payNotes, setPayNotes] = useState("");
   const [payLoading, setPayLoading] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
@@ -102,7 +102,7 @@ function DubaiClientTransactionsContent() {
     setPayingTxn(txn);
     setPayDate(getTodayDateString());
     setPayAmount(String(txn.balance_to_paid ?? txn.pending_aed ?? ""));
-    setPayMethod("CASH");
+    setPayMethod("Payment Method");
     setPayNotes(`Payment for transfer ${txn.transaction_number}`);
     setPayError(null);
   }
@@ -631,20 +631,20 @@ function DubaiClientTransactionsContent() {
         {/* Dubai Client Registry Table */}
         <FadeIn delay={0.2}>
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-            <div className="w-full overflow-x-auto">
-              <table className="w-full text-left text-xs table-fixed min-w-[1360px]">
+            <div className="w-full">
+              <table className="w-full text-left text-xs table-fixed">
                 <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800 text-[10px]">
                   <tr>
-                    <th className="px-3 py-3 w-[9%]">Date</th>
-                    <th className="px-3 py-3 w-[13%]">Dubai Client</th>
-                    <th className="px-3 py-3 w-[10%]">Total (INR)</th>
-                    <th className="px-3 py-3 w-[8%]">Manual Rate</th>
-                    <th className="px-3 py-3 w-[9%]">Wholesale Rate</th>
-                    <th className="px-3 py-3 w-[10%]">In Dhirams</th>
-                    <th className="px-3 py-3 w-[9%]">Paid Amount</th>
-                    <th className="px-3 py-3 w-[10%]">Balance to Paid</th>
-                    <th className="px-3 py-3 w-[10%]">Daily Balance</th>
-                    <th className="px-3 py-3 text-right w-[12%]">Actions</th>
+                    <th className="px-2.5 py-3 w-[8%]">Date</th>
+                    <th className="px-2.5 py-3 w-[11%]">Dubai Client</th>
+                    <th className="px-2.5 py-3 w-[11%]">Total (INR)</th>
+                    <th className="px-2.5 py-3 w-[8%]">Manual Rate</th>
+                    <th className="px-2.5 py-3 w-[8%]">Wholesale Rate</th>
+                    <th className="px-2.5 py-3 w-[10%]">In Dhirams</th>
+                    <th className="px-2.5 py-3 w-[10%]">Paid Amount</th>
+                    <th className="px-2.5 py-3 w-[11%]">Balance to Paid</th>
+                    <th className="px-2.5 py-3 w-[11%]">Daily Balance</th>
+                    <th className="px-2.5 py-3 text-right w-[12%]">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
@@ -692,7 +692,7 @@ function DubaiClientTransactionsContent() {
                           }`}
                         >
                           {/* 1. Date */}
-                          <td className="px-3 py-2.5 font-mono">
+                          <td className="px-2.5 py-2.5 font-mono">
                             <div className="flex items-center gap-1.5">
                               <span className="font-bold text-slate-900 dark:text-slate-100 text-xs">
                                 {t.transaction_date}
@@ -709,7 +709,7 @@ function DubaiClientTransactionsContent() {
                           </td>
 
                           {/* 2. Dubai Client */}
-                          <td className="px-3 py-2.5">
+                          <td className="px-2.5 py-2.5">
                             <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1 text-xs truncate">
                               <Building2 className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400 shrink-0" />
                               <span className="truncate" title={t.customer_name}>
@@ -726,14 +726,14 @@ function DubaiClientTransactionsContent() {
                           </td>
 
                           {/* 3. Total (INR) */}
-                          <td className="px-3 py-2.5 font-mono whitespace-nowrap">
+                          <td className="px-2.5 py-2.5 font-mono whitespace-nowrap">
                             <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">
                               {formatINR(totalVal)}
                             </div>
                           </td>
 
                           {/* 4. Manual Rate Value */}
-                          <td className="px-3 py-2.5 font-mono whitespace-nowrap">
+                          <td className="px-2.5 py-2.5 font-mono whitespace-nowrap">
                             <div className="font-bold text-slate-800 dark:text-slate-200 text-xs">
                               {Number(manualRateVal).toFixed(4)}
                             </div>
@@ -741,7 +741,7 @@ function DubaiClientTransactionsContent() {
                           </td>
 
                           {/* 5. Whole Sale Rate */}
-                          <td className="px-3 py-2.5 font-mono whitespace-nowrap">
+                          <td className="px-2.5 py-2.5 font-mono whitespace-nowrap">
                             <div className="font-bold text-teal-700 dark:text-teal-400 text-xs">
                               {Number(wholesaleRateVal).toFixed(4)}
                             </div>
@@ -749,21 +749,21 @@ function DubaiClientTransactionsContent() {
                           </td>
 
                           {/* 6. In Dhirams */}
-                          <td className="px-3 py-2.5 font-mono whitespace-nowrap">
+                          <td className="px-2.5 py-2.5 font-mono whitespace-nowrap">
                             <div className="font-extrabold text-slate-900 dark:text-slate-100 text-xs">
                               {formatAED(inDhiramsVal)}
                             </div>
                           </td>
 
                           {/* 7. Paid Amount */}
-                          <td className="px-3 py-2.5 font-mono whitespace-nowrap">
+                          <td className="px-2.5 py-2.5 font-mono whitespace-nowrap">
                             <div className="font-bold text-emerald-700 dark:text-emerald-400 text-xs">
                               {formatAED(paidAmountVal)}
                             </div>
                           </td>
 
                           {/* 8. Balance to Paid */}
-                          <td className="px-3 py-2.5 font-mono whitespace-nowrap">
+                          <td className="px-2.5 py-2.5 font-mono whitespace-nowrap">
                             <div className={`font-bold text-xs ${
                               balanceToPaidVal > 0 ? "text-amber-700 dark:text-amber-400 font-extrabold" : balanceToPaidVal < 0 ? "text-rose-700 dark:text-rose-400 font-extrabold" : "text-emerald-700 dark:text-emerald-400"
                             }`}>
@@ -773,7 +773,7 @@ function DubaiClientTransactionsContent() {
                           </td>
 
                           {/* 9. Daily Balance */}
-                          <td className="px-3 py-2.5 font-mono whitespace-nowrap">
+                          <td className="px-2.5 py-2.5 font-mono whitespace-nowrap">
                             <div className={`font-bold text-xs ${
                               dailyBalanceVal > 0 ? "text-blue-900 dark:text-blue-300 font-extrabold" : dailyBalanceVal < 0 ? "text-rose-700 dark:text-rose-400 font-extrabold" : "text-emerald-700 dark:text-emerald-400 font-bold"
                             }`}>
@@ -783,7 +783,7 @@ function DubaiClientTransactionsContent() {
                           </td>
 
                           {/* 10. Actions */}
-                          <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                          <td className="px-2.5 py-2.5 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-1.5 shrink-0">
                               {/* Quick Pay */}
                               {t.status === "CONFIRMED" && balanceToPaidVal > 0 && (
@@ -1098,18 +1098,16 @@ function DubaiClientTransactionsContent() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                     Payment Method
                   </label>
-                  <select
+                  <input
+                    type="text"
                     value={payMethod}
                     onChange={(e) => setPayMethod(e.target.value)}
-                    className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900"
-                  >
-                    <option value="CASH">CASH</option>
-                    <option value="BANK_TRANSFER">BANK TRANSFER</option>
-                    <option value="CHEQUE">CHEQUE</option>
-                  </select>
+                    placeholder="Payment Method"
+                    className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                  />
                 </div>
 
                 <div>

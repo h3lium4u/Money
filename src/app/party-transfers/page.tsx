@@ -1664,17 +1664,15 @@ function PartyTransfersContent() {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Method
+                    Payment Method
                   </label>
-                  <select
+                  <input
+                    type="text"
                     value={payMethod}
                     onChange={(e) => setPayMethod(e.target.value)}
+                    placeholder="Payment Method"
                     className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900"
-                  >
-                    <option value="CASH">CASH</option>
-                    <option value="BANK_TRANSFER">BANK TRANSFER</option>
-                    <option value="CHEQUE">CHEQUE</option>
-                  </select>
+                  />
                 </div>
               </div>
 

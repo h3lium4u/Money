@@ -404,16 +404,13 @@ export default function CustomerDetailPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Payment Method</label>
-                <select
+                <input
+                  type="text"
                   value={payMethod}
                   onChange={(e) => setPayMethod(e.target.value)}
+                  placeholder="Payment Method"
                   className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                >
-                  <option value="CASH">Cash (Dubai)</option>
-                  <option value="BANK_TRANSFER">Bank Transfer (AED)</option>
-                  <option value="CHEQUE">Cheque</option>
-                  <option value="OFFSET">Account Offset</option>
-                </select>
+                />
               </div>
             </div>
 

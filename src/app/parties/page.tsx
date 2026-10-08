@@ -1733,15 +1733,13 @@ export default function PartiesPage() {
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
                   Payment Method
                 </label>
-                <select
+                <input
+                  type="text"
                   value={payMethod}
                   onChange={(e) => setPayMethod(e.target.value)}
+                  placeholder="Payment Method"
                   className="w-full text-xs font-medium p-2.5 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
-                >
-                  <option value="CASH">Cash</option>
-                  <option value="BANK_TRANSFER">Bank Transfer</option>
-                  <option value="CHEQUE">Cheque</option>
-                </select>
+                />
               </div>
 
               <div>
