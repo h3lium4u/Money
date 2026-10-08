@@ -259,10 +259,10 @@ export default function IndiaDistributionPage() {
   }
 
   const formatINR = (val?: number) =>
-    `₹ ${(val || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    `₹ ${(val || 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`;
 
   const formatAED = (val?: number) =>
-    `${(val || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED`;
+    `${(val || 0).toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED`;
 
   // IND group = India-side distributors for distribution splits (MK, SALA)
   const confirmedIndiaParties = distributors.filter((d) => d.group_type === "IND");
@@ -926,7 +926,7 @@ export default function IndiaDistributionPage() {
                                   <td className="px-3 py-2 font-bold text-slate-900 whitespace-nowrap">{formatINR(s.inr_amount)}</td>
                                   <td className="px-3 py-2 whitespace-nowrap">
                                     <div className="text-slate-700 font-semibold">{s.aed_equivalent ? formatAED(s.aed_equivalent) : "-"}</div>
-                                    <div className="text-[10px] font-mono text-slate-500">Rate: {s.wholesale_rate?.toFixed(2) ?? "-"}</div>
+                                    <div className="text-[10px] font-mono text-slate-500">Rate: {s.wholesale_rate?.toFixed(3) ?? "-"}</div>
                                   </td>
                                   <td className="px-3 py-2">
                                     <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
@@ -1113,7 +1113,7 @@ export default function IndiaDistributionPage() {
                               <td className="px-3 py-2.5 whitespace-nowrap">
                                 <div className="font-bold text-slate-700">{row.total_aed_equivalent ? formatAED(row.total_aed_equivalent) : "-"}</div>
                                 <div className="text-[10px] text-slate-500 font-mono">
-                                  Rate: {row.wholesale_rate ? row.wholesale_rate.toFixed(2) : "-"}
+                                  Rate: {row.wholesale_rate ? row.wholesale_rate.toFixed(3) : "-"}
                                 </div>
                               </td>
 
@@ -1215,7 +1215,7 @@ export default function IndiaDistributionPage() {
                                             </td>
                                             <td className="px-3 py-2 whitespace-nowrap">
                                               <div className="font-bold text-slate-900">{formatINR(s.inr_amount)}</div>
-                                              <div className="text-[10px] text-slate-500 font-mono">Rate: {s.wholesale_rate ? s.wholesale_rate.toFixed(2) : "-"}</div>
+                                              <div className="text-[10px] text-slate-500 font-mono">Rate: {s.wholesale_rate ? s.wholesale_rate.toFixed(3) : "-"}</div>
                                             </td>
                                             <td className="px-3 py-2 text-slate-700 whitespace-nowrap font-medium">{s.aed_equivalent ? formatAED(s.aed_equivalent) : "-"}</td>
                                             <td className="px-3 py-2">

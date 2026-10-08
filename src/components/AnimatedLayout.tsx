@@ -122,7 +122,7 @@ export function AnimatedNumber({
     requestAnimationFrame(animate);
   }, [value]);
   
-  const formatted = formatFn ? formatFn(displayValue) : displayValue.toFixed(2);
+  const formatted = formatFn ? formatFn(displayValue) : displayValue.toFixed(3);
   return <>{prefix}{formatted}{suffix}</>;
 }
 

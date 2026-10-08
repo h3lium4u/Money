@@ -169,13 +169,13 @@ function PartyTransfersContent() {
   const newDateRef = useRef<HTMLInputElement>(null);
 
   const formatINR = (val?: number) => {
-    if (val === undefined || val === null || isNaN(val)) return "₹0.00";
-    return "₹ " + Number(val).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (val === undefined || val === null || isNaN(val)) return "₹0.000";
+    return "₹ " + Number(val).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
   };
 
   const formatAED = (val?: number) => {
-    if (val === undefined || val === null || isNaN(val)) return "0.00 AED";
-    return Number(val).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " AED";
+    if (val === undefined || val === null || isNaN(val)) return "0.000 AED";
+    return Number(val).toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + " AED";
   };
 
   async function loadData(isBackground = false) {
@@ -265,7 +265,7 @@ function PartyTransfersContent() {
   const validNewAmounts = newInrAmounts
     .map((v) => parseFloat(v))
     .filter((n) => !isNaN(n) && n > 0);
-  const totalEnteredAmount = Math.round((validNewAmounts.reduce((a, b) => a + b, 0) + Number.EPSILON) * 100) / 100;
+  const totalEnteredAmount = Math.round((validNewAmounts.reduce((a, b) => a + b, 0) + Number.EPSILON) * 1000) / 1000;
   const cRate = parseFloat(newCustomerRate) || 0;
   const bRate = parseFloat(newBaseRate) || 0;
 
@@ -277,9 +277,9 @@ function PartyTransfersContent() {
   const isAedInput = effectiveCurrency === "AED";
   const totalNewAed = isAedInput
     ? totalEnteredAmount
-    : (custRatePer1000 > 0 ? Math.round(((totalEnteredAmount / 1000) * custRatePer1000 + Number.EPSILON) * 100) / 100 : 0);
+    : (custRatePer1000 > 0 ? Math.round(((totalEnteredAmount / 1000) * custRatePer1000 + Number.EPSILON) * 1000) / 1000 : 0);
   const totalNewInr = isAedInput
-    ? (custRatePer1000 > 0 ? Math.round(((totalEnteredAmount / custRatePer1000) * 1000 + Number.EPSILON) * 100) / 100 : 0)
+    ? (custRatePer1000 > 0 ? Math.round(((totalEnteredAmount / custRatePer1000) * 1000 + Number.EPSILON) * 1000) / 1000 : 0)
     : totalEnteredAmount;
 
   const calculatedAedCharged = isAedInput
@@ -520,7 +520,7 @@ function PartyTransfersContent() {
 
       const cr1000 = cr >= 30 ? cr : (cr > 0 ? 1000 / cr : 0);
       const inrToSave = editCurrencyMode === "AED"
-        ? (cr1000 > 0 ? Math.round(((enteredAmt / cr1000) * 1000 + Number.EPSILON) * 100) / 100 : enteredAmt)
+        ? (cr1000 > 0 ? Math.round(((enteredAmt / cr1000) * 1000 + Number.EPSILON) * 1000) / 1000 : enteredAmt)
         : enteredAmt;
 
       const res = await fetch(`/api/transactions/${editingTxn.id}`, {
@@ -1216,9 +1216,9 @@ function PartyTransfersContent() {
                         </div>
                         <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                           {isInd ? (
-                            `Rate: ${t.customer_rate?.toFixed(4)}`
+                            `Rate: ${t.customer_rate?.toFixed(3)}`
                           ) : (
-                            <span>Rate: {t.customer_rate?.toFixed(4)} <span className="text-[10px] opacity-75">(₹{t.inr_amount?.toLocaleString("en-IN")})</span></span>
+                            <span>Rate: {t.customer_rate?.toFixed(3)} <span className="text-[10px] opacity-75">(₹{t.inr_amount?.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })})</span></span>
                           )}
                         </div>
                       </td>
@@ -1229,7 +1229,7 @@ function PartyTransfersContent() {
                           {isInd ? formatINR(getTransferCostInr(t)) : formatAED(t.cost_aed)}
                         </div>
                         <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
-                          {isInd ? `Base: ${t.base_rate?.toFixed(4)}` : formatINR(getTransferCostInr(t))}
+                          {isInd ? `Base: ${t.base_rate?.toFixed(3)}` : formatINR(getTransferCostInr(t))}
                         </div>
                       </td>
 
@@ -1243,7 +1243,7 @@ function PartyTransfersContent() {
                           {isInd ? formatINR(getTransferNetProfitInr(t)) : formatAED(t.net_profit_aed)}
                         </div>
                         <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
-                          {isInd ? `Margin: ₹${getTransferNetProfitInr(t).toFixed(2)}` : formatINR(getTransferNetProfitInr(t))}
+                          {isInd ? `Margin: ₹${getTransferNetProfitInr(t).toFixed(3)}` : formatINR(getTransferNetProfitInr(t))}
                         </div>
                       </td>
 
@@ -1787,11 +1787,11 @@ function PartyTransfersContent() {
               )}
               <div className="flex justify-between">
                 <span className="text-slate-500">Party Rate:</span>
-                <span className="font-mono font-bold text-slate-700">{cRate.toFixed(2)}</span>
+                <span className="font-mono font-bold text-slate-700">{cRate.toFixed(3)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Base Cost Rate:</span>
-                <span className="font-mono font-bold text-slate-700">{bRate.toFixed(2)}</span>
+                <span className="font-mono font-bold text-slate-700">{bRate.toFixed(3)}</span>
               </div>
               {effectiveCurrency === "AED" ? (
                 <>

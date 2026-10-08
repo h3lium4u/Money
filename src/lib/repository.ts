@@ -162,9 +162,9 @@ function formatDateTime(val: any): string {
 }
 
 function mapCustomerRecord(r: any): Customer {
-  const totalInr = roundTo(Number(r.total_inr || 0), 2);
-  const totalAed = roundTo(Number(r.total_aed || 0), 2);
-  const totalPaid = roundTo(Number(r.total_paid || 0), 2);
+  const totalInr = roundTo(Number(r.total_inr || 0), 3);
+  const totalAed = roundTo(Number(r.total_aed || 0), 3);
+  const totalPaid = roundTo(Number(r.total_paid || 0), 3);
   return {
     id: r.id,
     code: r.code,
@@ -177,20 +177,20 @@ function mapCustomerRecord(r: any): Customer {
     total_inr: totalInr,
     total_aed: totalAed,
     total_paid: totalPaid,
-    outstanding_balance: roundTo(totalAed - totalPaid, 2),
+    outstanding_balance: roundTo(totalAed - totalPaid, 3),
     created_at: formatDateTime(r.created_at),
   };
 }
 
 function mapTransactionRecord(r: any): TransactionRecord {
-  const inrAmount = roundTo(Number(r.inr_amount), 2);
-  const aedAmount = roundTo(Number(r.aed_amount), 2);
-  const distributedInr = roundTo(Number(r.total_distributed_inr || 0), 2);
-  const remainingInr = roundTo(Math.max(0, inrAmount - distributedInr), 2);
-  const paidAed = roundTo(Number(r.paid_aed || 0), 2);
-  const pendingAed = roundTo(Math.max(0, aedAmount - paidAed), 2);
-  const customerRate = roundTo(Number(r.customer_rate), 4);
-  const baseRate = roundTo(Number(r.base_rate), 4);
+  const inrAmount = roundTo(Number(r.inr_amount), 3);
+  const aedAmount = roundTo(Number(r.aed_amount), 3);
+  const distributedInr = roundTo(Number(r.total_distributed_inr || 0), 3);
+  const remainingInr = roundTo(Math.max(0, inrAmount - distributedInr), 3);
+  const paidAed = roundTo(Number(r.paid_aed || 0), 3);
+  const pendingAed = roundTo(Math.max(0, aedAmount - paidAed), 3);
+  const customerRate = roundTo(Number(r.customer_rate), 3);
+  const baseRate = roundTo(Number(r.base_rate), 3);
 
   return {
     id: r.id,
@@ -209,11 +209,11 @@ function mapTransactionRecord(r: any): TransactionRecord {
     in_dhirams: aedAmount,
     base_rate: baseRate,
     wholesale_rate: baseRate,
-    cost_aed: roundTo(Number(r.cost_aed), 2),
-    gross_profit_aed: roundTo(Number(r.gross_profit_aed), 2),
+    cost_aed: roundTo(Number(r.cost_aed), 3),
+    gross_profit_aed: roundTo(Number(r.gross_profit_aed), 3),
     delivery_charge_pct: Number(r.delivery_charge_pct),
-    delivery_charge_aed: roundTo(Number(r.delivery_charge_aed), 2),
-    net_profit_aed: roundTo(Number(r.net_profit_aed), 2),
+    delivery_charge_aed: roundTo(Number(r.delivery_charge_aed), 3),
+    net_profit_aed: roundTo(Number(r.net_profit_aed), 3),
     distributor_id: r.distributor_id || null,
     distributor_name: r.distributor_name || null,
     distributor_names: r.distributor_names && r.distributor_names !== '-' ? r.distributor_names : (r.distributor_name || null),
@@ -244,11 +244,11 @@ function mapDistributionSplitRecord(r: any): DistributionSplitRecord {
     distributor_code: r.distributor_code,
     group_type: r.group_type || "IND",
     split_date: formatDate(r.split_date),
-    inr_amount: roundTo(Number(r.inr_amount || 0), 2),
-    wholesale_rate: r.wholesale_rate != null ? Number(r.wholesale_rate) : null,
-    aed_equivalent: r.aed_equivalent != null ? roundTo(Number(r.aed_equivalent), 2) : null,
-    paid_amount_inr: roundTo(Number(r.paid_amount_inr || 0), 2),
-    balance_inr: roundTo(Number(r.balance_inr || 0), 2),
+    inr_amount: roundTo(Number(r.inr_amount || 0), 3),
+    wholesale_rate: r.wholesale_rate != null ? roundTo(Number(r.wholesale_rate), 3) : null,
+    aed_equivalent: r.aed_equivalent != null ? roundTo(Number(r.aed_equivalent), 3) : null,
+    paid_amount_inr: roundTo(Number(r.paid_amount_inr || 0), 3),
+    balance_inr: roundTo(Number(r.balance_inr || 0), 3),
     status: r.status || "ALLOCATED",
     notes: r.notes || null,
     is_demo: Boolean(r.is_demo),
@@ -263,10 +263,10 @@ function mapBankDistripRecord(r: any): BankDistripRecord {
     account_id: r.account_id,
     account_code: r.account_code || r.account_id,
     account_name: r.account_name,
-    order_inr: roundTo(Number(r.order_inr || 0), 2),
-    commission_inr: roundTo(Number(r.commission_inr || 0), 2),
-    paid_inr: roundTo(Number(r.paid_inr || 0), 2),
-    balance_inr: roundTo(Number(r.balance_inr || 0), 2),
+    order_inr: roundTo(Number(r.order_inr || 0), 3),
+    commission_inr: roundTo(Number(r.commission_inr || 0), 3),
+    paid_inr: roundTo(Number(r.paid_inr || 0), 3),
+    balance_inr: roundTo(Number(r.balance_inr || 0), 3),
     notes: r.notes || null,
     created_at: formatDateTime(r.created_at),
   };
@@ -535,7 +535,7 @@ export async function getPartiesPriorTransfersSummary(): Promise<{
 
     const totalSplits = pSplits.reduce((sum: number, s: any) => sum + Number(s.inr_amount || 0), 0);
 
-    const availablePriorBalance = Math.max(0, roundTo(totalTransferred - totalSplits, 2));
+    const availablePriorBalance = Math.max(0, roundTo(totalTransferred - totalSplits, 3));
     const hasPriorTransfers = availablePriorBalance > 0;
 
     const item: PartyPriorTransferSummary = {
@@ -543,8 +543,8 @@ export async function getPartiesPriorTransfersSummary(): Promise<{
       partyCode: p.code || p.name,
       partyName: p.name,
       distributorId: distId,
-      totalTransferredInr: roundTo(totalTransferred, 2),
-      totalSplitsAssignedInr: roundTo(totalSplits, 2),
+      totalTransferredInr: roundTo(totalTransferred, 3),
+      totalSplitsAssignedInr: roundTo(totalSplits, 3),
       availablePriorBalanceInr: availablePriorBalance,
       hasPriorTransfers,
       transfers: pTxns.map((t: any) => ({
@@ -962,7 +962,7 @@ export async function createTransaction(data: {
       }
       const splitInr = Number(s.inr_amount);
       const paidInr = s.paid_amount_inr !== undefined ? Number(s.paid_amount_inr) : 0.00;
-      const balanceInr = s.balance_inr !== undefined ? Number(s.balance_inr) : roundTo(splitInr - paidInr, 2);
+      const balanceInr = s.balance_inr !== undefined ? Number(s.balance_inr) : roundTo(splitInr - paidInr, 3);
       const splitStatus = balanceInr <= 0 ? 'SETTLED' : (paidInr > 0 ? 'PARTIAL' : 'ALLOCATED');
       const splitId = crypto.randomUUID();
       await execute(`
@@ -977,7 +977,7 @@ export async function createTransaction(data: {
         )
       `, [
         splitId, id, s.distributor_id, data.transaction_date,
-        splitInr, baseRate, baseRate > 0 ? roundTo(splitInr / baseRate, 2) : 0,
+        splitInr, baseRate, baseRate > 0 ? roundTo(splitInr / baseRate, 3) : 0,
         paidInr, balanceInr, splitStatus, s.notes || null
       ]);
     }
@@ -1160,23 +1160,23 @@ export async function getPartySplitSummary(todayParam?: string): Promise<PartySp
     party_name: r.party_name,
     party_code: r.party_code || r.party_name,
     group_type: r.group_type || "IND",
-    today_inr: roundTo(Number(r.today_inr || 0), 2),
-    yesterday_inr: roundTo(Number(r.yesterday_inr || 0), 2),
-    week_inr: roundTo(Number(r.week_inr || 0), 2),
-    month_inr: roundTo(Number(r.month_inr || 0), 2),
-    year_inr: roundTo(Number(r.year_inr || 0), 2),
-    total_inr: roundTo(Number(r.total_inr || 0), 2),
+    today_inr: roundTo(Number(r.today_inr || 0), 3),
+    yesterday_inr: roundTo(Number(r.yesterday_inr || 0), 3),
+    week_inr: roundTo(Number(r.week_inr || 0), 3),
+    month_inr: roundTo(Number(r.month_inr || 0), 3),
+    year_inr: roundTo(Number(r.year_inr || 0), 3),
+    total_inr: roundTo(Number(r.total_inr || 0), 3),
     split_count: Number(r.split_count || 0),
   }));
 
   const grand_totals = parties.reduce(
     (acc, p) => ({
-      today: roundTo(acc.today + p.today_inr, 2),
-      yesterday: roundTo(acc.yesterday + p.yesterday_inr, 2),
-      week: roundTo(acc.week + p.week_inr, 2),
-      month: roundTo(acc.month + p.month_inr, 2),
-      year: roundTo(acc.year + p.year_inr, 2),
-      total: roundTo(acc.total + p.total_inr, 2),
+      today: roundTo(acc.today + p.today_inr, 3),
+      yesterday: roundTo(acc.yesterday + p.yesterday_inr, 3),
+      week: roundTo(acc.week + p.week_inr, 3),
+      month: roundTo(acc.month + p.month_inr, 3),
+      year: roundTo(acc.year + p.year_inr, 3),
+      total: roundTo(acc.total + p.total_inr, 3),
     }),
     { today: 0, yesterday: 0, week: 0, month: 0, year: 0, total: 0 }
   );
@@ -1226,7 +1226,7 @@ export async function createDistributionSplit(data: {
 
   const id = crypto.randomUUID();
   const wholesaleRate = data.wholesale_rate || txn.base_rate;
-  const aedEq = wholesaleRate ? roundTo(data.inr_amount / wholesaleRate, 2) : 0;
+  const aedEq = wholesaleRate ? roundTo(data.inr_amount / wholesaleRate, 3) : 0;
 
   await execute(`
     INSERT INTO distribution_splits (
@@ -1240,7 +1240,7 @@ export async function createDistributionSplit(data: {
     )
   `, [
     id, data.transaction_id, data.distributor_id, data.split_date,
-    roundTo(data.inr_amount, 2), wholesaleRate, aedEq, data.notes || null
+    roundTo(data.inr_amount, 3), wholesaleRate, aedEq, data.notes || null
   ]);
 
   invalidateAllCaches();
@@ -1273,7 +1273,7 @@ export async function recordCustomerPayment(data: {
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, false)
   `, [
     id, paymentNumber, data.payment_date, data.customer_id, data.transaction_id || null,
-    roundTo(data.amount_aed, 2), data.payment_method || 'CASH', data.reference_number || null, data.notes || null
+    roundTo(data.amount_aed, 3), data.payment_method || 'CASH', data.reference_number || null, data.notes || null
   ]);
 
   await execute(`
@@ -1286,7 +1286,7 @@ export async function recordCustomerPayment(data: {
   return {
     ...created,
     payment_date: formatDate(created.payment_date),
-    amount_aed: roundTo(Number(created.amount_aed), 2),
+    amount_aed: roundTo(Number(created.amount_aed), 3),
     created_at: formatDateTime(created.created_at),
   };
 }
@@ -1334,7 +1334,7 @@ export async function listCustomerPayments(filters?: {
     customer_name: r.customer_name,
     transaction_id: r.transaction_id || null,
     transaction_number: r.transaction_number || null,
-    amount_aed: roundTo(Number(r.amount_aed), 2),
+    amount_aed: roundTo(Number(r.amount_aed), 3),
     payment_method: r.payment_method || "CASH",
     reference_number: r.reference_number || null,
     notes: r.notes || null,
@@ -1396,10 +1396,10 @@ export async function getCustomerLedger(customerId: string): Promise<{
 
   if (!custRow) throw new Error("Customer not found");
 
-  const totalInr = roundTo(txns.reduce((sum: number, t: any) => sum + Number(t.inr_amount || 0), 0), 2);
-  const totalAed = roundTo(txns.reduce((sum: number, t: any) => sum + Number(t.aed_amount || 0), 0), 2);
-  const totalPaid = roundTo(pays.reduce((sum: number, p: any) => sum + Number(p.amount_aed || 0), 0), 2);
-  const outstandingBalance = roundTo(totalAed - totalPaid, 2);
+  const totalInr = roundTo(txns.reduce((sum: number, t: any) => sum + Number(t.inr_amount || 0), 0), 3);
+  const totalAed = roundTo(txns.reduce((sum: number, t: any) => sum + Number(t.aed_amount || 0), 0), 3);
+  const totalPaid = roundTo(pays.reduce((sum: number, p: any) => sum + Number(p.amount_aed || 0), 0), 3);
+  const outstandingBalance = roundTo(totalAed - totalPaid, 3);
 
   const customer: Customer = {
     id: custRow.id,
@@ -1424,8 +1424,8 @@ export async function getCustomerLedger(customerId: string): Promise<{
     type: e.type as 'TRANSACTION' | 'PAYMENT',
     reference: e.reference,
     description: e.description,
-    debit_aed: roundTo(Number(e.debit_aed || 0), 2),
-    credit_aed: roundTo(Number(e.credit_aed || 0), 2),
+    debit_aed: roundTo(Number(e.debit_aed || 0), 3),
+    credit_aed: roundTo(Number(e.credit_aed || 0), 3),
     created_at: formatDateTime(e.created_at),
   })).sort((a: any, b: any) => {
     if (a.date !== b.date) return a.date.localeCompare(b.date);
@@ -1434,7 +1434,7 @@ export async function getCustomerLedger(customerId: string): Promise<{
 
   let running = 0;
   const entries = allEvents.map((e: any) => {
-    running = roundTo(running + e.debit_aed - e.credit_aed, 2);
+    running = roundTo(running + e.debit_aed - e.credit_aed, 3);
     return {
       id: e.id,
       date: e.date,
@@ -1480,9 +1480,9 @@ export async function listDistributors(groupType?: "IND" | "AED"): Promise<Distr
   return rows.map(d => ({
     ...d,
     group_type: d.group_type || "IND",
-    total_splits_inr: roundTo(Number(d.total_splits_inr || 0), 2),
-    total_splits_paid_inr: roundTo(Number(d.total_splits_paid_inr || 0), 2),
-    splits_balance_inr: roundTo(Number(d.splits_balance_inr || 0), 2),
+    total_splits_inr: roundTo(Number(d.total_splits_inr || 0), 3),
+    total_splits_paid_inr: roundTo(Number(d.total_splits_paid_inr || 0), 3),
+    splits_balance_inr: roundTo(Number(d.splits_balance_inr || 0), 3),
     created_at: formatDateTime(d.created_at),
   }));
 }
@@ -1553,7 +1553,7 @@ export async function listBankDistripAccounts(): Promise<BankDistripAccountRecor
 
   return rows.map(r => ({
     ...r,
-    current_balance: roundTo(Number(r.current_balance || 0), 2),
+    current_balance: roundTo(Number(r.current_balance || 0), 3),
     created_at: formatDateTime(r.created_at),
   }));
 }
@@ -1628,7 +1628,7 @@ export async function getDistributorOrderForDate(accountId: string, date: string
     ) as total_order
   `, [accountId, date]);
 
-  return roundTo(Number(row?.total_order || 0), 2);
+  return roundTo(Number(row?.total_order || 0), 3);
 }
 
 /**
@@ -1687,7 +1687,7 @@ export async function recalculateBankDistripBalances(accountId: string): Promise
     const com = Number(existing?.commission_inr || 0);
     const paid = Number(existing?.paid_inr || 0);
     // Formula from Excel: Balance = Previous Balance + Order + Commission - Paid
-    runningBal = roundTo(runningBal + order + com - paid, 2);
+    runningBal = roundTo(runningBal + order + com - paid, 3);
 
     if (existing) {
       if (Number(existing.order_inr) !== order || Number(existing.balance_inr) !== runningBal) {
@@ -1736,8 +1736,8 @@ export async function saveBankDistributionEntry(data: {
 }): Promise<void> {
   const accountId = data.account_id;
   const recordDate = data.record_date;
-  const com = roundTo(Number(data.commission_inr || 0), 2);
-  const paid = roundTo(Number(data.paid_inr || 0), 2);
+  const com = roundTo(Number(data.commission_inr || 0), 3);
+  const paid = roundTo(Number(data.paid_inr || 0), 3);
   const notes = data.notes?.trim() || null;
 
   // Retrieve automatic order from allocations / splits
@@ -1922,10 +1922,10 @@ export async function getBankDistributionSettlement(
   const accountsWithTotals: any[] = [];
 
   for (const acc of accountsData) {
-    const total_order = roundTo(Number(acc.total_order || 0), 2);
-    const total_commission = roundTo(Number(acc.total_commission || 0), 2);
-    const total_paid = roundTo(Number(acc.total_paid || 0), 2);
-    const closing_balance = roundTo(Number(acc.closing_balance || 0), 2);
+    const total_order = roundTo(Number(acc.total_order || 0), 3);
+    const total_commission = roundTo(Number(acc.total_commission || 0), 3);
+    const total_paid = roundTo(Number(acc.total_paid || 0), 3);
+    const closing_balance = roundTo(Number(acc.closing_balance || 0), 3);
 
     grandOrder += total_order;
     grandCom += total_commission;
@@ -1991,10 +1991,10 @@ export async function getBankDistributionSettlement(
     records: mappedRecords,
     totals: activeTotals,
     grandTotals: {
-      grand_order: roundTo(grandOrder, 2),
-      grand_commission: roundTo(grandCom, 2),
-      grand_paid: roundTo(grandPaid, 2),
-      grand_balance: roundTo(grandBal, 2),
+      grand_order: roundTo(grandOrder, 3),
+      grand_commission: roundTo(grandCom, 3),
+      grand_paid: roundTo(grandPaid, 3),
+      grand_balance: roundTo(grandBal, 3),
       distributor_summaries: distributorSummaries,
     },
   };
@@ -2143,32 +2143,32 @@ export async function getDashboardKPIs(filters?: { from?: string; to?: string; t
   const result = {
     kpis: {
       // Primary Cards
-      todayInr: roundTo(Number(todaySummary?.total_inr || 0), 2),
-      todayAed: roundTo(Number(todaySummary?.total_aed || 0), 2),
+      todayInr: roundTo(Number(todaySummary?.total_inr || 0), 3),
+      todayAed: roundTo(Number(todaySummary?.total_aed || 0), 3),
       todayTxnCount: Number(todaySummary?.count || 0),
-      todayProfit: roundTo(Number(todaySummary?.net_profit || 0), 2),
+      todayProfit: roundTo(Number(todaySummary?.net_profit || 0), 3),
 
       // Filtered Range Cards
-      totalInrProcessed: roundTo(Number(txnSummary?.total_inr || 0), 2),
-      totalAedCharged: roundTo(Number(txnSummary?.total_aed || 0), 2),
-      totalAedCollected: roundTo(Number(paySummary?.total_collected || 0), 2),
-      grossProfitAed: roundTo(Number(txnSummary?.gross_profit || 0), 2),
-      deliveryChargesAed: roundTo(Number(txnSummary?.delivery_charges || 0), 2),
-      netProfitAed: roundTo(Number(txnSummary?.net_profit || 0), 2),
+      totalInrProcessed: roundTo(Number(txnSummary?.total_inr || 0), 3),
+      totalAedCharged: roundTo(Number(txnSummary?.total_aed || 0), 3),
+      totalAedCollected: roundTo(Number(paySummary?.total_collected || 0), 3),
+      grossProfitAed: roundTo(Number(txnSummary?.gross_profit || 0), 3),
+      deliveryChargesAed: roundTo(Number(txnSummary?.delivery_charges || 0), 3),
+      netProfitAed: roundTo(Number(txnSummary?.net_profit || 0), 3),
       transactionCount: Number(txnSummary?.count || 0),
 
       // Secondary Global Cards
-      outstandingReceivablesAed: roundTo(Number(custReceivables?.customer_outstanding ?? custReceivables?.outstanding ?? 0), 2),
-      partyTransfersDueAed: roundTo(Math.max(0, Number(custReceivables?.party_due_pending || 0)), 2),
-      partyTransfersPaidAed: roundTo(Number(custReceivables?.party_paid || 0), 2),
-      indiaDistributionPendingInr: roundTo(Math.max(0, Number(distPending?.pending_inr || 0)), 2),
-      bankDistributionPendingInr: roundTo(Number(bankPending?.bank_pending_inr || 0), 2),
+      outstandingReceivablesAed: roundTo(Number(custReceivables?.customer_outstanding ?? custReceivables?.outstanding ?? 0), 3),
+      partyTransfersDueAed: roundTo(Math.max(0, Number(custReceivables?.party_due_pending || 0)), 3),
+      partyTransfersPaidAed: roundTo(Number(custReceivables?.party_paid || 0), 3),
+      indiaDistributionPendingInr: roundTo(Math.max(0, Number(distPending?.pending_inr || 0)), 3),
+      bankDistributionPendingInr: roundTo(Number(bankPending?.bank_pending_inr || 0), 3),
     },
     dailyTrends: dailyTrends.map(d => ({
       date: formatDate(d.date),
-      inrVolume: roundTo(Number(d.inr_volume || 0), 2),
-      aedVolume: roundTo(Number(d.aed_volume || 0), 2),
-      netProfit: roundTo(Number(d.net_profit || 0), 2),
+      inrVolume: roundTo(Number(d.inr_volume || 0), 3),
+      aedVolume: roundTo(Number(d.aed_volume || 0), 3),
+      netProfit: roundTo(Number(d.net_profit || 0), 3),
       count: Number(d.txn_count || 0),
     }))
   };
@@ -2341,7 +2341,7 @@ export async function updateTransaction(id: string, data: {
     await execute(`DELETE FROM distribution_splits WHERE transaction_id = $1`, [id]);
     for (const s of data.splits) {
       const splitId = s.id && !s.id.startsWith("new-") ? s.id : crypto.randomUUID();
-      const aedEq = baseRate > 0 ? roundTo(s.inr_amount / baseRate, 2) : 0;
+      const aedEq = baseRate > 0 ? roundTo(s.inr_amount / baseRate, 3) : 0;
       await execute(`
         INSERT INTO distribution_splits (
           id, transaction_id, distributor_id, split_date,
@@ -2354,7 +2354,7 @@ export async function updateTransaction(id: string, data: {
         )
       `, [
         splitId, id, s.distributor_id, transactionDate,
-        roundTo(s.inr_amount, 2), baseRate, aedEq, s.notes || null
+        roundTo(s.inr_amount, 3), baseRate, aedEq, s.notes || null
       ]);
     }
 
@@ -2470,9 +2470,9 @@ export async function updateDistributionSplit(id: string, data: {
     throw new Error(`New split amount (₹${newInr.toLocaleString()}) exceeds available unallocated order balance (₹${maxAllowed.toLocaleString()}).`);
   }
 
-  const aedEq = wholesaleRate ? roundTo(newInr / wholesaleRate, 2) : 0;
+  const aedEq = wholesaleRate ? roundTo(newInr / wholesaleRate, 3) : 0;
   const paidInr = Number(existingSplit.paid_amount_inr || 0);
-  const balanceInr = roundTo(newInr - paidInr, 2);
+  const balanceInr = roundTo(newInr - paidInr, 3);
 
   await execute(`
     UPDATE distribution_splits
@@ -2480,7 +2480,7 @@ export async function updateDistributionSplit(id: string, data: {
         wholesale_rate = $4, aed_equivalent = $5, balance_inr = $6, notes = $7
     WHERE id = $8
   `, [
-    distId, splitDate, roundTo(newInr, 2),
+    distId, splitDate, roundTo(newInr, 3),
     wholesaleRate, aedEq, balanceInr, notes || null,
     id
   ]);

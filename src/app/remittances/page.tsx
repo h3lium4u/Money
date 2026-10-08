@@ -346,9 +346,9 @@ function CustomerRemittancesContent() {
         return;
       }
     }
-    if (Math.abs(parsedEditInr - totalEditSplits) >= 0.01) {
+    if (Math.abs(parsedEditInr - totalEditSplits) >= 0.001) {
       setEditError(
-        `Total splits (₹${totalEditSplits.toLocaleString("en-IN", { minimumFractionDigits: 2 })}) must equal order amount (₹${parsedEditInr.toLocaleString("en-IN", { minimumFractionDigits: 2 })}). Difference: ₹${Math.abs(parsedEditInr - totalEditSplits).toLocaleString("en-IN", { minimumFractionDigits: 2 })}.`
+        `Total splits (₹${totalEditSplits.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}) must equal order amount (₹${parsedEditInr.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}). Difference: ₹${Math.abs(parsedEditInr - totalEditSplits).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}.`
       );
       return;
     }
@@ -475,10 +475,10 @@ function CustomerRemittancesContent() {
   }
 
   const formatINR = (val?: number) =>
-    `₹ ${(val || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    `₹ ${(val || 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`;
 
   const formatAED = (val?: number) =>
-    `${(val || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED`;
+    `${(val || 0).toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED`;
 
   // Strictly customer remittances: only entity_type === 'CUSTOMER'
   const filtered = transactions.filter((t) => {
@@ -802,7 +802,7 @@ function CustomerRemittancesContent() {
 
                         <td className="px-3.5 py-2.5 font-mono whitespace-nowrap">
                           <div className="font-bold text-slate-800 dark:text-slate-200 text-xs">
-                            {Number(t.customer_rate).toFixed(4)}
+                            {Number(t.customer_rate).toFixed(3)}
                           </div>
                           <span className="text-[9px] text-slate-400">AED/1000</span>
                         </td>
@@ -1131,11 +1131,11 @@ function CustomerRemittancesContent() {
                           {isMatched
                             ? "✓ Splits match order total exactly."
                             : diff > 0
-                            ? `⚠️ Unallocated: ₹${diff.toLocaleString("en-IN", { minimumFractionDigits: 2 })} remaining.`
-                            : `⛔ Over-allocated by ₹${Math.abs(diff).toLocaleString("en-IN", { minimumFractionDigits: 2 })}.`}
+                            ? `⚠️ Unallocated: ₹${diff.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} remaining.`
+                            : `⛔ Over-allocated by ₹${Math.abs(diff).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}.`}
                         </span>
                         <span className="font-bold">
-                          ₹{allocated.toLocaleString("en-IN")} / ₹{currentOrder.toLocaleString("en-IN")}
+                          ₹{allocated.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} / ₹{currentOrder.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                         </span>
                       </div>
                     );

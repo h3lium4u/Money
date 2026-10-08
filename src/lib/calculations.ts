@@ -56,24 +56,26 @@ export function calculateDubaiClientTransfer(inputs: DubaiClientInputs): DubaiCl
   if (manualRate <= 0) throw new Error("Manual rate value must be greater than zero");
   if (paidAmount < 0) throw new Error("Paid amount cannot be negative");
 
-  const wholesaleRate = roundTo(1000 / manualRate, 4);
-  const inDhirams = roundTo(total / wholesaleRate, 2);
-  const balanceToPaid = roundTo(inDhirams - paidAmount, 2);
+  // Wholesale rate = 1000 / manual rate (3 decimal points)
+  const wholesaleRate = roundTo(1000 / manualRate, 3);
+  // Exact In Dhirams formula avoids floating division rounding drift (prevents 60,000 drifting to 59,998)
+  const inDhirams = roundTo((total * manualRate) / 1000, 3);
+  const balanceToPaid = roundTo(inDhirams - paidAmount, 3);
 
   return {
-    total: roundTo(total, 2),
-    manualRate: roundTo(manualRate, 4),
+    total: roundTo(total, 3),
+    manualRate: roundTo(manualRate, 3),
     wholesaleRate,
     inDhirams,
-    paidAmount: roundTo(paidAmount, 2),
+    paidAmount: roundTo(paidAmount, 3),
     balanceToPaid,
   };
 }
 
 /**
- * Rounds a number to a specified number of decimal places.
+ * Rounds a number to a specified number of decimal places (default 3 decimals).
  */
-export function roundTo(val: number, decimals: number = 2): number {
+export function roundTo(val: number, decimals: number = 3): number {
   const factor = Math.pow(10, decimals);
   return Math.round((val + Number.EPSILON) * factor) / factor;
 }
@@ -85,16 +87,16 @@ export function roundTo(val: number, decimals: number = 2): number {
  */
 export function ratePer1000ToInrPerAed(ratePer1000: number): number {
   if (ratePer1000 <= 0) return 0;
-  return roundTo(1000 / ratePer1000, 4);
+  return roundTo(1000 / ratePer1000, 3);
 }
 
 export function inrPerAedToRatePer1000(inrPerAed: number): number {
   if (inrPerAed <= 0) return 0;
-  return roundTo(1000 / inrPerAed, 4);
+  return roundTo(1000 / inrPerAed, 3);
 }
 
 /**
- * Authoritative transaction calculations
+ * Authoritative transaction calculations with 3 decimal precision
  */
 export function calculateTransaction(inputs: TransactionInputs): TransactionCalculationResult {
   const inr = Number(inputs.inrAmount);
@@ -119,7 +121,7 @@ export function calculateTransaction(inputs: TransactionInputs): TransactionCalc
 
   // 1. AED Charged to Customer = (INR / 1000) * Customer_Rate_Per_1000
   const rawAedAmount = (inr / 1000) * customerRatePer1000;
-  const aedAmount = roundTo(rawAedAmount, 2);
+  const aedAmount = roundTo(rawAedAmount, 3);
 
   // 2. Base Cost AED
   // In the Excel, Base Rate (CV) is either in INR/AED (~26.82) or entered as =1000/38.30
@@ -134,33 +136,33 @@ export function calculateTransaction(inputs: TransactionInputs): TransactionCalc
 
   // Cost = INR / baseRateInrPerAed == (INR / 1000) * baseRatePer1000
   const rawCostAed = inr / baseRateInrPerAed;
-  const costAed = roundTo(rawCostAed, 2);
+  const costAed = roundTo(rawCostAed, 3);
 
   // 3. Gross Profit AED = AED Charged - Cost AED
   const rawGrossProfit = rawAedAmount - rawCostAed;
-  const grossProfitAed = roundTo(rawGrossProfit, 2);
+  const grossProfitAed = roundTo(rawGrossProfit, 3);
 
   // 4. Delivery Charge AED = Gross Profit * Delivery Charge %
   const rawDeliveryCharge = rawGrossProfit * deliveryPct;
-  const deliveryChargeAed = roundTo(rawDeliveryCharge, 2);
+  const deliveryChargeAed = roundTo(rawDeliveryCharge, 3);
 
   // 5. Net Profit AED = Gross Profit - Delivery Charge
   const rawNetProfit = rawGrossProfit - rawDeliveryCharge;
-  const netProfitAed = roundTo(rawNetProfit, 2);
+  const netProfitAed = roundTo(rawNetProfit, 3);
 
-  const marginPct = aedAmount > 0 ? roundTo((netProfitAed / aedAmount) * 100, 2) : 0;
+  const marginPct = aedAmount > 0 ? roundTo((netProfitAed / aedAmount) * 100, 3) : 0;
 
   return {
-    inrAmount: roundTo(inr, 2),
-    customerRate: roundTo(customerRatePer1000, 4),
-    customerRateInrPerAed: roundTo(customerRateInrPerAed, 4),
+    inrAmount: roundTo(inr, 3),
+    customerRate: roundTo(customerRatePer1000, 3),
+    customerRateInrPerAed: roundTo(customerRateInrPerAed, 3),
     aedAmount,
-    baseRate: roundTo(baseRate, 4),
-    baseRateAedPer1000: roundTo(baseRatePer1000, 4),
-    baseRateInrPerAed: roundTo(baseRateInrPerAed, 4),
+    baseRate: roundTo(baseRate, 3),
+    baseRateAedPer1000: roundTo(baseRatePer1000, 3),
+    baseRateInrPerAed: roundTo(baseRateInrPerAed, 3),
     costAed,
     grossProfitAed,
-    deliveryChargePct: roundTo(deliveryPct, 4),
+    deliveryChargePct: roundTo(deliveryPct, 3),
     deliveryChargeAed,
     netProfitAed,
     marginPct,
@@ -168,7 +170,7 @@ export function calculateTransaction(inputs: TransactionInputs): TransactionCalc
 }
 
 /**
- * Bank Distrip Running Balance:
+ * Bank Distrip Running Balance (3 decimal precision):
  * Current Balance = Previous Balance + Order (INR) + Commission (INR) - Paid (INR)
  */
 export function calculateBankDistripBalance(
@@ -177,7 +179,7 @@ export function calculateBankDistripBalance(
   commissionInr: number,
   paidInr: number
 ): number {
-  return roundTo(previousBalance + orderInr + commissionInr - paidInr, 2);
+  return roundTo(previousBalance + orderInr + commissionInr - paidInr, 3);
 }
 
 /**
@@ -196,9 +198,9 @@ export function calculateWholesaleSettlement(
   balanceToBePaidAed: number;
   dailyBalanceAed: number;
 } {
-  const inDirhams = roundTo(inrAmount / wholesaleRate, 2);
-  const balanceToBePaidAed = roundTo(inDirhams - paidAed, 2);
-  const dailyBalanceAed = roundTo(prevDailyBalanceAed + balanceToBePaidAed, 2);
+  const inDirhams = roundTo(inrAmount / wholesaleRate, 3);
+  const balanceToBePaidAed = roundTo(inDirhams - paidAed, 3);
+  const dailyBalanceAed = roundTo(prevDailyBalanceAed + balanceToBePaidAed, 3);
 
   return {
     inDirhams,
@@ -216,5 +218,5 @@ export function calculateCustomerRunningBalance(
   aedCharged: number,
   aedReceived: number
 ): number {
-  return roundTo(previousBalance + aedCharged - aedReceived, 2);
+  return roundTo(previousBalance + aedCharged - aedReceived, 3);
 }

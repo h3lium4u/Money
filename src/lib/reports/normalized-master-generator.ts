@@ -161,10 +161,10 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   const totalBalanceToPaid = customerTransactions.filter(t => t.status === "CONFIRMED").reduce((s, t) => s + (t.balance_to_paid ?? t.pending_aed ?? 0), 0);
 
   const dubaiKpis = [
-    { label: "Total Volume (INR)", value: totalDubaiInr, fmt: "#,##0.00" },
-    { label: "Total in Dirhams (AED)", value: totalInDhirams, fmt: "#,##0.00" },
-    { label: "Total Collected / Paid (AED)", value: totalPaidAmount, fmt: "#,##0.00" },
-    { label: "Outstanding Balance (AED)", value: totalBalanceToPaid, fmt: "#,##0.00" },
+    { label: "Total Volume (INR)", value: totalDubaiInr, fmt: "#,##0.000" },
+    { label: "Total in Dirhams (AED)", value: totalInDhirams, fmt: "#,##0.000" },
+    { label: "Total Collected / Paid (AED)", value: totalPaidAmount, fmt: "#,##0.000" },
+    { label: "Outstanding Balance (AED)", value: totalBalanceToPaid, fmt: "#,##0.000" },
     { label: "Total Orders Count", value: customerTransactions.length, fmt: "#,##0" },
   ];
 
@@ -197,9 +197,9 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   const totalPartyProfitInr = totalPartyInr - totalPartyCostInr;
 
   const partyKpis = [
-    { label: "Total Party Transfers Volume", value: totalPartyInr, fmt: "#,##0.00" },
-    { label: "Total Party Payout Cost", value: totalPartyCostInr, fmt: "#,##0.00" },
-    { label: "Net Profit on Party Transfers", value: totalPartyProfitInr, fmt: "#,##0.00" },
+    { label: "Total Party Transfers Volume", value: totalPartyInr, fmt: "#,##0.000" },
+    { label: "Total Party Payout Cost", value: totalPartyCostInr, fmt: "#,##0.000" },
+    { label: "Net Profit on Party Transfers", value: totalPartyProfitInr, fmt: "#,##0.000" },
     { label: "Registered Master Parties", value: parties.length, fmt: "#,##0" },
     { label: "Total Party Transfers Count", value: partyTransfers.length, fmt: "#,##0" },
   ];
@@ -233,10 +233,10 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   };
 
   const bankKpis = [
-    { label: "Grand Total Orders Assigned (INR)", value: grandTotals.grand_order, fmt: "#,##0.00" },
-    { label: "Grand Total Commission Recorded (INR)", value: grandTotals.grand_commission, fmt: "#,##0.00" },
-    { label: "Grand Total Paid / Disbursed (INR)", value: grandTotals.grand_paid, fmt: "#,##0.00" },
-    { label: "Net Grand Closing Balance Across Distributors (INR)", value: grandTotals.grand_balance, fmt: "#,##0.00" },
+    { label: "Grand Total Orders Assigned (INR)", value: grandTotals.grand_order, fmt: "#,##0.000" },
+    { label: "Grand Total Commission Recorded (INR)", value: grandTotals.grand_commission, fmt: "#,##0.000" },
+    { label: "Grand Total Paid / Disbursed (INR)", value: grandTotals.grand_paid, fmt: "#,##0.000" },
+    { label: "Net Grand Closing Balance Across Distributors (INR)", value: grandTotals.grand_balance, fmt: "#,##0.000" },
   ];
 
   bankKpis.forEach((k, idx) => {
@@ -399,10 +399,10 @@ export async function generateNormalizedMasterWorkbook(filters?: {
       balance: 0,
       created_date: "",
     });
-    custTotalRow.getCell(6).numFmt = "#,##0.00";
-    custTotalRow.getCell(7).numFmt = "#,##0.00";
-    custTotalRow.getCell(8).numFmt = "#,##0.00";
-    custTotalRow.getCell(9).numFmt = "#,##0.00";
+    custTotalRow.getCell(6).numFmt = "#,##0.000";
+    custTotalRow.getCell(7).numFmt = "#,##0.000";
+    custTotalRow.getCell(8).numFmt = "#,##0.000";
+    custTotalRow.getCell(9).numFmt = "#,##0.000";
     styleTotalRow(custTotalRow);
   } else {
     customers.forEach((c, idx) => {
@@ -418,11 +418,11 @@ export async function generateNormalizedMasterWorkbook(filters?: {
         balance: c.outstanding_balance || 0,
         created_date: c.created_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
       });
-      row.getCell(4).numFmt = "0.0000";
-      row.getCell(6).numFmt = "#,##0.00";
-      row.getCell(7).numFmt = "#,##0.00";
-      row.getCell(8).numFmt = "#,##0.00";
-      row.getCell(9).numFmt = "#,##0.00";
+      row.getCell(4).numFmt = "0.000";
+      row.getCell(6).numFmt = "#,##0.000";
+      row.getCell(7).numFmt = "#,##0.000";
+      row.getCell(8).numFmt = "#,##0.000";
+      row.getCell(9).numFmt = "#,##0.000";
       row.getCell(10).alignment = { horizontal: "center", vertical: "middle" };
       styleDataRow(row, idx % 2 === 1);
     });
@@ -440,10 +440,10 @@ export async function generateNormalizedMasterWorkbook(filters?: {
       balance: { formula: `=SUM(I2:I${lastCustRow})` },
       created_date: "",
     });
-    custTotalRow.getCell(6).numFmt = "#,##0.00";
-    custTotalRow.getCell(7).numFmt = "#,##0.00";
-    custTotalRow.getCell(8).numFmt = "#,##0.00";
-    custTotalRow.getCell(9).numFmt = "#,##0.00";
+    custTotalRow.getCell(6).numFmt = "#,##0.000";
+    custTotalRow.getCell(7).numFmt = "#,##0.000";
+    custTotalRow.getCell(8).numFmt = "#,##0.000";
+    custTotalRow.getCell(9).numFmt = "#,##0.000";
     styleTotalRow(custTotalRow);
   }
 
@@ -492,9 +492,9 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     });
     row.getCell(3).alignment = { horizontal: "center", vertical: "middle" };
     row.getCell(4).alignment = { horizontal: "center", vertical: "middle" };
-    row.getCell(5).numFmt = "0.0000";
-    row.getCell(7).numFmt = "#,##0.00";
-    row.getCell(8).numFmt = "#,##0.00";
+    row.getCell(5).numFmt = "0.000";
+    row.getCell(7).numFmt = "#,##0.000";
+    row.getCell(8).numFmt = "#,##0.000";
     row.getCell(9).alignment = { horizontal: "center", vertical: "middle" };
     styleDataRow(row, idx % 2 === 1);
   });
@@ -511,8 +511,8 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     net_profit_inr: { formula: `=SUM(H2:H${lastPartyRow})` },
     created_date: "",
   });
-  partyTotalRow.getCell(7).numFmt = "#,##0.00";
-  partyTotalRow.getCell(8).numFmt = "#,##0.00";
+  partyTotalRow.getCell(7).numFmt = "#,##0.000";
+  partyTotalRow.getCell(8).numFmt = "#,##0.000";
   styleTotalRow(partyTotalRow);
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -527,10 +527,10 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     { header: "Client Name", key: "cust_name", width: 25 },              // Col E
     { header: "Total Order (INR)", key: "total_inr", width: 20 },        // Col F: Total amount in INR
     { header: "Customer Rate (per 1000 INR)", key: "manual_rate", width: 24 }, // Col G: Customer rate
-    { header: "Wholesale Rate", key: "wholesale_rate", width: 18 },     // Col H: =ROUND(1000/G{rowNum}, 4)
-    { header: "Amount in Dirhams (AED)", key: "in_dhirams", width: 22 }, // Col I: =ROUND(F{rowNum}/H{rowNum}, 2)
+    { header: "Wholesale Rate", key: "wholesale_rate", width: 18 },     // Col H: =ROUND(1000/G{rowNum}, 3)
+    { header: "Amount in Dirhams (AED)", key: "in_dhirams", width: 22 }, // Col I: =ROUND((F{rowNum}*G{rowNum})/1000, 3)
     { header: "Paid Amount (AED)", key: "paid_amount", width: 20 },      // Col J: Paid AED
-    { header: "Balance to be Paid (AED)", key: "balance_to_paid", width: 22 }, // Col K: =ROUND(I{rowNum}-J{rowNum}, 2)
+    { header: "Balance to be Paid (AED)", key: "balance_to_paid", width: 22 }, // Col K: =ROUND(I{rowNum}-J{rowNum}, 3)
     { header: "Payment Status", key: "status", width: 16 },              // Col L
     { header: "Notes / Beneficiary", key: "notes", width: 32 },          // Col M
   ];
@@ -569,10 +569,10 @@ export async function generateNormalizedMasterWorkbook(filters?: {
       status: "",
       notes: "",
     });
-    txnTotalRow.getCell(6).numFmt = "#,##0.00";
-    txnTotalRow.getCell(9).numFmt = "#,##0.00";
-    txnTotalRow.getCell(10).numFmt = "#,##0.00";
-    txnTotalRow.getCell(11).numFmt = "#,##0.00";
+    txnTotalRow.getCell(6).numFmt = "#,##0.000";
+    txnTotalRow.getCell(9).numFmt = "#,##0.000";
+    txnTotalRow.getCell(10).numFmt = "#,##0.000";
+    txnTotalRow.getCell(11).numFmt = "#,##0.000";
     styleTotalRow(txnTotalRow);
   } else {
     customerTransactions.forEach((t, i) => {
@@ -590,22 +590,22 @@ export async function generateNormalizedMasterWorkbook(filters?: {
         cust_name: t.customer_name || "-",
         total_inr: totalInr,
         manual_rate: manualRate,
-        wholesale_rate: { formula: `=IF(G${rowNum}>0, ROUND(1000/G${rowNum}, 4), 0)` },
-        in_dhirams: { formula: `=IF(H${rowNum}>0, ROUND(F${rowNum}/H${rowNum}, 2), 0)` },
+        wholesale_rate: { formula: `=IF(G${rowNum}>0, ROUND(1000/G${rowNum}, 3), 0)` },
+        in_dhirams: { formula: `=IF(G${rowNum}>0, ROUND((F${rowNum}*G${rowNum})/1000, 3), 0)` },
         paid_amount: paidAmount,
-        balance_to_paid: { formula: `=ROUND(I${rowNum}-J${rowNum}, 2)` },
+        balance_to_paid: { formula: `=ROUND(I${rowNum}-J${rowNum}, 3)` },
         status: t.status,
         notes: t.notes || "-",
       });
 
       row.getCell(2).alignment = { horizontal: "center", vertical: "middle" };
       row.getCell(3).alignment = { horizontal: "center", vertical: "middle" };
-      row.getCell(6).numFmt = "#,##0.00"; // Total INR
-      row.getCell(7).numFmt = "0.0000";   // Customer Rate
-      row.getCell(8).numFmt = "0.0000";   // Wholesale Rate
-      row.getCell(9).numFmt = "#,##0.00"; // In Dhirams (AED)
-      row.getCell(10).numFmt = "#,##0.00"; // Paid Amount (AED)
-      row.getCell(11).numFmt = "#,##0.00"; // Balance to Paid (AED)
+      row.getCell(6).numFmt = "#,##0.000"; // Total INR
+      row.getCell(7).numFmt = "0.000";   // Customer Rate
+      row.getCell(8).numFmt = "0.000";   // Wholesale Rate
+      row.getCell(9).numFmt = "#,##0.000"; // In Dhirams (AED)
+      row.getCell(10).numFmt = "#,##0.000"; // Paid Amount (AED)
+      row.getCell(11).numFmt = "#,##0.000"; // Balance to Paid (AED)
       row.getCell(12).alignment = { horizontal: "center", vertical: "middle" };
 
       styleDataRow(row, i % 2 === 1);
@@ -627,10 +627,10 @@ export async function generateNormalizedMasterWorkbook(filters?: {
       status: "",
       notes: "",
     });
-    txnTotalRow.getCell(6).numFmt = "#,##0.00";
-    txnTotalRow.getCell(9).numFmt = "#,##0.00";
-    txnTotalRow.getCell(10).numFmt = "#,##0.00";
-    txnTotalRow.getCell(11).numFmt = "#,##0.00";
+    txnTotalRow.getCell(6).numFmt = "#,##0.000";
+    txnTotalRow.getCell(9).numFmt = "#,##0.000";
+    txnTotalRow.getCell(10).numFmt = "#,##0.000";
+    txnTotalRow.getCell(11).numFmt = "#,##0.000";
     styleTotalRow(txnTotalRow);
   }
 
@@ -691,9 +691,9 @@ export async function generateNormalizedMasterWorkbook(filters?: {
       status: "",
       notes: "",
     });
-    ptTotalRow.getCell(7).numFmt = "#,##0.00";
-    ptTotalRow.getCell(10).numFmt = "#,##0.00";
-    ptTotalRow.getCell(11).numFmt = "#,##0.00";
+    ptTotalRow.getCell(7).numFmt = "#,##0.000";
+    ptTotalRow.getCell(10).numFmt = "#,##0.000";
+    ptTotalRow.getCell(11).numFmt = "#,##0.000";
     styleTotalRow(ptTotalRow);
   } else {
     partyTransfers.forEach((t, i) => {
@@ -712,8 +712,8 @@ export async function generateNormalizedMasterWorkbook(filters?: {
         order_amount: t.inr_amount,
         party_rate: t.customer_rate,
         cost_rate: t.base_rate,
-        cost_amount: { formula: `=IF(H${rowNum}>0, G${rowNum}*(I${rowNum}/H${rowNum}), 0)` },
-        net_profit: { formula: `=G${rowNum}-J${rowNum}` },
+        cost_amount: { formula: `=IF(H${rowNum}>0, ROUND(G${rowNum}*(I${rowNum}/H${rowNum}), 3), 0)` },
+        net_profit: { formula: `=ROUND(G${rowNum}-J${rowNum}, 3)` },
         dist_name: t.distributor_names || t.distributor_name || "-",
         status: t.status,
         notes: t.notes || "-",
@@ -722,11 +722,11 @@ export async function generateNormalizedMasterWorkbook(filters?: {
       row.getCell(2).alignment = { horizontal: "center", vertical: "middle" };
       row.getCell(3).alignment = { horizontal: "center", vertical: "middle" };
       row.getCell(6).alignment = { horizontal: "center", vertical: "middle" };
-      row.getCell(7).numFmt = "#,##0.00";
-      row.getCell(8).numFmt = "0.0000";
-      row.getCell(9).numFmt = "0.0000";
-      row.getCell(10).numFmt = "#,##0.00";
-      row.getCell(11).numFmt = "#,##0.00";
+      row.getCell(7).numFmt = "#,##0.000";
+      row.getCell(8).numFmt = "0.000";
+      row.getCell(9).numFmt = "0.000";
+      row.getCell(10).numFmt = "#,##0.000";
+      row.getCell(11).numFmt = "#,##0.000";
       row.getCell(13).alignment = { horizontal: "center", vertical: "middle" };
 
       styleDataRow(row, i % 2 === 1);
@@ -749,9 +749,9 @@ export async function generateNormalizedMasterWorkbook(filters?: {
       status: "",
       notes: "",
     });
-    ptTotalRow.getCell(7).numFmt = "#,##0.00";
-    ptTotalRow.getCell(10).numFmt = "#,##0.00";
-    ptTotalRow.getCell(11).numFmt = "#,##0.00";
+    ptTotalRow.getCell(7).numFmt = "#,##0.000";
+    ptTotalRow.getCell(10).numFmt = "#,##0.000";
+    ptTotalRow.getCell(11).numFmt = "#,##0.000";
     styleTotalRow(ptTotalRow);
   }
 
@@ -803,7 +803,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
       ref_no: "",
       notes: "",
     });
-    payTotalRow.getCell(7).numFmt = "#,##0.00";
+    payTotalRow.getCell(7).numFmt = "#,##0.000";
     styleTotalRow(payTotalRow);
   } else {
     payments.forEach((p: any, idx: number) => {
@@ -823,7 +823,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
       });
       row.getCell(2).alignment = { horizontal: "center", vertical: "middle" };
       row.getCell(3).alignment = { horizontal: "center", vertical: "middle" };
-      row.getCell(7).numFmt = "#,##0.00";
+      row.getCell(7).numFmt = "#,##0.000";
       row.getCell(8).alignment = { horizontal: "center", vertical: "middle" };
       styleDataRow(row, idx % 2 === 1);
     });
@@ -842,7 +842,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
       ref_no: "",
       notes: "",
     });
-    payTotalRow.getCell(7).numFmt = "#,##0.00";
+    payTotalRow.getCell(7).numFmt = "#,##0.000";
     styleTotalRow(payTotalRow);
   }
 
@@ -897,8 +897,8 @@ export async function generateNormalizedMasterWorkbook(filters?: {
       status: "",
       notes: "",
     });
-    splitTotalRow.getCell(8).numFmt = "#,##0.00";
-    splitTotalRow.getCell(10).numFmt = "#,##0.00";
+    splitTotalRow.getCell(8).numFmt = "#,##0.000";
+    splitTotalRow.getCell(10).numFmt = "#,##0.000";
     styleTotalRow(splitTotalRow);
   } else {
     splits.forEach((s, idx) => {
@@ -915,16 +915,16 @@ export async function generateNormalizedMasterWorkbook(filters?: {
         dist_name: s.distributor_name || s.distributor_code,
         inr_amount: s.inr_amount,
         rate: s.wholesale_rate,
-        aed_eq: { formula: `=IF(I${rowNum}>0, ROUND(H${rowNum}/I${rowNum}, 2), 0)` },
+        aed_eq: { formula: `=IF(I${rowNum}>0, ROUND(H${rowNum}/I${rowNum}, 3), 0)` },
         status: s.status,
         notes: s.notes || "-",
       });
       row.getCell(2).alignment = { horizontal: "center", vertical: "middle" };
       row.getCell(3).alignment = { horizontal: "center", vertical: "middle" };
       row.getCell(6).alignment = { horizontal: "center", vertical: "middle" };
-      row.getCell(8).numFmt = "#,##0.00";
-      row.getCell(9).numFmt = "0.0000";
-      row.getCell(10).numFmt = "#,##0.00";
+      row.getCell(8).numFmt = "#,##0.000";
+      row.getCell(9).numFmt = "0.000";
+      row.getCell(10).numFmt = "#,##0.000";
       row.getCell(11).alignment = { horizontal: "center", vertical: "middle" };
       styleDataRow(row, idx % 2 === 1);
     });
@@ -944,8 +944,8 @@ export async function generateNormalizedMasterWorkbook(filters?: {
       status: "",
       notes: "",
     });
-    splitTotalRow.getCell(8).numFmt = "#,##0.00";
-    splitTotalRow.getCell(10).numFmt = "#,##0.00";
+    splitTotalRow.getCell(8).numFmt = "#,##0.000";
+    splitTotalRow.getCell(10).numFmt = "#,##0.000";
     styleTotalRow(splitTotalRow);
   }
 
@@ -983,9 +983,9 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     row.getCell(3).alignment = { horizontal: "center", vertical: "middle" };
     row.getCell(4).alignment = { horizontal: "center", vertical: "middle" };
     row.getCell(5).alignment = { horizontal: "center", vertical: "middle" };
-    row.getCell(6).numFmt = "#,##0.00";
-    row.getCell(7).numFmt = "#,##0.00";
-    row.getCell(8).numFmt = "#,##0.00";
+    row.getCell(6).numFmt = "#,##0.000";
+    row.getCell(7).numFmt = "#,##0.000";
+    row.getCell(8).numFmt = "#,##0.000";
     styleDataRow(row, idx % 2 === 1);
   });
 
@@ -1000,9 +1000,9 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     total_paid: { formula: `=SUM(G2:G${lastDistRow})` },
     bal_inr: { formula: `=SUM(H2:H${lastDistRow})` },
   });
-  distTotalRow.getCell(6).numFmt = "#,##0.00";
-  distTotalRow.getCell(7).numFmt = "#,##0.00";
-  distTotalRow.getCell(8).numFmt = "#,##0.00";
+  distTotalRow.getCell(6).numFmt = "#,##0.000";
+  distTotalRow.getCell(7).numFmt = "#,##0.000";
+  distTotalRow.getCell(8).numFmt = "#,##0.000";
   styleTotalRow(distTotalRow);
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1061,10 +1061,10 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     row.getCell(7).value = acc.record_count;
 
     row.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
-    row.getCell(3).numFmt = "#,##0.00";
-    row.getCell(4).numFmt = "#,##0.00";
-    row.getCell(5).numFmt = "#,##0.00";
-    row.getCell(6).numFmt = "#,##0.00";
+    row.getCell(3).numFmt = "#,##0.000";
+    row.getCell(4).numFmt = "#,##0.000";
+    row.getCell(5).numFmt = "#,##0.000";
+    row.getCell(6).numFmt = "#,##0.000";
     row.getCell(7).numFmt = "#,##0";
     row.getCell(7).alignment = { horizontal: "center", vertical: "middle" };
     styleDataRow(row, summaryRowIdx % 2 === 0);
@@ -1082,10 +1082,10 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   grandTotalRow.getCell(6).value = { formula: `=SUM(F6:F${summaryRowIdx - 1})` };
   grandTotalRow.getCell(7).value = { formula: `=SUM(G6:G${summaryRowIdx - 1})` };
 
-  grandTotalRow.getCell(3).numFmt = "#,##0.00";
-  grandTotalRow.getCell(4).numFmt = "#,##0.00";
-  grandTotalRow.getCell(5).numFmt = "#,##0.00";
-  grandTotalRow.getCell(6).numFmt = "#,##0.00";
+  grandTotalRow.getCell(3).numFmt = "#,##0.000";
+  grandTotalRow.getCell(4).numFmt = "#,##0.000";
+  grandTotalRow.getCell(5).numFmt = "#,##0.000";
+  grandTotalRow.getCell(6).numFmt = "#,##0.000";
   grandTotalRow.getCell(7).numFmt = "#,##0";
   grandTotalRow.getCell(7).alignment = { horizontal: "center", vertical: "middle" };
   styleTotalRow(grandTotalRow, "FFE0E7FF"); // Soft Indigo fill
@@ -1141,7 +1141,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
       emptyRow.getCell(5).value = 0;
       emptyRow.getCell(6).value = 0;
       emptyRow.getCell(7).value = "No settlement records recorded yet";
-      for (let c = 3; c <= 6; c++) emptyRow.getCell(c).numFmt = "#,##0.00";
+      for (let c = 3; c <= 6; c++) emptyRow.getCell(c).numFmt = "#,##0.000";
       styleDataRow(emptyRow);
       currRow++;
 
@@ -1152,8 +1152,8 @@ export async function generateNormalizedMasterWorkbook(filters?: {
       dTotRow.getCell(4).value = 0;
       dTotRow.getCell(5).value = 0;
       dTotRow.getCell(6).value = 0;
-      dTotRow.getCell(7).value = `Closing Balance: ₹0.00`;
-      for (let c = 3; c <= 6; c++) dTotRow.getCell(c).numFmt = "#,##0.00";
+      dTotRow.getCell(7).value = `Closing Balance: ₹0.000`;
+      for (let c = 3; c <= 6; c++) dTotRow.getCell(c).numFmt = "#,##0.000";
       styleTotalRow(dTotRow, "FFF3F4F6");
       currRow += 2;
     } else {
@@ -1177,10 +1177,10 @@ export async function generateNormalizedMasterWorkbook(filters?: {
 
         row.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
         row.getCell(2).alignment = { horizontal: "center", vertical: "middle" };
-        row.getCell(3).numFmt = "#,##0.00";
-        row.getCell(4).numFmt = "#,##0.00";
-        row.getCell(5).numFmt = "#,##0.00";
-        row.getCell(6).numFmt = "#,##0.00";
+        row.getCell(3).numFmt = "#,##0.000";
+        row.getCell(4).numFmt = "#,##0.000";
+        row.getCell(5).numFmt = "#,##0.000";
+        row.getCell(6).numFmt = "#,##0.000";
         styleDataRow(row, recIdx % 2 === 1);
         currRow++;
       });
@@ -1197,10 +1197,10 @@ export async function generateNormalizedMasterWorkbook(filters?: {
       dTotRow.getCell(6).value = { formula: `=F${distEndRow}` };
       dTotRow.getCell(7).value = `Closing Balance for ${acc.account_code}`;
 
-      dTotRow.getCell(3).numFmt = "#,##0.00";
-      dTotRow.getCell(4).numFmt = "#,##0.00";
-      dTotRow.getCell(5).numFmt = "#,##0.00";
-      dTotRow.getCell(6).numFmt = "#,##0.00";
+      dTotRow.getCell(3).numFmt = "#,##0.000";
+      dTotRow.getCell(4).numFmt = "#,##0.000";
+      dTotRow.getCell(5).numFmt = "#,##0.000";
+      dTotRow.getCell(6).numFmt = "#,##0.000";
       styleTotalRow(dTotRow, "FFF3F4F6");
 
       currRow += 2; // Spacer between distributors
@@ -1263,7 +1263,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     });
     dailyTotalRow.getCell(3).numFmt = "#,##0";
     for (let c = 4; c <= 7; c++) {
-      dailyTotalRow.getCell(c).numFmt = "#,##0.00";
+      dailyTotalRow.getCell(c).numFmt = "#,##0.000";
     }
     styleTotalRow(dailyTotalRow);
   } else {
@@ -1283,7 +1283,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
       row.getCell(2).alignment = { horizontal: "center", vertical: "middle" };
       row.getCell(3).numFmt = "#,##0";
       for (let c = 4; c <= 7; c++) {
-        row.getCell(c).numFmt = "#,##0.00";
+        row.getCell(c).numFmt = "#,##0.000";
       }
       styleDataRow(row, idx % 2 === 1);
     });
@@ -1300,7 +1300,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     });
     dailyTotalRow.getCell(3).numFmt = "#,##0";
     for (let c = 4; c <= 7; c++) {
-      dailyTotalRow.getCell(c).numFmt = "#,##0.00";
+      dailyTotalRow.getCell(c).numFmt = "#,##0.000";
     }
     styleTotalRow(dailyTotalRow);
   }

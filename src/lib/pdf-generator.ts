@@ -78,15 +78,15 @@ export function generateTransactionReceipt(txn: any, businessName = "REMITTANCE 
 
   // Amounts Table
   const tableData = [
-    ["Total Amount (INR)", `Rs. ${totalInr.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-    ["Manual Rate Value", `${manualRate.toFixed(4)} AED/1000`],
-    ["Whole Sale Rate (=1000/Rate)", wholesaleRate.toFixed(4)],
-    ["In Dhirams (=Total/Wholesale)", `${inDhirams.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED`]
+    ["Total Amount (INR)", `Rs. ${totalInr.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`],
+    ["Manual Rate Value", `${manualRate.toFixed(3)} AED/1000`],
+    ["Whole Sale Rate (=1000/Rate)", wholesaleRate.toFixed(3)],
+    ["In Dhirams (=Total/Wholesale)", `${inDhirams.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED`]
   ];
 
   if (paidAmt > 0 || balanceToPaid > 0) {
-    tableData.push(["Paid Amount (AED)", `${paidAmt.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED`]);
-    tableData.push(["Balance to Paid (AED)", `${balanceToPaid.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED`]);
+    tableData.push(["Paid Amount (AED)", `${paidAmt.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED`]);
+    tableData.push(["Balance to Paid (AED)", `${balanceToPaid.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED`]);
   }
 
   autoTable(doc, {

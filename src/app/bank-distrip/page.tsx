@@ -451,12 +451,12 @@ export default function BankDistripPage() {
 
   // Indian currency formatting (preserves negative values)
   function formatINR(val?: number) {
-    if (val === undefined || val === null || isNaN(val)) return "₹ 0.00";
+    if (val === undefined || val === null || isNaN(val)) return "₹ 0.000";
     const isNegative = val < 0;
     const abs = Math.abs(val);
     const formatted = abs.toLocaleString("en-IN", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      minimumFractionDigits: 3,
+      maximumFractionDigits: 3,
     });
     return isNegative ? `-₹ ${formatted}` : `₹ ${formatted}`;
   }

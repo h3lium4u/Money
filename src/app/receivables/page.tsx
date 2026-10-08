@@ -533,7 +533,7 @@ export default function ReceivablesPage() {
             <div className="h-7 w-32 rounded bg-slate-200 animate-pulse mt-2" />
           ) : (
             <h3 className="text-2xl font-bold text-rose-600 mt-1 font-mono">
-              {totalReceivables.toLocaleString("en-US", { minimumFractionDigits: 2 })} AED
+              {totalReceivables.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED
             </h3>
           )}
           <p className="text-[11px] text-slate-400 mt-1">Across {owingCount} accounts with pending dues</p>
@@ -548,7 +548,7 @@ export default function ReceivablesPage() {
             <div className="h-7 w-32 rounded bg-slate-200 animate-pulse mt-2" />
           ) : (
             <h3 className="text-2xl font-bold text-teal-700 mt-1 font-mono">
-              {totalPaidSum.toLocaleString("en-US", { minimumFractionDigits: 2 })} AED
+              {totalPaidSum.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED
             </h3>
           )}
           <p className="text-[11px] text-slate-400 mt-1">{allPayments.length} recorded payments</p>
@@ -693,23 +693,23 @@ export default function ReceivablesPage() {
 
                         {/* Pricing Rate */}
                         <td className="py-3 px-3 text-right font-mono font-semibold text-slate-700">
-                          {c.default_rate ? `${c.default_rate.toFixed(2)} AED` : "38.25 AED"}
+                          {c.default_rate ? `${c.default_rate.toFixed(3)} AED` : "38.250 AED"}
                           <span className="text-[10px] text-slate-400 block font-sans">per 1000 INR</span>
                         </td>
 
                         {/* Total Billed */}
                         <td className="py-3 px-3 text-right font-mono font-medium text-slate-900 whitespace-nowrap">
-                          {(c.total_aed || 0).toFixed(2)} AED
+                          {(c.total_aed || 0).toFixed(3)} AED
                           {c.total_inr && c.total_inr > 0 ? (
                             <span className="text-[10px] text-slate-400 block">
-                              ₹ {c.total_inr.toLocaleString("en-IN")}
+                              ₹ {c.total_inr.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                             </span>
                           ) : null}
                         </td>
 
                         {/* Total Paid */}
                         <td className="py-3 px-3 text-right font-mono font-bold text-teal-700 whitespace-nowrap">
-                          {(c.total_paid || 0).toFixed(2)} AED
+                          {(c.total_paid || 0).toFixed(3)} AED
                         </td>
 
                         {/* Outstanding Balance */}
@@ -719,7 +719,7 @@ export default function ReceivablesPage() {
                               isOwing ? "text-rose-600" : "text-emerald-700"
                             }`}
                           >
-                            {(c.outstanding_balance || 0).toFixed(2)} AED
+                            {(c.outstanding_balance || 0).toFixed(3)} AED
                           </span>
                           <span
                             className={`block text-[10px] font-bold ${
@@ -857,25 +857,25 @@ export default function ReceivablesPage() {
                                     <div>
                                       <span className="text-[10px] text-slate-400 font-bold uppercase block">Total Volume</span>
                                       <span className="font-mono font-bold text-slate-900">
-                                        ₹ {(ledgerData.customer?.total_inr || 0).toLocaleString("en-IN")}
+                                        ₹ {(ledgerData.customer?.total_inr || 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                                       </span>
                                     </div>
                                     <div>
                                       <span className="text-[10px] text-slate-400 font-bold uppercase block">Total Paid (AED)</span>
                                       <span className="font-mono font-bold text-teal-700">
-                                        {(ledgerData.customer?.total_paid || 0).toFixed(2)} AED
+                                        {(ledgerData.customer?.total_paid || 0).toFixed(3)} AED
                                       </span>
                                     </div>
                                     <div>
                                       <span className="text-[10px] text-slate-400 font-bold uppercase block">Current Balance (AED)</span>
                                       <span
                                         className={`font-mono font-bold ${
-                                          (ledgerData.customer?.outstanding_balance || 0) > 0.01
+                                          (ledgerData.customer?.outstanding_balance || 0) > 0.001
                                             ? "text-rose-600"
                                             : "text-emerald-700"
                                         }`}
                                       >
-                                        {(ledgerData.customer?.outstanding_balance || 0).toFixed(2)} AED
+                                        {(ledgerData.customer?.outstanding_balance || 0).toFixed(3)} AED
                                       </span>
                                     </div>
                                   </div>
@@ -917,21 +917,21 @@ export default function ReceivablesPage() {
                                               {e.description}
                                             </td>
                                             <td className="py-2 px-3 text-right font-mono text-slate-900">
-                                              {e.debit_aed > 0 ? `${e.debit_aed.toFixed(2)} AED` : "—"}
+                                              {e.debit_aed > 0 ? `${e.debit_aed.toFixed(3)} AED` : "—"}
                                             </td>
                                             <td className="py-2 px-3 text-right font-mono font-bold text-teal-700">
-                                              {e.credit_aed > 0 ? `${e.credit_aed.toFixed(2)} AED` : "—"}
+                                              {e.credit_aed > 0 ? `${e.credit_aed.toFixed(3)} AED` : "—"}
                                             </td>
                                             <td
                                               className={`py-2 px-3 text-right font-mono font-bold ${
-                                                e.running_balance_aed > 0.01
+                                                e.running_balance_aed > 0.001
                                                   ? "text-rose-600"
-                                                  : e.running_balance_aed < -0.01
+                                                  : e.running_balance_aed < -0.001
                                                   ? "text-blue-600"
                                                   : "text-slate-700"
                                               }`}
                                             >
-                                              {e.running_balance_aed.toFixed(2)} AED
+                                              {e.running_balance_aed.toFixed(3)} AED
                                             </td>
                                             <td className="py-2 px-3 text-center">
                                               {e.type === "PAYMENT" && e.id ? (
@@ -1039,7 +1039,7 @@ export default function ReceivablesPage() {
                       </span>
                     </td>
                     <td className="py-2.5 px-3 text-right font-mono font-bold text-teal-700 whitespace-nowrap">
-                      {Number(p.amount_aed).toFixed(2)} AED
+                      {Number(p.amount_aed).toFixed(3)} AED
                     </td>
                     <td className="py-2.5 px-3 text-slate-500 text-[11px] truncate max-w-xs">
                       {p.notes || "—"}
@@ -1096,7 +1096,7 @@ export default function ReceivablesPage() {
               >
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name} (Due: {(c.outstanding_balance || 0).toFixed(2)} AED)
+                    {c.name} (Due: {(c.outstanding_balance || 0).toFixed(3)} AED)
                   </option>
                 ))}
               </select>

@@ -233,10 +233,10 @@ function DubaiClientTransactionsContent() {
       return;
     }
 
-    const wholesaleRate = Math.round((1000 / mRate) * 10000) / 10000;
-    const inDhirams = Math.round((total / wholesaleRate) * 100) / 100;
-    const paid = isNaN(pAmt) ? 0 : Math.round(pAmt * 100) / 100;
-    const balanceToPaid = Math.round((inDhirams - paid) * 100) / 100;
+    const wholesaleRate = Math.round((1000 / mRate) * 1000) / 1000;
+    const inDhirams = Math.round(((total * mRate) / 1000) * 1000) / 1000;
+    const paid = isNaN(pAmt) ? 0 : Math.round(pAmt * 1000) / 1000;
+    const balanceToPaid = Math.round((inDhirams - paid) * 1000) / 1000;
 
     setEditPreview({
       total,
@@ -332,10 +332,10 @@ function DubaiClientTransactionsContent() {
   }
 
   const formatINR = (val?: number) =>
-    `₹ ${(val || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    `₹ ${(val || 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`;
 
   const formatAED = (val?: number) =>
-    `${(val || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED`;
+    `${(val || 0).toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED`;
 
   // Strictly Dubai Client transfers: only Dubai parties (exclude normal customers and Indian parties)
   const filtered = transactions.filter((t) => {
@@ -735,7 +735,7 @@ function DubaiClientTransactionsContent() {
                           {/* 4. Manual Rate Value */}
                           <td className="px-2.5 py-2.5 font-mono whitespace-nowrap">
                             <div className="font-bold text-slate-800 dark:text-slate-200 text-xs">
-                              {Number(manualRateVal).toFixed(4)}
+                              {Number(manualRateVal).toFixed(3)}
                             </div>
                             <span className="text-[9px] text-slate-400 dark:text-slate-500">AED/1000</span>
                           </td>
@@ -743,7 +743,7 @@ function DubaiClientTransactionsContent() {
                           {/* 5. Whole Sale Rate */}
                           <td className="px-2.5 py-2.5 font-mono whitespace-nowrap">
                             <div className="font-bold text-teal-700 dark:text-teal-400 text-xs">
-                              {Number(wholesaleRateVal).toFixed(4)}
+                              {Number(wholesaleRateVal).toFixed(3)}
                             </div>
                             <span className="text-[9px] text-slate-400 dark:text-slate-500">= 1000/Rate</span>
                           </td>
@@ -967,19 +967,19 @@ function DubaiClientTransactionsContent() {
                   <div className="p-3 bg-teal-50 rounded-xl border border-teal-200 text-xs space-y-1.5 font-medium">
                     <div className="flex justify-between">
                       <span className="text-teal-800">Whole Sale Rate (=1000/Rate):</span>
-                      <span className="font-mono font-bold text-teal-900">{editPreview.wholesaleRate.toFixed(4)}</span>
+                      <span className="font-mono font-bold text-teal-900">{editPreview.wholesaleRate.toFixed(3)}</span>
                     </div>
                     <div className="flex justify-between font-bold">
                       <span className="text-teal-900">In Dhirams (=Total/Wholesale):</span>
-                      <span className="font-mono text-teal-900">AED {editPreview.inDhirams.toFixed(2)}</span>
+                      <span className="font-mono text-teal-900">AED {editPreview.inDhirams.toFixed(3)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-600">Paid Amount:</span>
-                      <span className="font-mono text-slate-800">AED {editPreview.paidAmount.toFixed(2)}</span>
+                      <span className="font-mono text-slate-800">AED {editPreview.paidAmount.toFixed(3)}</span>
                     </div>
                     <div className="flex justify-between font-bold pt-1 border-t border-teal-200 text-amber-800">
                       <span>Balance to Paid:</span>
-                      <span className="font-mono">AED {editPreview.balanceToPaid.toFixed(2)}</span>
+                      <span className="font-mono">AED {editPreview.balanceToPaid.toFixed(3)}</span>
                     </div>
                   </div>
                 )}

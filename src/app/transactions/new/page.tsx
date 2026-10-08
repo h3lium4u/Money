@@ -203,17 +203,17 @@ export default function NewDubaiClientTransactionPage() {
     }
   }
 
-  // Calculate total order INR with exact 2-decimal rounding
+  // Calculate total order INR with exact 3-decimal rounding
   const validAmounts = inrAmounts
     .map((val) => parseFloat(val))
     .filter((num) => !isNaN(num) && num > 0);
-  const totalOrderInr = Math.round((validAmounts.reduce((sum, num) => sum + num, 0) + Number.EPSILON) * 100) / 100;
+  const totalOrderInr = Math.round((validAmounts.reduce((sum, num) => sum + num, 0) + Number.EPSILON) * 1000) / 1000;
 
-  // Calculate total paid AED from multiple fields
+  // Calculate total paid AED from multiple fields (3-decimal rounding)
   const validPaidAmounts = paidAmounts
     .map((val) => parseFloat(val))
     .filter((num) => !isNaN(num) && num > 0);
-  const totalPaidAed = Math.round((validPaidAmounts.reduce((sum, num) => sum + num, 0) + Number.EPSILON) * 100) / 100;
+  const totalPaidAed = Math.round((validPaidAmounts.reduce((sum, num) => sum + num, 0) + Number.EPSILON) * 1000) / 1000;
 
   // Live Server Backend Calculation
   useEffect(() => {
@@ -480,7 +480,7 @@ export default function NewDubaiClientTransactionPage() {
                     Total Order:
                   </span>
                   <span className="text-base font-extrabold text-teal-800 dark:text-teal-300 font-mono">
-                    ₹ {totalOrderInr.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    ₹ {totalOrderInr.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                   </span>
                 </div>
                 {inrWords && (
@@ -637,10 +637,10 @@ export default function NewDubaiClientTransactionPage() {
                     In Dhirams (AED Amount)
                   </span>
                   <p className="text-2xl sm:text-3xl font-black text-teal-900 dark:text-teal-100 font-mono tracking-tight">
-                    {preview.inDhirams.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED
+                    {preview.inDhirams.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED
                   </p>
                   <span className="text-[11px] text-teal-700 dark:text-teal-300 block font-mono">
-                    = Total (₹{preview.total.toLocaleString("en-IN")}) / Whole Sale Rate ({preview.wholesaleRate.toFixed(4)})
+                    = Total (₹{preview.total.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}) / Whole Sale Rate ({preview.wholesaleRate.toFixed(3)})
                   </span>
                 </div>
 
@@ -652,7 +652,7 @@ export default function NewDubaiClientTransactionPage() {
                       <span className="text-[10px] text-slate-400 font-mono">= 1000 / {manualRate || preview.manualRate}</span>
                     </div>
                     <span className="font-mono font-extrabold text-slate-900 dark:text-slate-100 text-sm">
-                      {preview.wholesaleRate.toFixed(4)}
+                      {preview.wholesaleRate.toFixed(3)}
                     </span>
                   </div>
 
@@ -662,7 +662,7 @@ export default function NewDubaiClientTransactionPage() {
                       <span className="text-[10px] text-slate-400">Manual Entry</span>
                     </div>
                     <span className="font-mono font-extrabold text-slate-900 dark:text-slate-100 text-sm">
-                      ₹ {preview.total.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      ₹ {preview.total.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                     </span>
                   </div>
 
@@ -672,7 +672,7 @@ export default function NewDubaiClientTransactionPage() {
                       <span className="text-[10px] text-slate-400">Manual Entry</span>
                     </div>
                     <span className="font-mono font-extrabold text-slate-900 dark:text-slate-100 text-sm">
-                      AED {preview.paidAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      AED {preview.paidAmount.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                     </span>
                   </div>
 
@@ -687,7 +687,7 @@ export default function NewDubaiClientTransactionPage() {
                       <span className="text-[10px] opacity-80 font-mono block">= In Dhirams - Paid amount</span>
                     </div>
                     <span className="font-mono font-black text-base sm:text-lg">
-                      AED {preview.balanceToPaid.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      AED {preview.balanceToPaid.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                     </span>
                   </div>
                 </div>
@@ -775,7 +775,7 @@ export default function NewDubaiClientTransactionPage() {
                 <div className="flex justify-between items-center text-sm font-bold">
                   <span className="text-slate-600 dark:text-slate-400">Total Order Amount (INR):</span>
                   <span className="font-mono text-slate-900 dark:text-slate-100">
-                    ₹ {totalOrderInr.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    ₹ {totalOrderInr.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -784,12 +784,12 @@ export default function NewDubaiClientTransactionPage() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-600 dark:text-slate-400">Wholesale Rate (1000 / Rate):</span>
-                  <span className="font-mono font-bold text-teal-700 dark:text-teal-400">{preview?.wholesaleRate.toFixed(4)}</span>
+                  <span className="font-mono font-bold text-teal-700 dark:text-teal-400">{preview?.wholesaleRate.toFixed(3)}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm font-bold pt-1 border-t border-slate-200 dark:border-slate-700">
                   <span className="text-teal-900 dark:text-teal-200">In Dhirams (AED):</span>
                   <span className="font-mono text-teal-800 dark:text-teal-300">
-                    AED {preview?.inDhirams.toFixed(2)}
+                    AED {preview?.inDhirams.toFixed(3)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -797,12 +797,12 @@ export default function NewDubaiClientTransactionPage() {
                     <span className="text-slate-600 dark:text-slate-400 block">Paid Amount (AED):</span>
                     {validPaidAmounts.length > 1 && (
                       <span className="text-[10px] text-slate-400 block font-mono">
-                        Sum of {validPaidAmounts.length} fields: {validPaidAmounts.map(a => Number(a).toFixed(2)).join(" + ")}
+                        Sum of {validPaidAmounts.length} fields: {validPaidAmounts.map(a => Number(a).toFixed(3)).join(" + ")}
                       </span>
                     )}
                   </div>
                   <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
-                    AED {(preview?.paidAmount || 0).toFixed(2)}
+                    AED {(preview?.paidAmount || 0).toFixed(3)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center font-bold text-sm pt-1 border-t border-slate-200 dark:border-slate-700">
@@ -810,7 +810,7 @@ export default function NewDubaiClientTransactionPage() {
                   <span className={`font-mono ${
                     (preview?.balanceToPaid || 0) > 0 ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400"
                   }`}>
-                    AED {(preview?.balanceToPaid || 0).toFixed(2)}
+                    AED {(preview?.balanceToPaid || 0).toFixed(3)}
                   </span>
                 </div>
               </div>

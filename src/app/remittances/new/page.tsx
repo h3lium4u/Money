@@ -288,7 +288,7 @@ export default function NewRemittancePage() {
   const validAmounts = inrAmounts
     .map((val) => parseFloat(val))
     .filter((num) => !isNaN(num) && num > 0);
-  const totalOrderInr = Math.round((validAmounts.reduce((sum, num) => sum + num, 0) + Number.EPSILON) * 100) / 100;
+  const totalOrderInr = Math.round((validAmounts.reduce((sum, num) => sum + num, 0) + Number.EPSILON) * 1000) / 1000;
 
   // Auto-fill single split amount with total order amount
   useEffect(() => {
@@ -344,9 +344,9 @@ export default function NewRemittancePage() {
     return () => clearTimeout(timer);
   }, [inrAmounts, customerRate, baseRate, deliveryPct, totalOrderInr]);
 
-  // Splits Calculation
-  const totalAllocatedInr = Math.round((splits.reduce((sum, s) => sum + (parseFloat(s.inr_amount) || 0), 0) + Number.EPSILON) * 100) / 100;
-  const remainingInr = Math.max(0, Math.round((totalOrderInr - totalAllocatedInr + Number.EPSILON) * 100) / 100);
+  // Splits Calculation (3 decimal precision)
+  const totalAllocatedInr = Math.round((splits.reduce((sum, s) => sum + (parseFloat(s.inr_amount) || 0), 0) + Number.EPSILON) * 1000) / 1000;
+  const remainingInr = Math.max(0, Math.round((totalOrderInr - totalAllocatedInr + Number.EPSILON) * 1000) / 1000);
 
   function addSplit() {
     if (distributors.length === 0) return;
@@ -561,8 +561,8 @@ export default function NewRemittancePage() {
               <h3 className="text-base font-mono font-bold text-slate-900">{successTxn.transaction_number}</h3>
               <p className="text-xs text-slate-600">
                 ₹ {Number(successTxn.inr_amount || successTxn.total).toLocaleString()} for {selectedCustomer?.name} •{" "}
-                <span className="font-bold text-slate-900">{Number(successTxn.aed_amount || successTxn.in_dhirams).toFixed(2)} AED</span> •{" "}
-                <span className="font-bold text-emerald-700">Profit: {Number(successTxn.net_profit_aed || 0).toFixed(2)} AED</span>
+                <span className="font-bold text-slate-900">{Number(successTxn.aed_amount || successTxn.in_dhirams).toFixed(3)} AED</span> •{" "}
+                <span className="font-bold text-emerald-700">Profit: {Number(successTxn.net_profit_aed || 0).toFixed(3)} AED</span>
               </p>
             </div>
           </div>
@@ -666,7 +666,7 @@ export default function NewRemittancePage() {
 
               {selectedCustomer && (
                 <div className="text-[10px] text-slate-500 font-semibold mt-1">
-                  Balance Due: {(selectedCustomer.outstanding_balance || 0).toFixed(2)} AED
+                  Balance Due: {(selectedCustomer.outstanding_balance || 0).toFixed(3)} AED
                 </div>
               )}
             </div>
@@ -1089,10 +1089,10 @@ export default function NewRemittancePage() {
                 <div>
                   <span className="text-[11px] text-slate-500 uppercase font-semibold">AED Amount Charged to Customer</span>
                   <div className="text-3xl font-mono font-bold text-slate-900 mt-1">
-                    {preview.aedAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })} AED
+                    {preview.aedAmount.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED
                   </div>
                   <span className="text-[10px] text-teal-700 font-mono">
-                    = (₹{preview.inrAmount.toLocaleString()} / 1000) × {preview.customerRate.toFixed(4)}
+                    = (₹{preview.inrAmount.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} / 1000) × {preview.customerRate.toFixed(3)}
                   </span>
                 </div>
 
@@ -1100,28 +1100,28 @@ export default function NewRemittancePage() {
                   <div className="flex justify-between text-slate-600">
                     <span className="text-slate-500">Wholesale Cost (AED):</span>
                     <span className="font-mono font-bold text-slate-800">
-                      {preview.costAed.toFixed(2)} AED
+                      {preview.costAed.toFixed(3)} AED
                     </span>
                   </div>
 
                   <div className="flex justify-between text-slate-600">
                     <span className="text-slate-500">Gross Margin:</span>
                     <span className="font-mono font-bold text-teal-700">
-                      +{preview.grossProfitAed.toFixed(2)} AED
+                      +{preview.grossProfitAed.toFixed(3)} AED
                     </span>
                   </div>
 
                   <div className="flex justify-between text-slate-600">
                     <span className="text-slate-500">Delivery Fee ({(preview.deliveryChargePct * 100).toFixed(0)}%):</span>
                     <span className="font-mono font-bold text-slate-500">
-                      -{preview.deliveryChargeAed.toFixed(2)} AED
+                      -{preview.deliveryChargeAed.toFixed(3)} AED
                     </span>
                   </div>
 
                   <div className="flex justify-between items-center p-3 rounded-lg bg-teal-50 border border-teal-200/80 mt-3">
                     <span className="font-bold text-teal-900">Net Business Profit:</span>
                     <span className="font-mono font-bold text-teal-700 text-lg">
-                      {preview.netProfitAed.toFixed(2)} AED
+                      {preview.netProfitAed.toFixed(3)} AED
                     </span>
                   </div>
                 </div>
@@ -1425,32 +1425,32 @@ export default function NewRemittancePage() {
                     <div className="flex justify-between items-center text-sm font-bold p-2 bg-teal-50 rounded-lg border border-teal-200/70">
                       <span className="text-teal-900">Customer Pays:</span>
                       <span className="text-base font-mono text-teal-800">
-                        {preview.aedAmount.toFixed(2)} AED
+                        {preview.aedAmount.toFixed(3)} AED
                       </span>
                     </div>
 
                     <div className="flex justify-between text-slate-600">
                       <span>Wholesale Cost (AED):</span>
-                      <span className="font-mono font-semibold">{preview.costAed.toFixed(2)} AED</span>
+                      <span className="font-mono font-semibold">{preview.costAed.toFixed(3)} AED</span>
                     </div>
 
                     <div className="flex justify-between text-slate-600">
                       <span>Gross Margin:</span>
                       <span className="font-mono font-semibold text-teal-700">
-                        +{preview.grossProfitAed.toFixed(2)} AED
+                        +{preview.grossProfitAed.toFixed(3)} AED
                       </span>
                     </div>
 
                     <div className="flex justify-between text-slate-600">
                       <span>Delivery Fee ({(preview.deliveryChargePct * 100).toFixed(0)}%):</span>
                       <span className="font-mono font-semibold text-rose-600">
-                        -{preview.deliveryChargeAed.toFixed(2)} AED
+                        -{preview.deliveryChargeAed.toFixed(3)} AED
                       </span>
                     </div>
 
                     <div className="flex justify-between font-bold text-teal-700 pt-1.5 border-t border-slate-200">
                       <span>Net Business Profit:</span>
-                      <span className="font-mono text-sm">{preview.netProfitAed.toFixed(2)} AED</span>
+                      <span className="font-mono text-sm">{preview.netProfitAed.toFixed(3)} AED</span>
                     </div>
                   </div>
                 )}

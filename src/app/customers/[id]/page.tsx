@@ -247,7 +247,7 @@ export default function CustomerDetailPage() {
           <span className="text-[11px] font-mono text-teal-700 font-semibold uppercase">{customer.code}</span>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{customer.name}</h2>
           <p className="text-xs text-slate-500 mt-1">
-            Default Pricing Rate: <span className="font-mono font-semibold text-slate-700">{customer.default_rate || 38.25} AED/1000</span>
+            Default Pricing Rate: <span className="font-mono font-semibold text-slate-700">{Number(customer.default_rate || 38.25).toFixed(3)} AED/1000</span>
           </p>
         </div>
 
@@ -255,14 +255,14 @@ export default function CustomerDetailPage() {
           <div className="text-right">
             <span className="text-xs text-slate-500 font-medium">Total Processed</span>
             <p className="text-base font-bold text-slate-900">
-              ₹ {(customer.total_inr || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+              ₹ {(customer.total_inr || 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
             </p>
           </div>
 
           <div className="text-right">
             <span className="text-xs text-slate-500 font-medium">Total Paid</span>
             <p className="text-base font-bold text-teal-700">
-              {(customer.total_paid || 0).toFixed(2)} AED
+              {(customer.total_paid || 0).toFixed(3)} AED
             </p>
           </div>
 
@@ -270,10 +270,10 @@ export default function CustomerDetailPage() {
             <span className="text-xs text-slate-500 font-medium">Outstanding Balance</span>
             <p
               className={`text-xl font-bold ${
-                outstanding > 0.01 ? "text-rose-600" : outstanding < -0.01 ? "text-blue-600" : "text-teal-700"
+                outstanding > 0.001 ? "text-rose-600" : outstanding < -0.001 ? "text-blue-600" : "text-teal-700"
               }`}
             >
-              {outstanding.toFixed(2)} AED
+              {outstanding.toFixed(3)} AED
             </p>
           </div>
         </div>
@@ -325,21 +325,21 @@ export default function CustomerDetailPage() {
                     <td className="py-3 px-4 font-mono font-medium text-slate-900">{e.reference}</td>
                     <td className="py-3 px-4 text-slate-600">{e.description}</td>
                     <td className="py-3 px-4 text-right font-medium text-slate-900">
-                      {e.debit_aed > 0 ? `${e.debit_aed.toFixed(2)} AED` : "—"}
+                      {e.debit_aed > 0 ? `${e.debit_aed.toFixed(3)} AED` : "—"}
                     </td>
                     <td className="py-3 px-4 text-right font-medium text-teal-700">
-                      {e.credit_aed > 0 ? `${e.credit_aed.toFixed(2)} AED` : "—"}
+                      {e.credit_aed > 0 ? `${e.credit_aed.toFixed(3)} AED` : "—"}
                     </td>
                     <td
                       className={`py-3 px-4 text-right font-bold ${
-                        e.running_balance_aed > 0.01
+                        e.running_balance_aed > 0.001
                           ? "text-rose-600"
-                          : e.running_balance_aed < -0.01
+                          : e.running_balance_aed < -0.001
                           ? "text-blue-600"
                           : "text-slate-700"
                       }`}
                     >
-                      {e.running_balance_aed.toFixed(2)} AED
+                      {e.running_balance_aed.toFixed(3)} AED
                     </td>
                     <td className="py-3 px-4 text-center print:hidden">
                       {e.type === "PAYMENT" && e.id ? (

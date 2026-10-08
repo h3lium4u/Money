@@ -280,10 +280,10 @@ export default function PartiesPage() {
   }
 
   const formatINR = (val?: number) =>
-    `₹ ${(val || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    `₹ ${(val || 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`;
 
   const formatAED = (val?: number) =>
-    `${(val || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED`;
+    `${(val || 0).toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED`;
 
   // Summary parties and grand totals from backend
   const partyRows = summary?.parties || [];
@@ -1270,27 +1270,27 @@ export default function PartiesPage() {
                             </div>
                           </td>
                           <td className="py-2.5 px-3 font-mono font-semibold text-slate-600 dark:text-slate-300">
-                            {party.default_rate ? Number(party.default_rate).toFixed(2) : "38.25"}
+                            {party.default_rate ? Number(party.default_rate).toFixed(3) : "38.250"}
                           </td>
                           <td className="py-2.5 px-3 text-right font-mono font-semibold text-slate-900 dark:text-slate-100 whitespace-nowrap">
-                            ₹{Number(party.total_inr || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                            ₹{Number(party.total_inr || 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                           </td>
                           <td className="py-2.5 px-3 text-right whitespace-nowrap">
                             <div className="font-mono font-semibold text-slate-900 dark:text-slate-100">
-                              {Number(party.total_aed || 0).toFixed(2)} AED
+                              {Number(party.total_aed || 0).toFixed(3)} AED
                             </div>
                             <div className="text-[10px] font-mono text-teal-700 dark:text-teal-400">
-                              Paid: {Number(party.total_paid || 0).toFixed(2)} AED
+                              Paid: {Number(party.total_paid || 0).toFixed(3)} AED
                             </div>
                           </td>
                           <td className="py-2.5 px-3 text-right font-mono font-bold whitespace-nowrap">
                             {hasDue ? (
                               <span className="text-rose-600 dark:text-rose-400">
-                                {Number(party.outstanding_balance).toFixed(2)} AED
+                                {Number(party.outstanding_balance).toFixed(3)} AED
                               </span>
                             ) : (
                               <span className="text-teal-700 dark:text-teal-400 font-medium">
-                                0.00 AED
+                                0.000 AED
                               </span>
                             )}
                           </td>
