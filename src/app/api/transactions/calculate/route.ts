@@ -59,13 +59,15 @@ export async function POST(request: Request) {
     const inr = !isNaN(totalVal) ? totalVal : Number(body.inrAmount);
     const custRate = !isNaN(manualRateVal) ? manualRateVal : Number(body.customerRate);
     const baseRate = Number(body.baseRate || body.base_rate);
-    const deliveryPct = body.deliveryChargePct !== undefined ? Number(body.deliveryChargePct) : (body.delivery_charge_pct !== undefined ? Number(body.delivery_charge_pct) : 0);
+    const deliveryPct = body.deliveryChargePct !== undefined ? Number(body.deliveryChargePct) : (body.delivery_charge_pct !== undefined ? Number(body.delivery_charge_pct) : undefined);
+    const deliveryChargeAed = body.deliveryChargeAed !== undefined ? Number(body.deliveryChargeAed) : (body.delivery_charge_aed !== undefined ? Number(body.delivery_charge_aed) : (body.deliveryAmount !== undefined ? Number(body.deliveryAmount) : undefined));
 
     const result = calculateTransaction({
       inrAmount: inr,
       customerRate: custRate,
       baseRate,
       deliveryChargePct: deliveryPct,
+      deliveryChargeAed,
     });
 
     return NextResponse.json(result);

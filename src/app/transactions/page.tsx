@@ -391,15 +391,14 @@ function DubaiClientTransactionsContent() {
     const balanceToPaidVal = t.balance_to_paid ?? (inDhiramsVal - paidAmountVal);
 
     const prevBal = clientRunningBalances[cId] || 0;
-    const newDailyBal = Math.round((prevBal + balanceToPaidVal) * 100) / 100;
+    const newDailyBal = Math.round((prevBal + balanceToPaidVal + Number.EPSILON) * 1000) / 1000;
     clientRunningBalances[cId] = newDailyBal;
     dailyBalanceMap.set(t.id, newDailyBal);
   });
 
-  const totalClosingDailyBalance = Object.values(clientRunningBalances).reduce(
-    (sum, val) => sum + val,
-    0
-  );
+  const totalClosingDailyBalance = Math.round(
+    (Object.values(clientRunningBalances).reduce((sum, val) => sum + val, 0) + Number.EPSILON) * 1000
+  ) / 1000;
 
   return (
     <PageTransition>

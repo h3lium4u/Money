@@ -854,6 +854,7 @@ export async function createTransaction(data: {
   paid_amount?: number;
   paid_aed?: number;
   delivery_charge_pct?: number;
+  delivery_charge_aed?: number;
   distributor_id?: string | null;
   notes?: string;
   splits?: Array<{
@@ -887,6 +888,7 @@ export async function createTransaction(data: {
       customerRate: manualRate,
       baseRate: Number(data.base_rate),
       deliveryChargePct: data.delivery_charge_pct,
+      deliveryChargeAed: data.delivery_charge_aed,
     });
     inrAmount = calc.inrAmount;
     customerRate = calc.customerRate;
@@ -2218,6 +2220,7 @@ export async function updateTransaction(id: string, data: {
   paid_amount?: number;
   paid_aed?: number;
   delivery_charge_pct?: number;
+  delivery_charge_aed?: number;
   notes?: string;
   reason?: string;
   splits?: Array<{
@@ -2261,6 +2264,7 @@ export async function updateTransaction(id: string, data: {
       customerRate: manualRate,
       baseRate: Number(data.base_rate),
       deliveryChargePct: data.delivery_charge_pct !== undefined ? data.delivery_charge_pct : existing.delivery_charge_pct,
+      deliveryChargeAed: data.delivery_charge_aed !== undefined ? data.delivery_charge_aed : existing.delivery_charge_aed,
     });
     inrAmount = calc.inrAmount;
     customerRate = calc.customerRate;

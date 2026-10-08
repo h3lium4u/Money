@@ -263,7 +263,7 @@ export default function PartyDetailPage() {
             Total Orders (INR)
           </span>
           <p className="text-xl font-mono font-bold text-slate-900 dark:text-slate-100 mt-1">
-            ₹{Number(party.total_inr || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+            ₹{Number(party.total_inr || 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
           </p>
         </div>
 
@@ -272,7 +272,7 @@ export default function PartyDetailPage() {
             Total Invoiced (AED)
           </span>
           <p className="text-xl font-mono font-bold text-slate-900 dark:text-slate-100 mt-1">
-            {Number(party.total_aed || 0).toFixed(2)} AED
+            {Number(party.total_aed || 0).toFixed(3)} AED
           </p>
         </div>
 
@@ -281,7 +281,7 @@ export default function PartyDetailPage() {
             Total Settlements Paid (AED)
           </span>
           <p className="text-xl font-mono font-bold text-teal-700 dark:text-teal-400 mt-1">
-            {Number(party.total_paid || 0).toFixed(2)} AED
+            {Number(party.total_paid || 0).toFixed(3)} AED
           </p>
         </div>
 
@@ -290,7 +290,7 @@ export default function PartyDetailPage() {
             Outstanding Due (AED)
           </span>
           <p className="text-xl font-mono font-bold text-rose-700 dark:text-rose-400 mt-1">
-            {Number(party.outstanding_balance || 0).toFixed(2)} AED
+            {Number(party.outstanding_balance || 0).toFixed(3)} AED
           </p>
         </div>
       </div>
@@ -349,13 +349,13 @@ export default function PartyDetailPage() {
                         {e.inr_amount ? `₹${Number(e.inr_amount).toLocaleString("en-IN")}` : "-"}
                       </td>
                       <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">
-                        {e.debit_aed ? Number(e.debit_aed).toFixed(2) : "-"}
+                        {e.debit_aed ? Number(e.debit_aed).toFixed(3) : "-"}
                       </td>
                       <td className="py-3 px-4 font-mono font-bold text-teal-700 dark:text-teal-400">
-                        {e.credit_aed ? Number(e.credit_aed).toFixed(2) : "-"}
+                        {e.credit_aed ? Number(e.credit_aed).toFixed(3) : "-"}
                       </td>
                       <td className="py-3 px-4 font-mono font-bold text-rose-700 dark:text-rose-400">
-                        {Number(e.running_balance_aed).toFixed(2)}
+                        {Number(e.running_balance_aed).toFixed(3)}
                       </td>
                       <td className="py-3 px-4 text-right">
                         {!isTxn && (

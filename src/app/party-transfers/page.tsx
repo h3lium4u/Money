@@ -269,33 +269,44 @@ function PartyTransfersContent() {
   const cRate = parseFloat(newCustomerRate) || 0;
   const bRate = parseFloat(newBaseRate) || 0;
 
-  // Normalized rates per 1000 INR
-  const custRatePer1000 = cRate >= 30 ? cRate : (cRate > 0 ? 1000 / cRate : 0);
-  const baseRatePer1000 = bRate >= 30 ? bRate : (bRate > 0 ? 1000 / bRate : 0);
-
-  // Currency specific amounts
+  // Currency specific amounts with exact conversion
   const isAedInput = effectiveCurrency === "AED";
-  const totalNewAed = isAedInput
-    ? totalEnteredAmount
-    : (custRatePer1000 > 0 ? Math.round(((totalEnteredAmount / 1000) * custRatePer1000 + Number.EPSILON) * 1000) / 1000 : 0);
-  const totalNewInr = isAedInput
-    ? (custRatePer1000 > 0 ? Math.round(((totalEnteredAmount / custRatePer1000) * 1000 + Number.EPSILON) * 1000) / 1000 : 0)
-    : totalEnteredAmount;
 
-  const calculatedAedCharged = isAedInput
-    ? totalEnteredAmount
-    : (custRatePer1000 > 0 ? (totalNewInr / 1000) * custRatePer1000 : 0);
-  const calculatedCostAed = custRatePer1000 > 0
-    ? (calculatedAedCharged * baseRatePer1000) / custRatePer1000
-    : (baseRatePer1000 > 0 ? (totalNewInr / 1000) * baseRatePer1000 : 0);
-  const calculatedNetProfitAed = calculatedAedCharged - calculatedCostAed;
+  let totalNewAed: number;
+  let totalNewInr: number;
+
+  if (isAedInput) {
+    totalNewAed = totalEnteredAmount;
+    if (cRate >= 30) {
+      totalNewInr = Math.round(((totalEnteredAmount * 1000) / cRate + Number.EPSILON) * 1000) / 1000;
+    } else if (cRate > 0) {
+      totalNewInr = Math.round((totalEnteredAmount * cRate + Number.EPSILON) * 1000) / 1000;
+    } else {
+      totalNewInr = 0;
+    }
+  } else {
+    totalNewInr = totalEnteredAmount;
+    if (cRate >= 30) {
+      totalNewAed = Math.round(((totalEnteredAmount * cRate) / 1000 + Number.EPSILON) * 1000) / 1000;
+    } else if (cRate > 0) {
+      totalNewAed = Math.round((totalEnteredAmount / cRate + Number.EPSILON) * 1000) / 1000;
+    } else {
+      totalNewAed = 0;
+    }
+  }
+
+  const calculatedAedCharged = totalNewAed;
+  const calculatedCostAed = bRate >= 30
+    ? Math.round(((totalNewInr * bRate) / 1000 + Number.EPSILON) * 1000) / 1000
+    : (bRate > 0 ? Math.round((totalNewInr / bRate + Number.EPSILON) * 1000) / 1000 : 0);
+  const calculatedNetProfitAed = Math.round((calculatedAedCharged - calculatedCostAed + Number.EPSILON) * 1000) / 1000;
 
   // In INR
   const calculatedInrCharged = totalNewInr;
-  const calculatedCostInr = custRatePer1000 > 0
-    ? (totalNewInr * baseRatePer1000) / custRatePer1000
+  const calculatedCostInr = bRate >= 30 && cRate > 0
+    ? Math.round(((totalNewInr * bRate) / (cRate >= 30 ? cRate : 1000 / cRate) + Number.EPSILON) * 1000) / 1000
     : 0;
-  const calculatedNetProfitInr = calculatedInrCharged - calculatedCostInr;
+  const calculatedNetProfitInr = Math.round((calculatedInrCharged - calculatedCostInr + Number.EPSILON) * 1000) / 1000;
 
   function handleAddInrAmount() {
     setNewInrAmounts((prev) => [...prev, ""]);
@@ -438,7 +449,7 @@ function PartyTransfersContent() {
     const isInd = isIndianParty(t);
     const inrPerAed = (t.aed_amount && t.aed_amount > 0) ? (t.inr_amount / t.aed_amount) : 1;
     const due = isInd
-      ? Math.max(0, Math.round(((t.inr_amount - (t.paid_aed || 0) * inrPerAed) + Number.EPSILON) * 100) / 100)
+      ? Math.max(0, Math.round(((t.inr_amount - (t.paid_aed || 0) * inrPerAed) + Number.EPSILON) * 1000) / 1000)
       : (t.pending_aed ?? t.aed_amount);
     setPayAmount(due > 0 ? String(due) : "");
     setPayDate(getTodayDateString());
@@ -471,7 +482,7 @@ function PartyTransfersContent() {
         body: JSON.stringify({
           transaction_id: payingTxn.id,
           payment_date: payDate,
-          amount_aed: Math.round((amountToSaveAed + Number.EPSILON) * 100) / 100,
+          amount_aed: Math.round((amountToSaveAed + Number.EPSILON) * 1000) / 1000,
           payment_method: payMethod,
           notes: notesToSave,
         }),
@@ -518,10 +529,14 @@ function PartyTransfersContent() {
       if (!cr || cr <= 0) throw new Error("Invalid customer rate");
       if (!br || br <= 0) throw new Error("Invalid base rate");
 
-      const cr1000 = cr >= 30 ? cr : (cr > 0 ? 1000 / cr : 0);
-      const inrToSave = editCurrencyMode === "AED"
-        ? (cr1000 > 0 ? Math.round(((enteredAmt / cr1000) * 1000 + Number.EPSILON) * 1000) / 1000 : enteredAmt)
-        : enteredAmt;
+      let inrToSave = enteredAmt;
+      if (editCurrencyMode === "AED") {
+        if (cr >= 30) {
+          inrToSave = Math.round(((enteredAmt * 1000) / cr + Number.EPSILON) * 1000) / 1000;
+        } else if (cr > 0) {
+          inrToSave = Math.round((enteredAmt * cr + Number.EPSILON) * 1000) / 1000;
+        }
+      }
 
       const res = await fetch(`/api/transactions/${editingTxn.id}`, {
         method: "PATCH",
@@ -675,10 +690,10 @@ function PartyTransfersContent() {
     const inrPerAed = (t.aed_amount && t.aed_amount > 0) ? (t.inr_amount / t.aed_amount) : 1;
     const totalBilled = isInd ? t.inr_amount : (t.aed_amount || 0);
     const paidAmt = isInd
-      ? Math.round((((t.paid_aed || 0) * inrPerAed) + Number.EPSILON) * 100) / 100
+      ? Math.round((((t.paid_aed || 0) * inrPerAed) + Number.EPSILON) * 1000) / 1000
       : (t.paid_aed || 0);
     const dueAmt = isInd
-      ? Math.max(0, Math.round(((t.inr_amount - paidAmt) + Number.EPSILON) * 100) / 100)
+      ? Math.max(0, Math.round(((t.inr_amount - paidAmt) + Number.EPSILON) * 1000) / 1000)
       : (t.pending_aed !== undefined ? t.pending_aed : Math.max(0, (t.aed_amount || 0) - (t.paid_aed || 0)));
     if (paymentFilter === "PENDING_DUE" && dueAmt <= 0.01) {
       return false;
@@ -1148,10 +1163,10 @@ function PartyTransfersContent() {
                   // Currency rule: Indian parties settle in INR, Dubai parties settle in AED
                   const totalBilled = isInd ? t.inr_amount : (t.aed_amount || 0);
                   const paidAmt = isInd
-                    ? Math.round((((t.paid_aed || 0) * inrPerAed) + Number.EPSILON) * 100) / 100
+                    ? Math.round((((t.paid_aed || 0) * inrPerAed) + Number.EPSILON) * 1000) / 1000
                     : (t.paid_aed || 0);
                   const pendingDue = isInd
-                    ? Math.max(0, Math.round(((t.inr_amount - paidAmt) + Number.EPSILON) * 100) / 100)
+                    ? Math.max(0, Math.round(((t.inr_amount - paidAmt) + Number.EPSILON) * 1000) / 1000)
                     : (t.pending_aed !== undefined ? t.pending_aed : Math.max(0, (t.aed_amount || 0) - (t.paid_aed || 0)));
 
                   const isFullySettled = totalBilled > 0 && pendingDue <= 0.01;
@@ -1856,10 +1871,10 @@ function PartyTransfersContent() {
         const inrPerAed = (payingTxn.aed_amount && payingTxn.aed_amount > 0) ? (payingTxn.inr_amount / payingTxn.aed_amount) : 1;
         const totalBilled = isInd ? payingTxn.inr_amount : (payingTxn.aed_amount || 0);
         const paidAmt = isInd
-          ? Math.round((((payingTxn.paid_aed || 0) * inrPerAed) + Number.EPSILON) * 100) / 100
+          ? Math.round((((payingTxn.paid_aed || 0) * inrPerAed) + Number.EPSILON) * 1000) / 1000
           : (payingTxn.paid_aed || 0);
         const pendingDue = isInd
-          ? Math.max(0, Math.round(((payingTxn.inr_amount - paidAmt) + Number.EPSILON) * 100) / 100)
+          ? Math.max(0, Math.round(((payingTxn.inr_amount - paidAmt) + Number.EPSILON) * 1000) / 1000)
           : (payingTxn.pending_aed !== undefined ? payingTxn.pending_aed : Math.max(0, (payingTxn.aed_amount || 0) - (payingTxn.paid_aed || 0)));
 
         return (

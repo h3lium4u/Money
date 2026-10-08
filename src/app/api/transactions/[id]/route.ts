@@ -13,7 +13,8 @@ const updateSchema = z.object({
   wholesale_rate: z.number().positive().optional(),
   paid_amount: z.number().min(0).optional(),
   paid_aed: z.number().min(0).optional(),
-  delivery_charge_pct: z.number().min(0).max(1).optional(),
+  delivery_charge_pct: z.number().min(0).optional(),
+  delivery_charge_aed: z.number().min(0).optional(),
   notes: z.string().optional(),
   reason: z.string().optional(),
   splits: z.array(z.object({

@@ -8,6 +8,7 @@ export interface TransactionInputs {
   customerRate: number; // e.g. 38.25 (AED per 1000 INR)
   baseRate: number; // e.g. 26.82 (INR per AED) or 37.25 (AED per 1000 INR)
   deliveryChargePct?: number; // default 0.20 (20%)
+  deliveryChargeAed?: number; // fixed delivery charge in AED
 }
 
 export interface TransactionCalculationResult {
@@ -102,52 +103,53 @@ export function calculateTransaction(inputs: TransactionInputs): TransactionCalc
   const inr = Number(inputs.inrAmount);
   const custRate = Number(inputs.customerRate);
   let baseRate = Number(inputs.baseRate);
-  const deliveryPct = inputs.deliveryChargePct !== undefined ? Number(inputs.deliveryChargePct) : 0.20;
 
   if (inr <= 0) throw new Error("INR amount must be greater than zero");
   if (custRate <= 0) throw new Error("Customer rate must be greater than zero");
   if (baseRate <= 0) throw new Error("Base rate must be greater than zero");
 
-  // Customer rate is in AED per 1000 INR (e.g. 38.25)
-  // If user entered it as INR per AED (e.g. ~26), normalize it:
-  let customerRatePer1000 = custRate;
-  let customerRateInrPerAed = ratePer1000ToInrPerAed(custRate);
-
-  if (custRate < 30) {
-    // Entered in INR per AED
-    customerRateInrPerAed = custRate;
-    customerRatePer1000 = inrPerAedToRatePer1000(custRate);
-  }
-
-  // 1. AED Charged to Customer = (INR / 1000) * Customer_Rate_Per_1000
-  const rawAedAmount = (inr / 1000) * customerRatePer1000;
+  // Determine Customer Rate convention & exact AED amount charged
+  // Rate >= 30: AED per 1000 INR (e.g. 38.25 AED for 1,000 INR) -> AED = (INR * Rate) / 1000
+  // Rate < 30: INR per 1 AED (e.g. 26.144 INR for 1 AED) -> AED = INR / Rate
+  const rawAedAmount = custRate >= 30 ? (inr * custRate) / 1000 : inr / custRate;
   const aedAmount = roundTo(rawAedAmount, 3);
 
-  // 2. Base Cost AED
-  // In the Excel, Base Rate (CV) is either in INR/AED (~26.82) or entered as =1000/38.30
-  let baseRateInrPerAed = baseRate;
-  let baseRatePer1000 = inrPerAedToRatePer1000(baseRate);
+  const customerRatePer1000 = custRate >= 30 ? custRate : inrPerAedToRatePer1000(custRate);
+  const customerRateInrPerAed = custRate < 30 ? custRate : ratePer1000ToInrPerAed(custRate);
 
-  if (baseRate >= 30) {
-    // Entered in AED per 1000 INR
-    baseRatePer1000 = baseRate;
-    baseRateInrPerAed = ratePer1000ToInrPerAed(baseRate);
-  }
-
-  // Cost = INR / baseRateInrPerAed == (INR / 1000) * baseRatePer1000
-  const rawCostAed = inr / baseRateInrPerAed;
+  // Determine Base Rate convention & exact Wholesale Cost AED
+  // Rate >= 30: AED per 1000 INR (e.g. 38.25 AED for 1,000 INR) -> Cost AED = (INR * Rate) / 1000
+  // Rate < 30: INR per 1 AED (e.g. 26.82 INR for 1 AED) -> Cost AED = INR / Rate
+  const rawCostAed = baseRate >= 30 ? (inr * baseRate) / 1000 : inr / baseRate;
   const costAed = roundTo(rawCostAed, 3);
 
-  // 3. Gross Profit AED = AED Charged - Cost AED
+  const baseRatePer1000 = baseRate >= 30 ? baseRate : inrPerAedToRatePer1000(baseRate);
+  const baseRateInrPerAed = baseRate < 30 ? baseRate : ratePer1000ToInrPerAed(baseRate);
+
+  // Gross Profit AED = AED Charged - Cost AED
   const rawGrossProfit = rawAedAmount - rawCostAed;
   const grossProfitAed = roundTo(rawGrossProfit, 3);
 
-  // 4. Delivery Charge AED = Gross Profit * Delivery Charge %
-  const rawDeliveryCharge = rawGrossProfit * deliveryPct;
-  const deliveryChargeAed = roundTo(rawDeliveryCharge, 3);
+  // Delivery Charge Calculation:
+  // If deliveryChargeAed is explicitly supplied (and >= 0), use that fixed AED amount directly without reducing it!
+  // Otherwise if deliveryChargePct is provided, calculate as rawGrossProfit * deliveryPct.
+  let deliveryChargeAed: number;
+  let deliveryPct = inputs.deliveryChargePct !== undefined ? Number(inputs.deliveryChargePct) : 0;
 
-  // 5. Net Profit AED = Gross Profit - Delivery Charge
-  const rawNetProfit = rawGrossProfit - rawDeliveryCharge;
+  if (inputs.deliveryChargeAed !== undefined && !isNaN(Number(inputs.deliveryChargeAed))) {
+    deliveryChargeAed = roundTo(Number(inputs.deliveryChargeAed), 3);
+    if (grossProfitAed > 0) {
+      deliveryPct = roundTo(deliveryChargeAed / grossProfitAed, 3);
+    }
+  } else if (inputs.deliveryChargePct !== undefined) {
+    const rawDeliveryCharge = rawGrossProfit * deliveryPct;
+    deliveryChargeAed = roundTo(rawDeliveryCharge, 3);
+  } else {
+    deliveryChargeAed = 0;
+  }
+
+  // Net Profit AED = Gross Profit - Delivery Charge
+  const rawNetProfit = rawGrossProfit - deliveryChargeAed;
   const netProfitAed = roundTo(rawNetProfit, 3);
 
   const marginPct = aedAmount > 0 ? roundTo((netProfitAed / aedAmount) * 100, 3) : 0;

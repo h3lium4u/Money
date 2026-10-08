@@ -69,7 +69,8 @@ export default function NewRemittancePage() {
   const [inrAmounts, setInrAmounts] = useState<string[]>([""]);
   const [customerRate, setCustomerRate] = useState<string>("");
   const [baseRate, setBaseRate] = useState<string>("");
-  const [deliveryPct, setDeliveryPct] = useState<string>("");
+  const [deliveryMode, setDeliveryMode] = useState<"AED" | "PCT">("AED");
+  const [deliveryValue, setDeliveryValue] = useState<string>("");
   const [notes, setNotes] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
@@ -309,7 +310,7 @@ export default function NewRemittancePage() {
     const inr = totalOrderInr;
     const cRate = parseFloat(customerRate);
     const bRate = parseFloat(baseRate);
-    const dPct = deliveryPct ? parseFloat(deliveryPct) / 100 : 0.2;
+    const dVal = parseFloat(deliveryValue);
 
     if (!inr || inr <= 0 || !cRate || cRate <= 0 || !bRate || bRate <= 0) {
       setPreview(null);
@@ -320,15 +321,22 @@ export default function NewRemittancePage() {
       setCalculating(true);
       setError(null);
       try {
+        const bodyPayload: any = {
+          inrAmount: inr,
+          customerRate: cRate,
+          baseRate: bRate,
+        };
+
+        if (deliveryMode === "AED") {
+          bodyPayload.deliveryChargeAed = !isNaN(dVal) && dVal >= 0 ? dVal : 0;
+        } else {
+          bodyPayload.deliveryChargePct = !isNaN(dVal) && dVal >= 0 ? dVal / 100 : 0;
+        }
+
         const res = await fetch("/api/transactions/calculate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            inrAmount: inr,
-            customerRate: cRate,
-            baseRate: bRate,
-            deliveryChargePct: isNaN(dPct) ? 0.2 : dPct,
-          }),
+          body: JSON.stringify(bodyPayload),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
@@ -342,7 +350,7 @@ export default function NewRemittancePage() {
     }, 150);
 
     return () => clearTimeout(timer);
-  }, [inrAmounts, customerRate, baseRate, deliveryPct, totalOrderInr]);
+  }, [inrAmounts, customerRate, baseRate, deliveryMode, deliveryValue, totalOrderInr]);
 
   // Splits Calculation (3 decimal precision)
   const totalAllocatedInr = Math.round((splits.reduce((sum, s) => sum + (parseFloat(s.inr_amount) || 0), 0) + Number.EPSILON) * 1000) / 1000;
@@ -355,7 +363,7 @@ export default function NewRemittancePage() {
       {
         id: Math.random().toString(),
         distributor_id: distributors[0].id,
-        inr_amount: remainingInr > 0 ? String(Math.round((remainingInr + Number.EPSILON) * 100) / 100) : "",
+        inr_amount: remainingInr > 0 ? String(Math.round((remainingInr + Number.EPSILON) * 1000) / 1000) : "",
         notes: "",
       },
     ]);
@@ -492,19 +500,27 @@ export default function NewRemittancePage() {
           : "";
       const finalNotes = [notes.trim(), breakdownText].filter(Boolean).join(" | ") || undefined;
 
+      const dVal = parseFloat(deliveryValue);
+      const submitPayload: any = {
+        transaction_date: date,
+        customer_id: customerId,
+        inr_amount: inr,
+        customer_rate: cRate,
+        base_rate: bRate,
+        notes: finalNotes,
+        splits: payloadSplits.length > 0 ? payloadSplits : undefined,
+      };
+
+      if (deliveryMode === "AED") {
+        submitPayload.delivery_charge_aed = !isNaN(dVal) && dVal >= 0 ? dVal : 0;
+      } else {
+        submitPayload.delivery_charge_pct = !isNaN(dVal) && dVal >= 0 ? dVal / 100 : 0;
+      }
+
       const res = await fetch("/api/transactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          transaction_date: date,
-          customer_id: customerId,
-          inr_amount: inr,
-          customer_rate: cRate,
-          base_rate: bRate,
-          delivery_charge_pct: deliveryPct ? parseFloat(deliveryPct) / 100 : 0.2,
-          notes: finalNotes,
-          splits: payloadSplits.length > 0 ? payloadSplits : undefined,
-        }),
+        body: JSON.stringify(submitPayload),
       });
 
       const data = await res.json();
@@ -514,6 +530,7 @@ export default function NewRemittancePage() {
       setShowConfirmModal(false);
       setSplits([]);
       setInrAmounts(["", "", ""]);
+      setDeliveryValue("");
       setNotes("");
       toast.success("Remittance transfer saved successfully");
     } catch (err: any) {
@@ -571,6 +588,7 @@ export default function NewRemittancePage() {
               onClick={() => {
                 setSuccessTxn(null);
                 setInrAmounts(["", "", ""]);
+                setDeliveryValue("");
                 setNotes("");
                 setDate(getTodayDateString());
               }}
@@ -793,16 +811,38 @@ export default function NewRemittancePage() {
           {/* Section: Delivery Cut & Notes */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Delivery Charge Cut (%)
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Delivery Charge ({deliveryMode})
+                </label>
+                <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded text-[10px] font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setDeliveryMode("AED")}
+                    className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                      deliveryMode === "AED" ? "bg-teal-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    AED
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeliveryMode("PCT")}
+                    className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                      deliveryMode === "PCT" ? "bg-teal-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    %
+                  </button>
+                </div>
+              </div>
               <input
                 type="number"
                 step="any"
-                placeholder="e.g. 20"
-                value={deliveryPct}
-                onChange={(e) => setDeliveryPct(e.target.value)}
-                className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                placeholder={deliveryMode === "AED" ? "e.g. 20.000 AED" : "e.g. 20 %"}
+                value={deliveryValue}
+                onChange={(e) => setDeliveryValue(e.target.value)}
+                className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500 font-mono"
               />
             </div>
 
@@ -904,7 +944,7 @@ export default function NewRemittancePage() {
                         type="button"
                         onClick={() => {
                           const cur = parseFloat(s.inr_amount) || 0;
-                          const nextVal = Math.round((cur + remainingInr + Number.EPSILON) * 100) / 100;
+                          const nextVal = Math.round((cur + remainingInr + Number.EPSILON) * 1000) / 1000;
                           updateSplit(s.id, "inr_amount", String(nextVal));
                         }}
                         className="text-teal-700 hover:underline cursor-pointer text-[10px]"
@@ -1112,7 +1152,9 @@ export default function NewRemittancePage() {
                   </div>
 
                   <div className="flex justify-between text-slate-600">
-                    <span className="text-slate-500">Delivery Fee ({(preview.deliveryChargePct * 100).toFixed(0)}%):</span>
+                    <span className="text-slate-500">
+                      Delivery Fee {deliveryMode === "PCT" && preview.deliveryChargePct > 0 ? `(${(preview.deliveryChargePct * 100).toFixed(0)}%)` : "(AED)"}:
+                    </span>
                     <span className="font-mono font-bold text-slate-500">
                       -{preview.deliveryChargeAed.toFixed(3)} AED
                     </span>
@@ -1442,7 +1484,7 @@ export default function NewRemittancePage() {
                     </div>
 
                     <div className="flex justify-between text-slate-600">
-                      <span>Delivery Fee ({(preview.deliveryChargePct * 100).toFixed(0)}%):</span>
+                      <span>Delivery Fee {deliveryMode === "PCT" && preview.deliveryChargePct > 0 ? `(${(preview.deliveryChargePct * 100).toFixed(0)}%)` : "(AED)"}:</span>
                       <span className="font-mono font-semibold text-rose-600">
                         -{preview.deliveryChargeAed.toFixed(3)} AED
                       </span>

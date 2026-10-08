@@ -13,7 +13,8 @@ const createSchema = z.object({
   wholesale_rate: z.number().positive().optional(),
   paid_amount: z.number().min(0, "Paid amount cannot be negative").optional(),
   paid_aed: z.number().min(0).optional(),
-  delivery_charge_pct: z.number().min(0).max(1).optional(),
+  delivery_charge_pct: z.number().min(0).optional(),
+  delivery_charge_aed: z.number().min(0).optional(),
   distributor_id: z.string().nullable().optional(),
   notes: z.string().optional(),
   splits: z.array(z.object({

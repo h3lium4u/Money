@@ -421,7 +421,7 @@ export default function NewDubaiClientTransactionPage() {
               </select>
               {selectedClient && selectedClient.outstanding_balance !== undefined && (
                 <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold mt-1">
-                  Outstanding Balance: AED {Number(selectedClient.outstanding_balance).toFixed(2)}
+                  Outstanding Balance: AED {Number(selectedClient.outstanding_balance).toFixed(3)}
                 </div>
               )}
             </div>
@@ -572,7 +572,7 @@ export default function NewDubaiClientTransactionPage() {
                     Total Paid Sum ({validPaidAmounts.length} {validPaidAmounts.length === 1 ? "entry" : "entries"}):
                   </span>
                   <span className="font-mono font-extrabold text-emerald-800 dark:text-emerald-300 text-sm">
-                    AED {totalPaidAed.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    AED {totalPaidAed.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                   </span>
                 </div>
               )}
