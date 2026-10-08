@@ -146,9 +146,9 @@ function PartyTransfersContent() {
   // New Party Transfer Form State
   const [newDate, setNewDate] = useState(getTodayDateString());
   const [newPartyId, setNewPartyId] = useState("");
-  const [newInrAmounts, setNewInrAmounts] = useState<string[]>(["", "", ""]);
-  const [newCustomerRate, setNewCustomerRate] = useState("38.67");
-  const [newBaseRate, setNewBaseRate] = useState("30.00");
+  const [newInrAmounts, setNewInrAmounts] = useState<string[]>([""]);
+  const [newCustomerRate, setNewCustomerRate] = useState("");
+  const [newBaseRate, setNewBaseRate] = useState("");
   const [newError, setNewError] = useState<string | null>(null);
   const [showConfirmNew, setShowConfirmNew] = useState(false);
   const [savingNew, setSavingNew] = useState(false);
@@ -188,12 +188,6 @@ function PartyTransfersContent() {
 
       setTransfers(txns);
       setParties(partyList);
-      if (partyList.length > 0 && !newPartyId) {
-        setNewPartyId(partyList[0].id);
-        if (partyList[0].default_rate) {
-          setNewCustomerRate(String(partyList[0].default_rate));
-        }
-      }
     } catch (err) {
       console.error("Failed to load party transfers data:", err);
     } finally {
@@ -235,11 +229,10 @@ function PartyTransfersContent() {
     return inr - cost;
   }
 
-  // Compute live preview for new party transfer
   const validNewAmounts = newInrAmounts
     .map((v) => parseFloat(v))
     .filter((n) => !isNaN(n) && n > 0);
-  const totalNewInr = validNewAmounts.reduce((a, b) => a + b, 0);
+  const totalNewInr = Math.round((validNewAmounts.reduce((a, b) => a + b, 0) + Number.EPSILON) * 100) / 100;
   const cRate = parseFloat(newCustomerRate) || 0;
   const bRate = parseFloat(newBaseRate) || 0;
 

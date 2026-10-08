@@ -66,7 +66,7 @@ export default function NewRemittancePage() {
   const [date, setDate] = useState(getTodayDateString());
   const dateInputRef = useRef<HTMLInputElement>(null);
   const [customerId, setCustomerId] = useState("");
-  const [inrAmounts, setInrAmounts] = useState<string[]>(["", "", ""]);
+  const [inrAmounts, setInrAmounts] = useState<string[]>([""]);
   const [customerRate, setCustomerRate] = useState<string>("");
   const [baseRate, setBaseRate] = useState<string>("");
   const [deliveryPct, setDeliveryPct] = useState<string>("");
@@ -124,7 +124,7 @@ export default function NewRemittancePage() {
   const [newCustName, setNewCustName] = useState("");
   const [newCustCode, setNewCustCode] = useState("");
   const [newCustPhone, setNewCustPhone] = useState("");
-  const [newCustRate, setNewCustRate] = useState("38.25");
+  const [newCustRate, setNewCustRate] = useState("");
   const [savingNewCust, setSavingNewCust] = useState(false);
   const [newCustError, setNewCustError] = useState<string | null>(null);
 
@@ -214,7 +214,7 @@ export default function NewRemittancePage() {
       setNewCustName("");
       setNewCustCode("");
       setNewCustPhone("");
-      setNewCustRate("38.25");
+      setNewCustRate("");
       toast.success("Customer created successfully");
     } catch (err: any) {
       setNewCustError(err.message || "Failed to create customer");
@@ -282,7 +282,7 @@ export default function NewRemittancePage() {
   const validAmounts = inrAmounts
     .map((val) => parseFloat(val))
     .filter((num) => !isNaN(num) && num > 0);
-  const totalOrderInr = validAmounts.reduce((sum, num) => sum + num, 0);
+  const totalOrderInr = Math.round((validAmounts.reduce((sum, num) => sum + num, 0) + Number.EPSILON) * 100) / 100;
 
   // Auto-fill single split amount with total order amount
   useEffect(() => {
@@ -339,8 +339,8 @@ export default function NewRemittancePage() {
   }, [inrAmounts, customerRate, baseRate, deliveryPct, totalOrderInr]);
 
   // Splits Calculation
-  const totalAllocatedInr = splits.reduce((sum, s) => sum + (parseFloat(s.inr_amount) || 0), 0);
-  const remainingInr = Math.max(0, totalOrderInr - totalAllocatedInr);
+  const totalAllocatedInr = Math.round((splits.reduce((sum, s) => sum + (parseFloat(s.inr_amount) || 0), 0) + Number.EPSILON) * 100) / 100;
+  const remainingInr = Math.max(0, Math.round((totalOrderInr - totalAllocatedInr + Number.EPSILON) * 100) / 100);
 
   function addSplit() {
     if (distributors.length === 0) return;
@@ -349,7 +349,7 @@ export default function NewRemittancePage() {
       {
         id: Math.random().toString(),
         distributor_id: distributors[0].id,
-        inr_amount: remainingInr > 0 ? String(remainingInr) : "",
+        inr_amount: remainingInr > 0 ? String(Math.round((remainingInr + Number.EPSILON) * 100) / 100) : "",
         notes: "",
       },
     ]);
@@ -709,7 +709,7 @@ export default function NewRemittancePage() {
               </div>
             ) : (
               <div className="text-[11px] text-slate-400 italic px-1">
-                Enter at least one amount. 3 fields provided by default; empty fields are not included in Excel.
+                Enter at least one amount. Use &quot;+ Add Amount&quot; to add more fields if needed; empty fields are not included in Excel.
               </div>
             )}
           </div>
@@ -863,7 +863,8 @@ export default function NewRemittancePage() {
                         type="button"
                         onClick={() => {
                           const cur = parseFloat(s.inr_amount) || 0;
-                          updateSplit(s.id, "inr_amount", String(cur + remainingInr));
+                          const nextVal = Math.round((cur + remainingInr + Number.EPSILON) * 100) / 100;
+                          updateSplit(s.id, "inr_amount", String(nextVal));
                         }}
                         className="text-teal-700 hover:underline cursor-pointer text-[10px]"
                       >

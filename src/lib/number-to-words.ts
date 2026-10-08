@@ -35,8 +35,15 @@ export function numberToIndianWords(amount: number | string | undefined | null):
   if (isNaN(num) || num < 0) return "";
   if (num === 0) return "Zero Rupees Only";
 
-  const integerPart = Math.floor(num);
-  const decimalPart = Math.round((num - integerPart) * 100);
+  // Clean rounding to 2 decimal places with EPSILON to prevent IEEE 754 float drift
+  const rounded = Math.round((num + Number.EPSILON) * 100) / 100;
+  let integerPart = Math.floor(rounded);
+  let decimalPart = Math.round((rounded - integerPart) * 100);
+
+  if (decimalPart >= 100) {
+    integerPart += 1;
+    decimalPart = 0;
+  }
 
   let n = integerPart;
   let words = "";

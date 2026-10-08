@@ -74,7 +74,7 @@ export default function NewDubaiClientTransactionPage() {
   const [newClientName, setNewClientName] = useState("");
   const [newClientCode, setNewClientCode] = useState("");
   const [newClientPhone, setNewClientPhone] = useState("");
-  const [newClientRate, setNewClientRate] = useState("38.25");
+  const [newClientRate, setNewClientRate] = useState("");
   const [savingNewClient, setSavingNewClient] = useState(false);
   const [newClientError, setNewClientError] = useState<string | null>(null);
 
@@ -123,12 +123,6 @@ export default function NewDubaiClientTransactionPage() {
       const list: ClientOption[] = Array.isArray(pJson) ? pJson : [];
 
       setClients(list);
-      if (list.length > 0 && !customerId) {
-        setCustomerId(list[0].id);
-        if (list[0].default_rate) {
-          setManualRate(String(list[0].default_rate));
-        }
-      }
     } catch (err) {
       console.error(err);
       setClients([]);
@@ -181,7 +175,7 @@ export default function NewDubaiClientTransactionPage() {
       setNewClientName("");
       setNewClientCode("");
       setNewClientPhone("");
-      setNewClientRate("38.25");
+      setNewClientRate("");
       toast.success("Dubai Client created successfully");
     } catch (err: any) {
       setNewClientError(err.message || "Failed to create client");
@@ -191,11 +185,11 @@ export default function NewDubaiClientTransactionPage() {
     }
   }
 
-  // Calculate total order INR
+  // Calculate total order INR with exact 2-decimal rounding
   const validAmounts = inrAmounts
     .map((val) => parseFloat(val))
     .filter((num) => !isNaN(num) && num > 0);
-  const totalOrderInr = validAmounts.reduce((sum, num) => sum + num, 0);
+  const totalOrderInr = Math.round((validAmounts.reduce((sum, num) => sum + num, 0) + Number.EPSILON) * 100) / 100;
 
   // Live Server Backend Calculation
   useEffect(() => {
@@ -301,7 +295,7 @@ export default function NewDubaiClientTransactionPage() {
   const inrWords = totalOrderInr > 0 ? numberToIndianWords(totalOrderInr) : null;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* Breadcrumb Navigation */}
       <Breadcrumbs
         items={[
@@ -327,7 +321,7 @@ export default function NewDubaiClientTransactionPage() {
           <button
             type="button"
             onClick={() => setShowNewClientModal(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 text-xs font-bold rounded-lg hover:bg-teal-100 dark:hover:bg-teal-900/50 transition-colors shadow-2xs"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 text-xs font-bold rounded-lg hover:bg-teal-100 dark:hover:bg-teal-900/50 transition-colors shadow-2xs cursor-pointer"
           >
             <UserPlus className="w-3.5 h-3.5" />
             <span>+ New Dubai Client</span>
@@ -335,10 +329,17 @@ export default function NewDubaiClientTransactionPage() {
         </div>
       </div>
 
-      {/* Main Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 space-y-5">
-          
+      {/* Main 2-Column Responsive Grid: Form on Left (7 cols), Calculation Preview on Right (5 cols) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Column (7 cols): Input Form */}
+        <form onSubmit={handleSubmit} className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-5">
+          {error && (
+            <div className="p-3.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs rounded-xl flex items-center gap-2 font-medium">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+              <span>{error}</span>
+            </div>
+          )}
+
           {/* Section 1: Date & Dubai Client */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Choose Date */}
@@ -354,12 +355,12 @@ export default function NewDubaiClientTransactionPage() {
                   required
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 pr-10"
+                  className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 pr-10 cursor-pointer"
                 />
                 <button
                   type="button"
                   onClick={openDatePicker}
-                  className="absolute right-2 p-1.5 text-slate-400 hover:text-teal-700 dark:hover:text-teal-400 rounded-md transition-colors"
+                  className="absolute right-2 p-1.5 text-slate-400 hover:text-teal-700 dark:hover:text-teal-400 rounded-md transition-colors cursor-pointer"
                   title="Choose Date"
                 >
                   <Calendar className="w-4 h-4" />
@@ -377,7 +378,7 @@ export default function NewDubaiClientTransactionPage() {
                 <button
                   type="button"
                   onClick={() => setShowNewClientModal(true)}
-                  className="text-[11px] font-bold text-teal-700 dark:text-teal-400 hover:underline inline-flex items-center gap-1"
+                  className="text-[11px] font-bold text-teal-700 dark:text-teal-400 hover:underline inline-flex items-center gap-1 cursor-pointer"
                 >
                   + Add Client
                 </button>
@@ -386,7 +387,7 @@ export default function NewDubaiClientTransactionPage() {
                 required
                 value={customerId}
                 onChange={(e) => handleClientChange(e.target.value)}
-                className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
               >
                 <option value="">-- Choose Dubai Client --</option>
                 {clients.map((c) => (
@@ -524,16 +525,36 @@ export default function NewDubaiClientTransactionPage() {
               className="w-full text-xs font-medium border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
           </div>
-        </div>
 
-        {/* Live Backend Calculation Projection */}
-        {preview ? (
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => router.push("/transactions")}
+              className="px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving || !preview}
+              className="px-6 py-2.5 text-xs font-bold bg-[#0F766E] hover:bg-[#0D9488] text-white rounded-lg transition-all shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Proceed & Confirm Transfer</span>
+            </button>
+          </div>
+        </form>
+
+        {/* Right Column (5 cols): Calculation Preview & Dubai Rules Guide */}
+        <div className="lg:col-span-5 space-y-4 lg:sticky lg:top-6">
+          {/* Live Backend Calculation Preview Card */}
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-teal-200 dark:border-teal-800/70 shadow-sm p-5 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <Calculator className="w-5 h-5 text-teal-700 dark:text-teal-400" />
-                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-                  Backend Calculation Output
+                <h3 className="text-xs font-bold uppercase tracking-wider text-teal-900 dark:text-teal-200">
+                  Backend Calculation Preview
                 </h3>
               </div>
               <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full">
@@ -541,89 +562,108 @@ export default function NewDubaiClientTransactionPage() {
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {/* 1. Whole Sale Rate */}
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700/80 space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
-                  Whole sale rate
-                </span>
-                <p className="text-base font-extrabold text-slate-900 dark:text-slate-100 font-mono">
-                  {preview.wholesaleRate.toFixed(4)}
-                </p>
-                <span className="text-[10px] text-slate-400 block font-mono">= 1000 / {manualRate}</span>
-              </div>
+            {preview ? (
+              <div className="space-y-4">
+                {/* Prominent IN DHIRAMS Hero Card */}
+                <div className="p-4 bg-teal-50/90 dark:bg-teal-950/40 rounded-xl border border-teal-200 dark:border-teal-800 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-teal-800 dark:text-teal-300 block">
+                    In Dhirams (AED Amount)
+                  </span>
+                  <p className="text-2xl sm:text-3xl font-black text-teal-900 dark:text-teal-100 font-mono tracking-tight">
+                    {preview.inDhirams.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED
+                  </p>
+                  <span className="text-[11px] text-teal-700 dark:text-teal-300 block font-mono">
+                    = Total (₹{preview.total.toLocaleString("en-IN")}) / Whole Sale Rate ({preview.wholesaleRate.toFixed(4)})
+                  </span>
+                </div>
 
-              {/* 2. In Dhirams */}
-              <div className="p-3 bg-teal-50/80 dark:bg-teal-950/40 rounded-xl border border-teal-200 dark:border-teal-800 space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-teal-800 dark:text-teal-300 block">
-                  In Dhirams
-                </span>
-                <p className="text-base font-extrabold text-teal-900 dark:text-teal-200 font-mono">
-                  AED {preview.inDhirams.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-                <span className="text-[10px] text-teal-600 dark:text-teal-400 block font-mono">= Total / Whole sale rate</span>
-              </div>
+                {/* Metric Breakdown Rows */}
+                <div className="space-y-2.5 text-xs">
+                  <div className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200/80 dark:border-slate-700">
+                    <div>
+                      <span className="font-bold text-slate-700 dark:text-slate-300 block">Whole Sale Rate</span>
+                      <span className="text-[10px] text-slate-400 font-mono">= 1000 / {manualRate || preview.manualRate}</span>
+                    </div>
+                    <span className="font-mono font-extrabold text-slate-900 dark:text-slate-100 text-sm">
+                      {preview.wholesaleRate.toFixed(4)}
+                    </span>
+                  </div>
 
-              {/* 3. Paid Amount */}
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700/80 space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
-                  Paid Amount
-                </span>
-                <p className="text-base font-extrabold text-slate-900 dark:text-slate-100 font-mono">
-                  AED {preview.paidAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-                <span className="text-[10px] text-slate-400 block">Manual Entry</span>
-              </div>
+                  <div className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200/80 dark:border-slate-700">
+                    <div>
+                      <span className="font-bold text-slate-700 dark:text-slate-300 block">Total Order (INR)</span>
+                      <span className="text-[10px] text-slate-400">Manual Entry</span>
+                    </div>
+                    <span className="font-mono font-extrabold text-slate-900 dark:text-slate-100 text-sm">
+                      ₹ {preview.total.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
 
-              {/* 4. Balance to paid */}
-              <div className={`p-3 rounded-xl border space-y-1 ${
-                preview.balanceToPaid > 0
-                  ? "bg-amber-50/80 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200"
-                  : "bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200"
-              }`}>
-                <span className="text-[10px] font-bold uppercase tracking-wider block">
-                  Balance to paid
-                </span>
-                <p className="text-base font-extrabold font-mono">
-                  AED {preview.balanceToPaid.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <div className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200/80 dark:border-slate-700">
+                    <div>
+                      <span className="font-bold text-slate-700 dark:text-slate-300 block">Paid Amount (AED)</span>
+                      <span className="text-[10px] text-slate-400">Manual Entry</span>
+                    </div>
+                    <span className="font-mono font-extrabold text-slate-900 dark:text-slate-100 text-sm">
+                      AED {preview.paidAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+
+                  {/* Balance to Paid Highlight Box */}
+                  <div className={`p-3 rounded-xl border flex items-center justify-between ${
+                    preview.balanceToPaid > 0
+                      ? "bg-amber-50/90 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200"
+                      : "bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200"
+                  }`}>
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider block">Balance to Paid</span>
+                      <span className="text-[10px] opacity-80 font-mono block">= In Dhirams - Paid amount</span>
+                    </div>
+                    <span className="font-mono font-black text-base sm:text-lg">
+                      AED {preview.balanceToPaid.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : calculating ? (
+              <div className="p-8 text-center flex flex-col items-center justify-center gap-2 text-xs text-slate-500">
+                <RefreshCw className="w-5 h-5 animate-spin text-teal-700" />
+                <span>Computing authoritative server values...</span>
+              </div>
+            ) : (
+              <div className="p-6 text-center text-xs text-slate-400 space-y-2 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+                <Coins className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
+                <p className="font-semibold text-slate-600 dark:text-slate-300">No Calculation Yet</p>
+                <p className="text-[11px] text-slate-400">
+                  Enter Total INR and Manual Rate value to see the authoritative wholesale and Dhirams calculation live.
                 </p>
-                <span className="text-[10px] opacity-80 block font-mono">= In Dhirams - Paid amount</span>
+              </div>
+            )}
+          </div>
+
+          {/* Dubai Client Calculation Rules Card */}
+          <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-2 text-xs">
+            <h4 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-teal-700" />
+              <span>Dubai Client Calculation Rules</span>
+            </h4>
+            <div className="space-y-1.5 text-[11px] text-slate-600 dark:text-slate-400">
+              <div className="flex items-start gap-1.5">
+                <span className="text-teal-700 font-bold">•</span>
+                <span><strong>Wholesale Rate</strong> = 1000 / Manual Rate Value (e.g. 1000 / 38.25 = 26.1438)</span>
+              </div>
+              <div className="flex items-start gap-1.5">
+                <span className="text-teal-700 font-bold">•</span>
+                <span><strong>In Dhirams (AED)</strong> = Total Order (INR) / Wholesale Rate</span>
+              </div>
+              <div className="flex items-start gap-1.5">
+                <span className="text-teal-700 font-bold">•</span>
+                <span><strong>Balance to Paid</strong> = In Dhirams - Paid Amount (AED)</span>
               </div>
             </div>
           </div>
-        ) : calculating ? (
-          <div className="p-5 text-center bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-2 text-xs text-slate-500">
-            <RefreshCw className="w-4 h-4 animate-spin text-teal-700" />
-            <span>Calculating authoritative values on server...</span>
-          </div>
-        ) : null}
-
-        {error && (
-          <div className="p-3.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs rounded-xl flex items-center gap-2 font-medium">
-            <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* Action Button */}
-        <div className="flex items-center justify-end gap-3 pt-2">
-          <button
-            type="button"
-            onClick={() => router.push("/transactions")}
-            className="px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={saving || !preview}
-            className="px-6 py-2.5 text-xs font-bold bg-[#0F766E] hover:bg-[#0D9488] text-white rounded-lg transition-all shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50"
-          >
-            <CheckCircle2 className="w-4 h-4" />
-            <span>Proceed & Confirm Transfer</span>
-          </button>
         </div>
-      </form>
+      </div>
 
       {/* Confirmation Modal */}
       {showConfirmModal && (
