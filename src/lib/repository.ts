@@ -147,6 +147,26 @@ export interface BankDistripRecord {
   created_at: string;
 }
 
+export interface PartyPriorTransferItem {
+  id: string;
+  transaction_number: string;
+  transaction_date: string;
+  inr_amount: number;
+  notes?: string | null;
+}
+
+export interface PartyPriorTransferSummary {
+  partyId: string;
+  partyCode: string;
+  partyName: string;
+  distributorId?: string;
+  totalTransferredInr: number;
+  totalSplitsAssignedInr: number;
+  availablePriorBalanceInr: number;
+  hasPriorTransfers: boolean;
+  transfers: PartyPriorTransferItem[];
+}
+
 function formatDate(val: any): string {
   if (!val) return "";
   if (typeof val === "string") return val.slice(0, 10);
@@ -277,7 +297,15 @@ interface CacheStore {
   customers: { timestamp: number; data: Record<string, Customer[]> } | null;
   customerLedger: Map<string, { timestamp: number; data: any }>;
   customerPayments: { timestamp: number; data: any[] } | null;
-  partyTransfers: { timestamp: number; data: { transfers: TransactionRecord[]; parties: Customer[] } } | null;
+  partyTransfers: {
+    timestamp: number;
+    data: {
+      transfers: TransactionRecord[];
+      parties: Customer[];
+      priorSummaries: Record<string, PartyPriorTransferSummary>;
+      priorList: PartyPriorTransferSummary[];
+    };
+  } | null;
   bankDistrip: { timestamp: number; data: Map<string, any> } | null;
   dashboardKpi: { timestamp: number; key: string; data: any } | null;
   partySplitSummary: { timestamp: number; key: string; data: any } | null;
@@ -450,26 +478,6 @@ export async function listParties(partyType?: "DUBAI" | "INDIA" | "ALL"): Promis
   }
   cacheStore.customers.data[cacheKey] = result;
   return result;
-}
-
-export interface PartyPriorTransferItem {
-  id: string;
-  transaction_number: string;
-  transaction_date: string;
-  inr_amount: number;
-  notes?: string | null;
-}
-
-export interface PartyPriorTransferSummary {
-  partyId: string;
-  partyCode: string;
-  partyName: string;
-  distributorId?: string;
-  totalTransferredInr: number;
-  totalSplitsAssignedInr: number;
-  availablePriorBalanceInr: number;
-  hasPriorTransfers: boolean;
-  transfers: PartyPriorTransferItem[];
 }
 
 export async function getPartiesPriorTransfersSummary(): Promise<{
@@ -797,6 +805,8 @@ export async function listTransactions(filters?: {
 export async function getPartyTransfersData(forceRefresh = false): Promise<{
   transfers: TransactionRecord[];
   parties: Customer[];
+  priorSummaries: Record<string, PartyPriorTransferSummary>;
+  priorList: PartyPriorTransferSummary[];
 }> {
   const now = Date.now();
   // Fast cache for 30 seconds unless invalidated by any mutation
@@ -805,12 +815,18 @@ export async function getPartyTransfersData(forceRefresh = false): Promise<{
   }
 
   // Parallel fetch using Promise.all on server
-  const [transfers, parties] = await Promise.all([
+  const [transfers, parties, priorData] = await Promise.all([
     listTransactions({ entityType: "PARTY", limit: 250 }),
     listParties(),
+    getPartiesPriorTransfersSummary(),
   ]);
 
-  const result = { transfers, parties };
+  const result = {
+    transfers,
+    parties,
+    priorSummaries: priorData.summaries,
+    priorList: priorData.list,
+  };
   cacheStore.partyTransfers = {
     timestamp: now,
     data: result,
