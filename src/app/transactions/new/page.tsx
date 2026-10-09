@@ -93,9 +93,12 @@ export default function NewDubaiClientTransactionPage() {
   };
 
   function handleAmountChange(index: number, value: string) {
-    const next = [...inrAmounts];
-    next[index] = value;
-    setInrAmounts(next);
+    const clean = value.replace(/,/g, "");
+    if (clean === "" || /^[0-9]*\.?[0-9]*$/.test(clean)) {
+      const next = [...inrAmounts];
+      next[index] = clean;
+      setInrAmounts(next);
+    }
   }
 
   function handleAddAmount() {
@@ -111,9 +114,12 @@ export default function NewDubaiClientTransactionPage() {
   }
 
   function handlePaidAmountChange(index: number, value: string) {
-    const next = [...paidAmounts];
-    next[index] = value;
-    setPaidAmounts(next);
+    const clean = value.replace(/,/g, "");
+    if (clean === "" || /^[0-9]*\.?[0-9]*$/.test(clean)) {
+      const next = [...paidAmounts];
+      next[index] = clean;
+      setPaidAmounts(next);
+    }
   }
 
   function handleAddPaidAmount() {
@@ -185,7 +191,7 @@ export default function NewDubaiClientTransactionPage() {
       // Add to list and immediately select
       setClients((prev) => [created, ...prev]);
       setCustomerId(created.id);
-      if (created.default_rate) {
+      if (created.default_rate && !manualRate.trim()) {
         setManualRate(String(created.default_rate));
       }
 
@@ -451,12 +457,12 @@ export default function NewDubaiClientTransactionPage() {
                       <span className="font-mono">₹</span>
                     </div>
                     <input
-                      type="number"
-                      step="any"
+                      type="text"
+                      inputMode="decimal"
                       placeholder="Enter Total INR Amount (e.g. 500000)"
                       value={amount}
                       onChange={(e) => handleAmountChange(idx, e.target.value)}
-                      className="w-full text-sm font-bold pl-8 pr-3 py-2.5 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs"
+                      className="w-full text-sm font-bold pl-8 pr-3 py-2.5 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs font-mono"
                     />
                   </div>
                   {inrAmounts.length > 1 && (
@@ -502,13 +508,18 @@ export default function NewDubaiClientTransactionPage() {
                 <span className="text-[10px] text-teal-700 dark:text-teal-400 font-bold">AED / 1000 INR</span>
               </label>
               <input
-                type="number"
-                step="any"
+                type="text"
+                inputMode="decimal"
                 required
                 placeholder="e.g. 38.25"
                 value={manualRate}
-                onChange={(e) => setManualRate(e.target.value)}
-                className="w-full text-sm font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                onChange={(e) => {
+                  const clean = e.target.value.replace(/,/g, "");
+                  if (clean === "" || /^[0-9]*\.?[0-9]*$/.test(clean)) {
+                    setManualRate(clean);
+                  }
+                }}
+                className="w-full text-sm font-bold font-mono border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
               <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
                 Wholesale rate is computed as <strong>1000 / Exchange Rate</strong>.
@@ -544,8 +555,8 @@ export default function NewDubaiClientTransactionPage() {
                         <span>AED</span>
                       </div>
                       <input
-                        type="number"
-                        step="any"
+                        type="text"
+                        inputMode="decimal"
                         placeholder={idx === 0 ? "Enter paid amount in AED (e.g. 5000)" : "Additional paid amount (AED)"}
                         value={amt}
                         onChange={(e) => handlePaidAmountChange(idx, e.target.value)}
@@ -659,7 +670,7 @@ export default function NewDubaiClientTransactionPage() {
                   <div className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200/80 dark:border-slate-700">
                     <div>
                       <span className="font-bold text-slate-700 dark:text-slate-300 block">Total Order (INR)</span>
-                      <span className="text-[10px] text-slate-400">Manual Entry</span>
+                      <span className="text-[10px] text-slate-400">Order Amount</span>
                     </div>
                     <span className="font-mono font-extrabold text-slate-900 dark:text-slate-100 text-sm">
                       ₹ {preview.total.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
@@ -669,7 +680,7 @@ export default function NewDubaiClientTransactionPage() {
                   <div className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200/80 dark:border-slate-700">
                     <div>
                       <span className="font-bold text-slate-700 dark:text-slate-300 block">Paid Amount (AED)</span>
-                      <span className="text-[10px] text-slate-400">Manual Entry</span>
+                      <span className="text-[10px] text-slate-400">Advance / Cash</span>
                     </div>
                     <span className="font-mono font-extrabold text-slate-900 dark:text-slate-100 text-sm">
                       AED {preview.paidAmount.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
@@ -702,7 +713,7 @@ export default function NewDubaiClientTransactionPage() {
                 <Coins className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
                 <p className="font-semibold text-slate-600 dark:text-slate-300">No Calculation Yet</p>
                 <p className="text-[11px] text-slate-400">
-                  Enter Total INR and Manual Rate value to see the authoritative wholesale and Dhirams calculation live.
+                  Enter Total INR and Client Exchange Rate to see the authoritative wholesale and Dhirams calculation live.
                 </p>
               </div>
             )}

@@ -321,9 +321,12 @@ function PartyTransfersContent() {
   }
 
   function handleInrAmountChange(idx: number, val: string) {
-    const next = [...newInrAmounts];
-    next[idx] = val;
-    setNewInrAmounts(next);
+    const clean = val.replace(/,/g, "");
+    if (clean === "" || /^[0-9]*\.?[0-9]*$/.test(clean)) {
+      const next = [...newInrAmounts];
+      next[idx] = clean;
+      setNewInrAmounts(next);
+    }
   }
 
   function handlePartySelect(partyId: string) {
@@ -335,7 +338,7 @@ function PartyTransfersContent() {
       } else {
         setNewCurrencyMode("AED");
       }
-      if (p.default_rate) {
+      if (p.default_rate && !newCustomerRate.trim()) {
         setNewCustomerRate(String(p.default_rate));
       }
     }
@@ -1609,8 +1612,8 @@ function PartyTransfersContent() {
                           {effectiveCurrency === "AED" ? "AED" : "₹"}
                         </span>
                         <input
-                          type="number"
-                          step="any"
+                          type="text"
+                          inputMode="decimal"
                           placeholder={effectiveCurrency === "AED" ? `Enter AED amount ${idx + 1}...` : `Enter INR amount ${idx + 1}...`}
                           value={amt}
                           onChange={(e) => handleInrAmountChange(idx, e.target.value)}
@@ -1659,11 +1662,16 @@ function PartyTransfersContent() {
                     Customer / Party Rate
                   </label>
                   <input
-                    type="number"
-                    step="any"
+                    type="text"
+                    inputMode="decimal"
                     required
                     value={newCustomerRate}
-                    onChange={(e) => setNewCustomerRate(e.target.value)}
+                    onChange={(e) => {
+                      const clean = e.target.value.replace(/,/g, "");
+                      if (clean === "" || /^[0-9]*\.?[0-9]*$/.test(clean)) {
+                        setNewCustomerRate(clean);
+                      }
+                    }}
                     className="w-full text-xs font-bold font-mono border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-teal-500"
                   />
                   <span className="text-[10px] text-slate-400 mt-0.5 block">Party billing rate (e.g. 38.25)</span>
@@ -1674,11 +1682,16 @@ function PartyTransfersContent() {
                     Base / Cost Rate
                   </label>
                   <input
-                    type="number"
-                    step="any"
+                    type="text"
+                    inputMode="decimal"
                     required
                     value={newBaseRate}
-                    onChange={(e) => setNewBaseRate(e.target.value)}
+                    onChange={(e) => {
+                      const clean = e.target.value.replace(/,/g, "");
+                      if (clean === "" || /^[0-9]*\.?[0-9]*$/.test(clean)) {
+                        setNewBaseRate(clean);
+                      }
+                    }}
                     className="w-full text-xs font-bold font-mono border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-teal-500"
                   />
                   <span className="text-[10px] text-slate-400 mt-0.5 block">Cost rate to India payout (e.g. 30.00)</span>
@@ -1969,12 +1982,17 @@ function PartyTransfersContent() {
                       {isInd ? "₹" : "AED"}
                     </span>
                     <input
-                      type="number"
-                      step="any"
+                      type="text"
+                      inputMode="decimal"
                       required
                       placeholder={isInd ? "e.g. 50000" : "0.00"}
                       value={payAmount}
-                      onChange={(e) => setPayAmount(e.target.value)}
+                      onChange={(e) => {
+                        const clean = e.target.value.replace(/,/g, "");
+                        if (clean === "" || /^[0-9]*\.?[0-9]*$/.test(clean)) {
+                          setPayAmount(clean);
+                        }
+                      }}
                       className={`w-full text-sm font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-teal-500 font-mono ${
                         isInd ? "pl-7" : "pl-12"
                       }`}
@@ -2104,11 +2122,16 @@ function PartyTransfersContent() {
                     {editCurrencyMode === "AED" ? "AED" : "₹"}
                   </span>
                   <input
-                    type="number"
-                    step="any"
+                    type="text"
+                    inputMode="decimal"
                     required
                     value={editInrAmount}
-                    onChange={(e) => setEditInrAmount(e.target.value)}
+                    onChange={(e) => {
+                      const clean = e.target.value.replace(/,/g, "");
+                      if (clean === "" || /^[0-9]*\.?[0-9]*$/.test(clean)) {
+                        setEditInrAmount(clean);
+                      }
+                    }}
                     className={`w-full text-xs font-bold font-mono border border-slate-300 rounded p-2 text-slate-900 ${
                       editCurrencyMode === "AED" ? "pl-14" : "pl-7"
                     }`}
@@ -2120,11 +2143,16 @@ function PartyTransfersContent() {
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Customer / Party Rate</label>
                   <input
-                    type="number"
-                    step="any"
+                    type="text"
+                    inputMode="decimal"
                     required
                     value={editCustomerRate}
-                    onChange={(e) => setEditCustomerRate(e.target.value)}
+                    onChange={(e) => {
+                      const clean = e.target.value.replace(/,/g, "");
+                      if (clean === "" || /^[0-9]*\.?[0-9]*$/.test(clean)) {
+                        setEditCustomerRate(clean);
+                      }
+                    }}
                     className="w-full text-xs font-bold font-mono border border-slate-300 rounded p-2 text-slate-900"
                   />
                   <span className="text-[10px] text-slate-400 mt-0.5 block">Party billing rate (e.g. 38.25)</span>
@@ -2132,11 +2160,16 @@ function PartyTransfersContent() {
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Base / Cost Rate</label>
                   <input
-                    type="number"
-                    step="any"
+                    type="text"
+                    inputMode="decimal"
                     required
                     value={editBaseRate}
-                    onChange={(e) => setEditBaseRate(e.target.value)}
+                    onChange={(e) => {
+                      const clean = e.target.value.replace(/,/g, "");
+                      if (clean === "" || /^[0-9]*\.?[0-9]*$/.test(clean)) {
+                        setEditBaseRate(clean);
+                      }
+                    }}
                     className="w-full text-xs font-bold font-mono border border-slate-300 rounded p-2 text-slate-900"
                   />
                   <span className="text-[10px] text-slate-400 mt-0.5 block">Cost rate to India payout (e.g. 30.00)</span>

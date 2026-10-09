@@ -306,7 +306,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   noteCell.font = { italic: true, size: 8.5, color: { argb: "FF475569" } };
   noteCell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
   noteCell.border = borderThin;
-  wsSumm.getRow(noteRow).height = 26;
+  wsSumm.getRow(noteRow).height = 42;
 
   // Table of Contents / Sheet Guide
   const navHeaderRow = noteRow + 2;
@@ -319,7 +319,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   const sheetGuide = [
     { code: "Sheet 02", name: "Customers", desc: "Dubai remittance clients, contact info, and outstanding balances in AED." },
     { code: "Sheet 03", name: "Parties_Master", desc: "Core trading parties (HAJA, MK, NF2, SALA, SARAB) with native currencies and rates." },
-    { code: "Sheet 04", name: "Dubai_Client_Transfers", desc: "Order remittances with Date, Customer Rate, Wholesale Rate, AED in Dirhams, and Balance." },
+    { code: "Sheet 04", name: "Dubai_Client_Transfers", desc: "Order remittances with Date, Client Exchange Rate, Wholesale Rate, AED in Dirhams, and Balance." },
     { code: "Sheet 05", name: "Party_Transfers", desc: "Party transfers in AED & INR with Date, Party Rate, Cost, and Net Profit." },
     { code: "Sheet 06", name: "Customer_Payments", desc: "Date-wise payment receipts in AED, payment methods, and bank slip reference numbers." },
     { code: "Sheet 07", name: "Distribution_Splits", desc: "Order allocations split to India payout distributors (MK · SALA) with Date and AED equivalent." },
@@ -526,7 +526,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     { header: "Client ID", key: "cust_id", width: 16 },                  // Col D
     { header: "Client Name", key: "cust_name", width: 25 },              // Col E
     { header: "Total Order (INR)", key: "total_inr", width: 20 },        // Col F: Total amount in INR
-    { header: "Customer Rate (per 1000 INR)", key: "manual_rate", width: 24 }, // Col G: Customer rate
+    { header: "Client Exchange Rate (per 1000 INR)", key: "manual_rate", width: 28 }, // Col G: Client exchange rate
     { header: "Wholesale Rate", key: "wholesale_rate", width: 18 },     // Col H: =ROUND(1000/G{rowNum}, 3)
     { header: "Amount in Dirhams (AED)", key: "in_dhirams", width: 22 }, // Col I: =ROUND((F{rowNum}*G{rowNum})/1000, 3)
     { header: "Paid Amount (AED)", key: "paid_amount", width: 20 },      // Col J: Paid AED
@@ -1209,7 +1209,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
 
   wsBank.columns = [
     { width: 16 }, // A: Date / Code
-    { width: 10 }, // B: Day / Name
+    { width: 26 }, // B: Day / Name
     { width: 22 }, // C: Order / Order
     { width: 20 }, // D: Com / Com
     { width: 22 }, // E: Paid / Paid

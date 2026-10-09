@@ -534,8 +534,10 @@ export async function getPartiesPriorTransfersSummary(): Promise<{
     });
 
     const totalSplits = pSplits.reduce((sum: number, s: any) => sum + Number(s.inr_amount || 0), 0);
+    // Only subtract splits that were actually offset / paid against the prior advance
+    const totalDeductedFromPrior = pSplits.reduce((sum: number, s: any) => sum + Number(s.paid_amount_inr || 0), 0);
 
-    const availablePriorBalance = Math.max(0, roundTo(totalTransferred - totalSplits, 3));
+    const availablePriorBalance = Math.max(0, roundTo(totalTransferred - totalDeductedFromPrior, 3));
     const hasPriorTransfers = availablePriorBalance > 0;
 
     const item: PartyPriorTransferSummary = {
@@ -579,14 +581,19 @@ export async function getCustomer(id: string): Promise<Customer | null> {
              SUM(inr_amount) AS total_inr, 
              SUM(aed_amount) AS total_aed
       FROM transactions 
-      WHERE status = 'CONFIRMED' AND (customer_id = $1 OR customer_id IN (SELECT id FROM customers WHERE code = $2))
+      WHERE status = 'CONFIRMED' AND (
+        customer_id = $1 
+        OR customer_id IN (SELECT id FROM customers WHERE UPPER(code) = UPPER($2) OR UPPER(name) = UPPER($2))
+        OR distributor_id = $1
+      )
       GROUP BY customer_id
     ),
     pay_agg AS (
       SELECT customer_id, 
              SUM(amount_aed) AS total_paid
       FROM customer_payments
-      WHERE customer_id = $1 OR customer_id IN (SELECT id FROM customers WHERE code = $2)
+      WHERE customer_id = $1 
+         OR customer_id IN (SELECT id FROM customers WHERE UPPER(code) = UPPER($2) OR UPPER(name) = UPPER($2))
       GROUP BY customer_id
     )
     SELECT 
@@ -597,7 +604,12 @@ export async function getCustomer(id: string): Promise<Customer | null> {
     FROM customers c
     LEFT JOIN txn_agg ta ON ta.customer_id = c.id
     LEFT JOIN pay_agg pa ON pa.customer_id = c.id
-    WHERE c.id = $1 OR c.code = $2
+    WHERE c.id = $1 
+       OR UPPER(c.code) = UPPER($2)
+       OR UPPER(c.name) = UPPER($2)
+       OR c.code IN (SELECT code FROM distributors WHERE id = $1)
+       OR UPPER(c.name) IN (SELECT UPPER(name) FROM distributors WHERE id = $1)
+    LIMIT 1
   `, [id, id]);
 
   if (!r) return null;
@@ -1137,7 +1149,8 @@ export async function getPartySplitSummary(todayParam?: string): Promise<PartySp
 
   const partySql = `
     SELECT 
-      d.id as party_id,
+      COALESCE(c.id, d.id) as party_id,
+      d.id as distributor_id,
       d.name as party_name,
       d.code as party_code,
       d.group_type,
@@ -1149,9 +1162,11 @@ export async function getPartySplitSummary(todayParam?: string): Promise<PartySp
       COALESCE(SUM(s.inr_amount), 0) as total_inr,
       COUNT(s.id) as split_count
     FROM distributors d
+    LEFT JOIN customers c ON (UPPER(c.code) = UPPER(d.code) OR UPPER(c.name) = UPPER(d.name))
+                         AND COALESCE(c.entity_type, 'CUSTOMER') = 'PARTY'
     LEFT JOIN distribution_splits s ON s.distributor_id = d.id
     WHERE d.group_type = 'IND' OR d.partner_type = 'INDIA_DISTRIBUTOR'
-    GROUP BY d.id, d.name, d.code, d.group_type
+    GROUP BY d.id, c.id, d.name, d.code, d.group_type
     ORDER BY d.name ASC
   `;
 
@@ -1265,6 +1280,16 @@ export async function recordCustomerPayment(data: {
   transaction_id?: string;
   notes?: string;
 }): Promise<CustomerPaymentRecord> {
+  const custRow = await queryOne(`
+    SELECT id FROM customers 
+    WHERE id = $1 
+       OR UPPER(code) = UPPER($1) 
+       OR code IN (SELECT code FROM distributors WHERE id = $1)
+       OR UPPER(name) IN (SELECT UPPER(name) FROM distributors WHERE id = $1)
+    LIMIT 1
+  `, [data.customer_id]);
+  const resolvedCustomerId = custRow ? custRow.id : data.customer_id;
+
   const id = crypto.randomUUID();
   const paymentNumber = `PAY-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
 
@@ -1274,7 +1299,7 @@ export async function recordCustomerPayment(data: {
       amount_aed, payment_method, reference_number, notes, is_demo
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, false)
   `, [
-    id, paymentNumber, data.payment_date, data.customer_id, data.transaction_id || null,
+    id, paymentNumber, data.payment_date, resolvedCustomerId, data.transaction_id || null,
     roundTo(data.amount_aed, 3), data.payment_method || 'CASH', data.reference_number || null, data.notes || null
   ]);
 
@@ -1359,12 +1384,17 @@ export async function getCustomerLedger(customerId: string): Promise<{
     id: string;
     date: string;
     type: 'TRANSACTION' | 'PAYMENT';
+    entry_type?: 'TRANSACTION' | 'PAYMENT';
     reference: string;
     description: string;
+    inr_amount?: number | null;
+    notes?: string | null;
     debit_aed: number;
     credit_aed: number;
     running_balance_aed: number;
+    running_due_aed?: number;
   }>;
+  ledger?: any[];
 }> {
   const now = Date.now();
   const cached = cacheStore.customerLedger.get(customerId);
@@ -1372,31 +1402,66 @@ export async function getCustomerLedger(customerId: string): Promise<{
     return cached.data;
   }
 
-  // Parallel fetch: customer, confirmed transactions, and payments
-  const [custRow, txns, pays] = await Promise.all([
-    queryOne(`SELECT * FROM customers WHERE id = $1 OR code = $2`, [customerId, customerId]),
+  // 1. Resolve customer or party record flexibly by id, code, or linked distributor id/code/name
+  let custRow = await queryOne(`
+    SELECT * FROM customers 
+    WHERE id = $1 
+       OR UPPER(code) = UPPER($1) 
+       OR UPPER(name) = UPPER($1)
+       OR code IN (SELECT code FROM distributors WHERE id = $1)
+       OR UPPER(name) IN (SELECT UPPER(name) FROM distributors WHERE id = $1)
+    LIMIT 1
+  `, [customerId]);
+
+  if (!custRow) {
+    const distRow = await queryOne(`SELECT * FROM distributors WHERE id = $1 OR UPPER(code) = UPPER($1) OR UPPER(name) = UPPER($1)`, [customerId]);
+    if (distRow) {
+      custRow = await queryOne(`
+        SELECT * FROM customers 
+        WHERE (UPPER(code) = UPPER($1) OR UPPER(name) = UPPER($2))
+          AND COALESCE(entity_type, 'CUSTOMER') = 'PARTY'
+        LIMIT 1
+      `, [distRow.code || '', distRow.name || '']);
+    }
+  }
+
+  if (!custRow) throw new Error("Party account not found");
+
+  const resolvedId = custRow.id;
+  const resolvedCode = custRow.code;
+
+  // Parallel fetch: confirmed transactions (orders/transfers) and payments (settlements)
+  const [txns, pays] = await Promise.all([
     query(`
       SELECT id, transaction_date as date, 'TRANSACTION' as type, transaction_number as reference,
              'Order ' || inr_amount || ' INR @ ' || customer_rate as description,
              aed_amount as debit_aed, 0.0 as credit_aed, created_at,
-             inr_amount, aed_amount
+             inr_amount, aed_amount, notes
       FROM transactions
-      WHERE (customer_id = $1 OR customer_id IN (SELECT id FROM customers WHERE code = $2)) 
+      WHERE (
+        customer_id = $1 
+        OR customer_id = $2 
+        OR customer_id IN (SELECT id FROM customers WHERE UPPER(code) = UPPER($3) OR UPPER(name) = UPPER($3))
+        OR distributor_id = $1
+        OR distributor_id = $2
+      ) 
         AND status = 'CONFIRMED'
       ORDER BY transaction_date ASC, created_at ASC
-    `, [customerId, customerId]),
+    `, [resolvedId, customerId, resolvedCode]),
     query(`
       SELECT id, payment_date as date, 'PAYMENT' as type, payment_number as reference,
              'Payment (' || payment_method || ')' as description,
              0.0 as debit_aed, amount_aed as credit_aed, created_at,
-             amount_aed
+             amount_aed, notes
       FROM customer_payments
-      WHERE (customer_id = $1 OR customer_id IN (SELECT id FROM customers WHERE code = $2))
+      WHERE (
+        customer_id = $1 
+        OR customer_id = $2 
+        OR customer_id IN (SELECT id FROM customers WHERE UPPER(code) = UPPER($3) OR UPPER(name) = UPPER($3))
+      )
       ORDER BY payment_date ASC, created_at ASC
-    `, [customerId, customerId]),
+    `, [resolvedId, customerId, resolvedCode]),
   ]);
-
-  if (!custRow) throw new Error("Customer not found");
 
   const totalInr = roundTo(txns.reduce((sum: number, t: any) => sum + Number(t.inr_amount || 0), 0), 3);
   const totalAed = roundTo(txns.reduce((sum: number, t: any) => sum + Number(t.aed_amount || 0), 0), 3);
@@ -1426,6 +1491,8 @@ export async function getCustomerLedger(customerId: string): Promise<{
     type: e.type as 'TRANSACTION' | 'PAYMENT',
     reference: e.reference,
     description: e.description,
+    inr_amount: e.inr_amount != null ? roundTo(Number(e.inr_amount), 3) : null,
+    notes: e.notes || null,
     debit_aed: roundTo(Number(e.debit_aed || 0), 3),
     credit_aed: roundTo(Number(e.credit_aed || 0), 3),
     created_at: formatDateTime(e.created_at),
@@ -1441,15 +1508,19 @@ export async function getCustomerLedger(customerId: string): Promise<{
       id: e.id,
       date: e.date,
       type: e.type as 'TRANSACTION' | 'PAYMENT',
+      entry_type: e.type as 'TRANSACTION' | 'PAYMENT',
       reference: e.reference,
       description: e.description,
+      inr_amount: e.inr_amount,
+      notes: e.notes,
       debit_aed: e.debit_aed,
       credit_aed: e.credit_aed,
-      running_balance_aed: running
+      running_balance_aed: running,
+      running_due_aed: running,
     };
   });
 
-  const result = { customer, entries };
+  const result = { customer, entries, ledger: entries };
   cacheStore.customerLedger.set(customerId, { timestamp: now, data: result });
   if (custRow.id !== customerId) {
     cacheStore.customerLedger.set(custRow.id, { timestamp: now, data: result });

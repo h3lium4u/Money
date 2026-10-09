@@ -637,7 +637,7 @@ function DubaiClientTransactionsContent() {
                     <th className="px-2.5 py-3 w-[8%]">Date</th>
                     <th className="px-2.5 py-3 w-[11%]">Dubai Client</th>
                     <th className="px-2.5 py-3 w-[11%]">Total (INR)</th>
-                    <th className="px-2.5 py-3 w-[8%]">Manual Rate</th>
+                    <th className="px-2.5 py-3 w-[8%]">Client Rate</th>
                     <th className="px-2.5 py-3 w-[8%]">Wholesale Rate</th>
                     <th className="px-2.5 py-3 w-[10%]">In Dhirams</th>
                     <th className="px-2.5 py-3 w-[10%]">Paid Amount</th>
@@ -920,12 +920,17 @@ function DubaiClientTransactionsContent() {
                   <div className="relative">
                     <span className="absolute left-3 top-2 text-slate-400 font-bold text-sm">₹</span>
                     <input
-                      type="number"
-                      step="any"
+                      type="text"
+                      inputMode="decimal"
                       required
                       value={editTotal}
-                      onChange={(e) => setEditTotal(e.target.value)}
-                      className="w-full text-sm font-bold pl-7 pr-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      onChange={(e) => {
+                        const clean = e.target.value.replace(/,/g, "");
+                        if (clean === "" || /^[0-9]*\.?[0-9]*$/.test(clean)) {
+                          setEditTotal(clean);
+                        }
+                      }}
+                      className="w-full text-sm font-bold pl-7 pr-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500 font-mono"
                     />
                   </div>
                 </div>
@@ -933,15 +938,20 @@ function DubaiClientTransactionsContent() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                      Manual Rate Value
+                      Client Exchange Rate
                     </label>
                     <input
-                      type="number"
-                      step="any"
+                      type="text"
+                      inputMode="decimal"
                       required
                       value={editManualRate}
-                      onChange={(e) => setEditManualRate(e.target.value)}
-                      className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900"
+                      onChange={(e) => {
+                        const clean = e.target.value.replace(/,/g, "");
+                        if (clean === "" || /^[0-9]*\.?[0-9]*$/.test(clean)) {
+                          setEditManualRate(clean);
+                        }
+                      }}
+                      className="w-full text-xs font-bold font-mono border border-slate-300 rounded-lg p-2 text-slate-900"
                     />
                     <span className="text-[10px] text-slate-400">AED / 1000 INR</span>
                   </div>
@@ -951,13 +961,18 @@ function DubaiClientTransactionsContent() {
                       Paid Amount (AED)
                     </label>
                     <input
-                      type="number"
-                      step="any"
+                      type="text"
+                      inputMode="decimal"
                       value={editPaidAmount}
-                      onChange={(e) => setEditPaidAmount(e.target.value)}
-                      className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900"
+                      onChange={(e) => {
+                        const clean = e.target.value.replace(/,/g, "");
+                        if (clean === "" || /^[0-9]*\.?[0-9]*$/.test(clean)) {
+                          setEditPaidAmount(clean);
+                        }
+                      }}
+                      className="w-full text-xs font-bold font-mono border border-slate-300 rounded-lg p-2 text-slate-900"
                     />
-                    <span className="text-[10px] text-slate-400">Manual Entry</span>
+                    <span className="text-[10px] text-slate-400">Advance / Cash</span>
                   </div>
                 </div>
 
@@ -1002,7 +1017,7 @@ function DubaiClientTransactionsContent() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Corrected manual rate value or order total"
+                    placeholder="e.g. Corrected client exchange rate or order total"
                     value={editReason}
                     onChange={(e) => setEditReason(e.target.value)}
                     className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900"

@@ -182,7 +182,7 @@ export default function PartyDetailPage() {
   }
 
   const party = data.customer;
-  const ledger = data.ledger || [];
+  const ledger = data.ledger || data.entries || [];
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -323,7 +323,7 @@ export default function PartyDetailPage() {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
                 {ledger.map((e: any, idx: number) => {
-                  const isTxn = e.entry_type === "TRANSACTION";
+                  const isTxn = e.entry_type === "TRANSACTION" || e.type === "TRANSACTION";
                   return (
                     <tr
                       key={idx}
@@ -355,7 +355,7 @@ export default function PartyDetailPage() {
                         {e.credit_aed ? Number(e.credit_aed).toFixed(3) : "-"}
                       </td>
                       <td className="py-3 px-4 font-mono font-bold text-rose-700 dark:text-rose-400">
-                        {Number(e.running_balance_aed).toFixed(3)}
+                        {Number(e.running_balance_aed !== undefined ? e.running_balance_aed : e.running_due_aed || 0).toFixed(3)}
                       </td>
                       <td className="py-3 px-4 text-right">
                         {!isTxn && (
@@ -584,13 +584,16 @@ export default function PartyDetailPage() {
           totalInr: party.total_inr,
           totalPaid: party.total_paid,
           outstanding: party.outstanding_balance,
-          entries: ledger.map((e: any) => ({
-            date: e.date,
-            type: e.entry_type === "TRANSACTION" ? "TRANSFER" : "SETTLEMENT",
-            reference: e.reference || (e.entry_type === "TRANSACTION" ? "Party Transfer" : "Settlement Received"),
-            amount: e.entry_type === "TRANSACTION" ? e.inr_amount : e.credit_aed,
-            currency: e.entry_type === "TRANSACTION" ? "INR" : "AED",
-          })),
+          entries: ledger.map((e: any) => {
+            const isTxn = e.entry_type === "TRANSACTION" || e.type === "TRANSACTION";
+            return {
+              date: e.date,
+              type: isTxn ? "TRANSFER" : "SETTLEMENT",
+              reference: e.reference || (isTxn ? "Party Transfer" : "Settlement Received"),
+              amount: isTxn ? (e.inr_amount || e.debit_aed) : e.credit_aed,
+              currency: isTxn ? (e.inr_amount ? "INR" : "AED") : "AED",
+            };
+          }),
         }}
         onCompletePrint={() => {
           window.print();

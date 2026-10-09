@@ -87,7 +87,7 @@ function CustomerRemittancesContent() {
 
   // India Parties & Splits editing state
   const [indiaParties, setIndiaParties] = useState<any[]>([]);
-  const [editSplits, setEditSplits] = useState<Array<{ id: string; distributor_id: string; inr_amount: string; notes?: string }>>([]);
+  const [editSplits, setEditSplits] = useState<Array<{ id: string; distributor_id: string; inr_amount: string; notes?: string; deduct_prior?: boolean }>>([]);
   const [loadingEditSplits, setLoadingEditSplits] = useState(false);
   const [priorTransfersMap, setPriorTransfersMap] = useState<Record<string, any>>({});
 
@@ -302,11 +302,14 @@ function CustomerRemittancesContent() {
   }
 
   function handleEditSplitAmountChange(index: number, amount: string) {
-    setEditSplits((prev) => {
-      const next = [...prev];
-      next[index] = { ...next[index], inr_amount: amount };
-      return next;
-    });
+    const clean = amount.replace(/,/g, "");
+    if (clean === "" || /^[0-9]*\.?[0-9]*$/.test(clean)) {
+      setEditSplits((prev) => {
+        const next = [...prev];
+        next[index] = { ...next[index], inr_amount: clean };
+        return next;
+      });
+    }
   }
 
   function handleAllocateEditRemaining(index: number) {
@@ -317,6 +320,14 @@ function CustomerRemittancesContent() {
     );
     const rem = Math.max(0, currentOrder - otherAllocated);
     handleEditSplitAmountChange(index, String(rem));
+  }
+
+  function handleEditSplitDeductPrior(index: number, deduct: boolean) {
+    setEditSplits((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], deduct_prior: deduct };
+      return next;
+    });
   }
 
   async function handleSaveEdit(e: React.FormEvent) {
@@ -372,15 +383,21 @@ function CustomerRemittancesContent() {
             return editSplits.map((s) => {
               const splitAmt = parseFloat(s.inr_amount);
               const pInfo = priorTransfersMap[s.distributor_id];
+              const shouldDeduct = s.deduct_prior === true;
 
-              if (!pInfo || !pInfo.hasPriorTransfers) {
+              if (!pInfo || !pInfo.hasPriorTransfers || !shouldDeduct) {
+                let noteText = s.notes || "";
+                if (pInfo && pInfo.hasPriorTransfers && !shouldDeduct) {
+                  const keepNote = `[Prior advance of ₹${pInfo.availablePriorBalanceInr.toLocaleString("en-IN")} kept as-is (untouched); Full ₹${splitAmt.toLocaleString("en-IN")} payable separately]`;
+                  noteText = noteText ? `${noteText} • ${keepNote}` : keepNote;
+                }
                 return {
                   id: s.id.startsWith("new-") ? undefined : s.id,
                   distributor_id: s.distributor_id,
                   inr_amount: splitAmt,
                   paid_amount_inr: 0,
                   balance_inr: splitAmt,
-                  notes: s.notes || undefined,
+                  notes: noteText || undefined,
                 };
               }
 
@@ -945,23 +962,33 @@ function CustomerRemittancesContent() {
                   <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase mb-1">INR Amount</label>
                     <input
-                      type="number"
-                      step="any"
+                      type="text"
+                      inputMode="decimal"
                       required
                       value={editInr}
-                      onChange={(e) => setEditInr(e.target.value)}
-                      className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900"
+                      onChange={(e) => {
+                        const clean = e.target.value.replace(/,/g, "");
+                        if (clean === "" || /^[0-9]*\.?[0-9]*$/.test(clean)) {
+                          setEditInr(clean);
+                        }
+                      }}
+                      className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900 font-mono"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Customer Rate</label>
                     <input
-                      type="number"
-                      step="any"
+                      type="text"
+                      inputMode="decimal"
                       required
                       value={editCustRate}
-                      onChange={(e) => setEditCustRate(e.target.value)}
-                      className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900"
+                      onChange={(e) => {
+                        const clean = e.target.value.replace(/,/g, "");
+                        if (clean === "" || /^[0-9]*\.?[0-9]*$/.test(clean)) {
+                          setEditCustRate(clean);
+                        }
+                      }}
+                      className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900 font-mono"
                     />
                   </div>
                 </div>
@@ -969,11 +996,16 @@ function CustomerRemittancesContent() {
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Paid Amount (AED)</label>
                   <input
-                    type="number"
-                    step="any"
+                    type="text"
+                    inputMode="decimal"
                     value={editPaidAmount}
-                    onChange={(e) => setEditPaidAmount(e.target.value)}
-                    className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900"
+                    onChange={(e) => {
+                      const clean = e.target.value.replace(/,/g, "");
+                      if (clean === "" || /^[0-9]*\.?[0-9]*$/.test(clean)) {
+                        setEditPaidAmount(clean);
+                      }
+                    }}
+                    className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900 font-mono"
                   />
                 </div>
 
@@ -1052,18 +1084,18 @@ function CustomerRemittancesContent() {
                             <div className="relative">
                               <span className="absolute left-2 top-1.5 text-slate-400 font-bold text-xs">₹</span>
                               <input
-                                type="number"
-                                step="any"
+                                type="text"
+                                inputMode="decimal"
                                 required
                                 placeholder="Amount"
                                 value={s.inr_amount}
                                 onChange={(e) => handleEditSplitAmountChange(idx, e.target.value)}
-                                className="w-full text-xs font-bold pl-5 pr-2 py-1.5 border border-slate-300 rounded text-slate-900 bg-white"
+                                className="w-full text-xs font-bold font-mono pl-5 pr-2 py-1.5 border border-slate-300 rounded text-slate-900 bg-white"
                               />
                             </div>
                           </div>
 
-                          {/* Prior Transfer Offset for this party if available */}
+                          {/* Prior Transfer Offset & Decision Card for this party if available */}
                           {(() => {
                             const partyInfo = priorTransfersMap[s.distributor_id];
                             if (!partyInfo || !partyInfo.hasPriorTransfers || partyInfo.availablePriorBalanceInr <= 0) {
@@ -1073,34 +1105,90 @@ function CustomerRemittancesContent() {
                             const splitInr = parseFloat(s.inr_amount) || 0;
                             const priorAvailable = partyInfo.availablePriorBalanceInr;
                             const isSplitEntered = splitInr > 0;
+                            const isDeducting = s.deduct_prior === true;
                             const remainingToGive = Math.max(0, splitInr - priorAvailable);
                             const remainingPriorBalance = Math.max(0, priorAvailable - splitInr);
                             const isExactMatch = isSplitEntered && Math.abs(splitInr - priorAvailable) < 0.01;
 
                             return (
-                              <div className="p-2 rounded bg-amber-50/80 border border-amber-200 text-[11px] space-y-1">
-                                <div className="flex justify-between items-center text-amber-900 font-bold">
+                              <div className="p-2.5 rounded-lg bg-gradient-to-r from-amber-50/90 to-teal-50/60 border border-amber-300 text-[11px] space-y-2">
+                                <div className="flex justify-between items-center text-amber-900 font-bold border-b border-amber-200/80 pb-1.5">
                                   <span>Prior Advance Available: ₹{priorAvailable.toLocaleString("en-IN")}</span>
-                                  <span className="text-[10px] text-slate-500 font-mono">
-                                    {partyInfo.partyName}
+                                  <span className="text-[10px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-mono">
+                                    Pre-paid to {partyInfo.partyName}
                                   </span>
                                 </div>
-                                {isSplitEntered && (
-                                  <div className="pt-1 border-t border-amber-200/60 flex justify-between items-center">
-                                    {remainingToGive > 0 ? (
-                                      <span className="font-bold text-amber-950">
-                                        👉 Remaining to pay: ₹{remainingToGive.toLocaleString("en-IN")}
-                                      </span>
-                                    ) : isExactMatch ? (
-                                      <span className="font-bold text-emerald-800">
-                                        ✓ Settled against advance (₹0 to pay)
-                                      </span>
+
+                                {/* Decision Buttons */}
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pt-0.5">
+                                  <span className="text-[10px] font-bold text-slate-700">Advance Treatment:</span>
+                                  <div className="inline-flex rounded-lg p-0.5 bg-white border border-slate-300 shadow-xs">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleEditSplitDeductPrior(idx, true)}
+                                      className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                                        isDeducting
+                                          ? "bg-[#0F766E] text-white shadow-xs"
+                                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                                      }`}
+                                    >
+                                      <span>⚡</span> Proceed with Reduced Amount {isDeducting && "✓"}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleEditSplitDeductPrior(idx, false)}
+                                      className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                                        !isDeducting
+                                          ? "bg-slate-800 text-white shadow-xs"
+                                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                                      }`}
+                                    >
+                                      <span>🛡️</span> Keep Prior Amount As It Is {!isDeducting && "✓"}
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {isSplitEntered ? (
+                                  <div className="space-y-1 pt-1">
+                                    {isDeducting ? (
+                                      <>
+                                        <div className="flex justify-between items-center text-slate-700 text-[10px]">
+                                          <span>Split: <strong>₹{splitInr.toLocaleString("en-IN")}</strong></span>
+                                          <span>Deducted from Advance: <strong className="text-amber-800">-₹{Math.min(splitInr, priorAvailable).toLocaleString("en-IN")}</strong></span>
+                                        </div>
+                                        {remainingToGive > 0 ? (
+                                          <div className="p-1.5 bg-amber-100 rounded border border-amber-300 font-bold text-amber-950 flex justify-between items-center">
+                                            <span>👉 Remaining to pay {partyInfo.partyName}:</span>
+                                            <span>₹{remainingToGive.toLocaleString("en-IN")}</span>
+                                          </div>
+                                        ) : isExactMatch ? (
+                                          <div className="p-1.5 bg-emerald-100 rounded border border-emerald-300 font-bold text-emerald-800">
+                                            ✓ Settled against advance (₹0 to pay)
+                                          </div>
+                                        ) : (
+                                          <div className="p-1.5 bg-emerald-50 rounded border border-emerald-200 font-semibold text-emerald-800 flex justify-between items-center">
+                                            <span>✓ 100% covered (₹0 to pay now)</span>
+                                            <span>Retains ₹{remainingPriorBalance.toLocaleString("en-IN")} advance</span>
+                                          </div>
+                                        )}
+                                      </>
                                     ) : (
-                                      <span className="font-semibold text-emerald-800">
-                                        ✓ 100% covered • Party retains ₹{remainingPriorBalance.toLocaleString("en-IN")} advance
-                                      </span>
+                                      <div className="p-2 bg-slate-100 rounded border border-slate-300 text-slate-900 space-y-0.5">
+                                        <div className="flex justify-between items-center font-bold">
+                                          <span>🛡️ Advance Kept Intact:</span>
+                                          <span>₹{priorAvailable.toLocaleString("en-IN")} untouched</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-[10px] text-slate-700">
+                                          <span>Full Amount Payable For This Order:</span>
+                                          <span className="font-bold font-mono">₹{splitInr.toLocaleString("en-IN")}</span>
+                                        </div>
+                                      </div>
                                     )}
                                   </div>
+                                ) : (
+                                  <p className="text-[10px] text-slate-500 italic">
+                                    Enter split INR amount above to calculate net remaining or retained advance.
+                                  </p>
                                 )}
                               </div>
                             );

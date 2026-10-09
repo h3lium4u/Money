@@ -1467,11 +1467,16 @@ export default function BankDistripPage() {
                     Commission / COM (INR)
                   </label>
                   <input
-                    type="number"
-                    step="any"
+                    type="text"
+                    inputMode="decimal"
                     placeholder="0"
                     value={addCom}
-                    onChange={(e) => setAddCom(e.target.value)}
+                    onChange={(e) => {
+                      const clean = e.target.value.replace(/,/g, "");
+                      if (clean === "" || /^[0-9]*\.?[0-9]*$/.test(clean)) {
+                        setAddCom(clean);
+                      }
+                    }}
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-teal-500"
                   />
                   <span className="text-[10px] text-slate-400 mt-0.5 block">
@@ -1484,11 +1489,16 @@ export default function BankDistripPage() {
                     Paid / PAID (INR) *
                   </label>
                   <input
-                    type="number"
-                    step="any"
+                    type="text"
+                    inputMode="decimal"
                     placeholder="e.g. 1800000 or -56530"
                     value={addPaid}
-                    onChange={(e) => setAddPaid(e.target.value)}
+                    onChange={(e) => {
+                      const clean = e.target.value.replace(/,/g, "");
+                      if (clean === "" || /^-?[0-9]*\.?[0-9]*$/.test(clean)) {
+                        setAddPaid(clean);
+                      }
+                    }}
                     required
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-teal-500"
                   />
@@ -1633,10 +1643,15 @@ export default function BankDistripPage() {
                     Commission / COM (INR)
                   </label>
                   <input
-                    type="number"
-                    step="any"
+                    type="text"
+                    inputMode="decimal"
                     value={editCom}
-                    onChange={(e) => setEditCom(e.target.value)}
+                    onChange={(e) => {
+                      const clean = e.target.value.replace(/,/g, "");
+                      if (clean === "" || /^[0-9]*\.?[0-9]*$/.test(clean)) {
+                        setEditCom(clean);
+                      }
+                    }}
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-teal-500"
                   />
                 </div>
@@ -1646,10 +1661,15 @@ export default function BankDistripPage() {
                     Paid / PAID (INR) *
                   </label>
                   <input
-                    type="number"
-                    step="any"
+                    type="text"
+                    inputMode="decimal"
                     value={editPaid}
-                    onChange={(e) => setEditPaid(e.target.value)}
+                    onChange={(e) => {
+                      const clean = e.target.value.replace(/,/g, "");
+                      if (clean === "" || /^-?[0-9]*\.?[0-9]*$/.test(clean)) {
+                        setEditPaid(clean);
+                      }
+                    }}
                     required
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-teal-500"
                   />
