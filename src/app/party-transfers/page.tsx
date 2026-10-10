@@ -666,7 +666,10 @@ function PartyTransfersContent() {
     .filter((t) => isIndianParty(t))
     .reduce((sum, t) => sum + (t.inr_amount || 0), 0);
 
-  const totalAvailableAdvanceCredit = Object.values(priorSummaries).reduce(
+  const uniquePriorItems = Array.from(
+    new Map(Object.values(priorSummaries).map((p: any) => [p.partyId || p.partyCode, p])).values()
+  );
+  const totalAvailableAdvanceCredit = uniquePriorItems.reduce(
     (sum: number, p: any) => sum + Number(p.availablePriorBalanceInr || 0),
     0
   );
