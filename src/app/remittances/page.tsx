@@ -87,7 +87,7 @@ function CustomerRemittancesContent() {
 
   // India Parties & Splits editing state
   const [indiaParties, setIndiaParties] = useState<any[]>([]);
-  const [editSplits, setEditSplits] = useState<Array<{ id: string; distributor_id: string; inr_amount: string; notes?: string; deduct_prior?: boolean }>>([]);
+  const [editSplits, setEditSplits] = useState<Array<{ id: string; distributor_id: string; inr_amount: string; channel?: string; notes?: string; deduct_prior?: boolean }>>([]);
   const [loadingEditSplits, setLoadingEditSplits] = useState(false);
   const [priorTransfersMap, setPriorTransfersMap] = useState<Record<string, any>>({});
 
@@ -238,12 +238,19 @@ function CustomerRemittancesContent() {
       const splitsData = await res.json();
       if (Array.isArray(splitsData) && splitsData.length > 0) {
         setEditSplits(
-          splitsData.map((s: any) => ({
-            id: s.id,
-            distributor_id: s.distributor_id,
-            inr_amount: String(s.inr_amount),
-            notes: s.notes || "",
-          }))
+          splitsData.map((s: any) => {
+            const rawNote = s.notes || "";
+            const matchChannel = rawNote.match(/^\[(BANK|GPAY|CASH|HAWALA|DEFAULT|OTHER)\]\s*(.*)$/);
+            const channel = matchChannel ? matchChannel[1] : "BANK";
+            const cleanNotes = matchChannel ? matchChannel[2] : rawNote;
+            return {
+              id: s.id,
+              distributor_id: s.distributor_id,
+              inr_amount: String(s.inr_amount),
+              channel,
+              notes: cleanNotes,
+            };
+          })
         );
       } else {
         setEditSplits([
@@ -251,6 +258,7 @@ function CustomerRemittancesContent() {
             id: `new-${Date.now()}`,
             distributor_id: indiaParties[0]?.id || "",
             inr_amount: String(t.inr_amount),
+            channel: "BANK",
             notes: "",
           },
         ]);
@@ -262,6 +270,7 @@ function CustomerRemittancesContent() {
           id: `new-${Date.now()}`,
           distributor_id: indiaParties[0]?.id || "",
           inr_amount: String(t.inr_amount),
+          channel: "BANK",
           notes: "",
         },
       ]);
@@ -284,6 +293,8 @@ function CustomerRemittancesContent() {
         id: `new-${Date.now()}-${Math.random()}`,
         distributor_id: nextParty.id,
         inr_amount: rem > 0 ? String(rem) : "",
+        channel: "BANK",
+        notes: "",
       },
     ]);
   }
@@ -357,11 +368,30 @@ function CustomerRemittancesContent() {
         return;
       }
     }
-    if (Math.abs(parsedEditInr - totalEditSplits) >= 0.001) {
-      setEditError(
-        `Total splits (₹${totalEditSplits.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}) must equal order amount (₹${parsedEditInr.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}). Difference: ₹${Math.abs(parsedEditInr - totalEditSplits).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}.`
-      );
+    const diff = Math.round((parsedEditInr - totalEditSplits + Number.EPSILON) * 1000) / 1000;
+    if (Math.abs(diff) > 1.00) {
+      if (diff > 0) {
+        setEditError(
+          `Total splits (₹${totalEditSplits.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}) is less than order amount (₹${parsedEditInr.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}). Remaining unallocated: ₹${diff.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}.`
+        );
+      } else {
+        setEditError(
+          `Total splits (₹${totalEditSplits.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}) exceeds order amount (₹${parsedEditInr.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}). Difference: ₹${Math.abs(diff).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}.`
+        );
+      }
       return;
+    }
+
+    // Auto-absorb minor fractional discrepancy <= 1.00 INR into the last split row
+    let adjustedSplits = [...editSplits];
+    if (Math.abs(diff) > 0 && Math.abs(diff) <= 1.00 && adjustedSplits.length > 0) {
+      const lastIdx = adjustedSplits.length - 1;
+      const curAmt = parseFloat(adjustedSplits[lastIdx].inr_amount) || 0;
+      const nextAmt = Math.round((curAmt + diff + Number.EPSILON) * 1000) / 1000;
+      adjustedSplits[lastIdx] = {
+        ...adjustedSplits[lastIdx],
+        inr_amount: String(nextAmt),
+      };
     }
 
     setIsUpdating(true);
@@ -380,13 +410,20 @@ function CustomerRemittancesContent() {
           reason: editReason || undefined,
           splits: (() => {
             const remainingPriorTracker: Record<string, number> = {};
-            return editSplits.map((s) => {
+            return adjustedSplits.map((s) => {
               const splitAmt = parseFloat(s.inr_amount);
               const pInfo = priorTransfersMap[s.distributor_id];
               const shouldDeduct = s.deduct_prior === true;
 
+              let noteText = s.notes ? s.notes.trim() : "";
+              if (s.channel && s.channel !== "DEFAULT") {
+                const chanTag = `[${s.channel}]`;
+                if (!noteText.includes(chanTag)) {
+                  noteText = noteText ? `${chanTag} ${noteText}` : chanTag;
+                }
+              }
+
               if (!pInfo || !pInfo.hasPriorTransfers || !shouldDeduct) {
-                let noteText = s.notes || "";
                 if (pInfo && pInfo.hasPriorTransfers && !shouldDeduct) {
                   const keepNote = `[Prior advance of ₹${pInfo.availablePriorBalanceInr.toLocaleString("en-IN")} kept as-is (untouched); Full ₹${splitAmt.toLocaleString("en-IN")} payable separately]`;
                   noteText = noteText ? `${noteText} • ${keepNote}` : keepNote;
@@ -410,7 +447,6 @@ function CustomerRemittancesContent() {
               const balanceInr = Math.max(0, splitAmt - paidInr);
               remainingPriorTracker[partyKey] = Math.max(0, currentPriorAvail - paidInr);
 
-              let noteText = s.notes || "";
               if (paidInr > 0) {
                 const offsetNote = `[Offset ₹${paidInr.toLocaleString("en-IN")} from prior transfer; Remaining to pay: ₹${balanceInr.toLocaleString("en-IN")}]`;
                 noteText = noteText ? `${noteText} • ${offsetNote}` : offsetNote;
@@ -1065,8 +1101,8 @@ function CustomerRemittancesContent() {
                               )}
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
+                          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                            <div className="sm:col-span-5">
                               <select
                                 required
                                 value={s.distributor_id}
@@ -1081,7 +1117,7 @@ function CustomerRemittancesContent() {
                                 ))}
                               </select>
                             </div>
-                            <div className="relative">
+                            <div className="sm:col-span-4 relative">
                               <span className="absolute left-2 top-1.5 text-slate-400 font-bold text-xs">₹</span>
                               <input
                                 type="text"
@@ -1093,6 +1129,43 @@ function CustomerRemittancesContent() {
                                 className="w-full text-xs font-bold font-mono pl-5 pr-2 py-1.5 border border-slate-300 rounded text-slate-900 bg-white"
                               />
                             </div>
+                            <div className="sm:col-span-3">
+                              <select
+                                value={s.channel || "BANK"}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setEditSplits((prev) => {
+                                    const next = [...prev];
+                                    next[idx] = { ...next[idx], channel: val };
+                                    return next;
+                                  });
+                                }}
+                                className="w-full text-xs font-bold border border-slate-300 rounded p-1.5 text-slate-900 bg-white"
+                              >
+                                <option value="BANK">BANK</option>
+                                <option value="GPAY">GPAY</option>
+                                <option value="CASH">CASH</option>
+                                <option value="HAWALA">HAWALA</option>
+                                <option value="DEFAULT">DEFAULT</option>
+                                <option value="OTHER">OTHER</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div>
+                            <input
+                              type="text"
+                              placeholder="Optional reference / split notes..."
+                              value={s.notes || ""}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditSplits((prev) => {
+                                  const next = [...prev];
+                                  next[idx] = { ...next[idx], notes: val };
+                                  return next;
+                                });
+                              }}
+                              className="w-full text-xs border border-slate-200 rounded px-2 py-1 bg-white text-slate-700 placeholder:text-slate-400"
+                            />
                           </div>
 
                           {/* Prior Transfer Offset & Decision Card for this party if available */}
@@ -1202,25 +1275,48 @@ function CustomerRemittancesContent() {
                   {(() => {
                     const currentOrder = parseFloat(editInr) || 0;
                     const allocated = editSplits.reduce((sum, s) => sum + (parseFloat(s.inr_amount) || 0), 0);
-                    const diff = currentOrder - allocated;
-                    const isMatched = currentOrder > 0 && Math.abs(diff) < 0.01;
+                    const diff = Math.round((currentOrder - allocated + Number.EPSILON) * 1000) / 1000;
+                    const isExactMatch = currentOrder > 0 && Math.abs(diff) < 0.001;
+                    const isWithinTolerance = currentOrder > 0 && Math.abs(diff) <= 1.00 && !isExactMatch;
 
                     return (
                       <div
-                        className={`p-2 rounded-lg border text-[11px] flex items-center justify-between font-mono ${
-                          isMatched
+                        className={`p-2 rounded-lg border text-[11px] flex flex-wrap items-center justify-between gap-2 font-mono ${
+                          isExactMatch
                             ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                            : isWithinTolerance
+                            ? "bg-teal-50 border-teal-200 text-teal-800"
                             : diff > 0
                             ? "bg-amber-50 border-amber-200 text-amber-800"
                             : "bg-rose-50 border-rose-200 text-rose-800"
                         }`}
                       >
-                        <span className="font-sans font-semibold">
-                          {isMatched
-                            ? "✓ Splits match order total exactly."
-                            : diff > 0
-                            ? `⚠️ Unallocated: ₹${diff.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} remaining.`
-                            : `⛔ Over-allocated by ₹${Math.abs(diff).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}.`}
+                        <span className="font-sans font-semibold flex items-center gap-2">
+                          {isExactMatch ? (
+                            "✓ Splits match order total exactly."
+                          ) : isWithinTolerance ? (
+                            <>
+                              <span>⚡ Fraction: {diff > 0 ? `+₹${diff.toFixed(2)}` : `-₹${Math.abs(diff).toFixed(2)}`} (Auto-absorbed on save)</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (editSplits.length > 0) {
+                                    const lastIdx = editSplits.length - 1;
+                                    const cur = parseFloat(editSplits[lastIdx].inr_amount) || 0;
+                                    const nextVal = Math.round((cur + diff + Number.EPSILON) * 1000) / 1000;
+                                    handleEditSplitAmountChange(lastIdx, String(nextVal));
+                                  }
+                                }}
+                                className="px-1.5 py-0.5 bg-teal-200 hover:bg-teal-300 text-teal-900 rounded font-bold text-[10px] cursor-pointer"
+                              >
+                                Auto-balance Fraction
+                              </button>
+                            </>
+                          ) : diff > 0 ? (
+                            `⚠️ Unallocated: ₹${diff.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} remaining.`
+                          ) : (
+                            `⛔ Over-allocated by ₹${Math.abs(diff).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}.`
+                          )}
                         </span>
                         <span className="font-bold">
                           ₹{allocated.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} / ₹{currentOrder.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}

@@ -984,12 +984,27 @@ export async function createTransaction(data: {
 
   // Insert initial splits if provided
   if (data.splits && data.splits.length > 0) {
-    let totalSplitInr = 0;
-    for (const s of data.splits) {
-      totalSplitInr += Number(s.inr_amount);
-      if (totalSplitInr > inrAmount) {
-        throw new Error(`Total distribution (₹${totalSplitInr.toLocaleString()}) cannot exceed customer order (₹${inrAmount.toLocaleString()})`);
-      }
+    const rawSum = data.splits.reduce((sum, s) => sum + Number(s.inr_amount), 0);
+    const splitDiff = Math.round((inrAmount - rawSum + Number.EPSILON) * 1000) / 1000;
+    if (splitDiff < -1.00) {
+      throw new Error(`Total distribution (₹${rawSum.toLocaleString()}) cannot exceed customer order (₹${inrAmount.toLocaleString()})`);
+    }
+
+    // Auto-absorb minor fractional discrepancy (<= 1.00 INR) into the last split item
+    const splitsToInsert = [...data.splits];
+    if (Math.abs(splitDiff) > 0 && Math.abs(splitDiff) <= 1.00 && splitsToInsert.length > 0) {
+      const lastIdx = splitsToInsert.length - 1;
+      const lastAmt = roundTo(Number(splitsToInsert[lastIdx].inr_amount) + splitDiff, 3);
+      splitsToInsert[lastIdx] = {
+        ...splitsToInsert[lastIdx],
+        inr_amount: lastAmt,
+        balance_inr: splitsToInsert[lastIdx].balance_inr !== undefined
+          ? roundTo(Number(splitsToInsert[lastIdx].balance_inr) + splitDiff, 3)
+          : undefined,
+      };
+    }
+
+    for (const s of splitsToInsert) {
       const splitInr = Number(s.inr_amount);
       const paidInr = s.paid_amount_inr !== undefined ? Number(s.paid_amount_inr) : 0.00;
       const balanceInr = s.balance_inr !== undefined ? Number(s.balance_inr) : roundTo(splitInr - paidInr, 3);
@@ -2421,16 +2436,24 @@ export async function updateTransaction(id: string, data: {
 
   // Update/re-allocate splits if provided
   if (data.splits && data.splits.length > 0) {
-    let totalSplitInr = 0;
-    for (const s of data.splits) {
-      totalSplitInr += Number(s.inr_amount);
+    const rawSum = data.splits.reduce((sum, s) => sum + Number(s.inr_amount), 0);
+    const splitDiff = Math.round((inrAmount - rawSum + Number.EPSILON) * 1000) / 1000;
+    if (splitDiff < -1.00) {
+      throw new Error(`Total distribution (₹${rawSum.toLocaleString()}) cannot exceed customer order (₹${inrAmount.toLocaleString()})`);
     }
-    if (totalSplitInr > inrAmount) {
-      throw new Error(`Total distribution (₹${totalSplitInr.toLocaleString()}) cannot exceed customer order (₹${inrAmount.toLocaleString()})`);
+
+    const splitsToInsert = [...data.splits];
+    if (Math.abs(splitDiff) > 0 && Math.abs(splitDiff) <= 1.00 && splitsToInsert.length > 0) {
+      const lastIdx = splitsToInsert.length - 1;
+      const lastAmt = roundTo(Number(splitsToInsert[lastIdx].inr_amount) + splitDiff, 3);
+      splitsToInsert[lastIdx] = {
+        ...splitsToInsert[lastIdx],
+        inr_amount: lastAmt,
+      };
     }
 
     await execute(`DELETE FROM distribution_splits WHERE transaction_id = $1`, [id]);
-    for (const s of data.splits) {
+    for (const s of splitsToInsert) {
       const splitId = s.id && !s.id.startsWith("new-") ? s.id : crypto.randomUUID();
       const aedEq = baseRate > 0 ? roundTo(s.inr_amount / baseRate, 3) : 0;
       await execute(`

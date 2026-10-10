@@ -56,6 +56,7 @@ interface SplitItem {
   id: string;
   distributor_id: string;
   inr_amount: string;
+  channel?: string;
   notes?: string;
   deduct_prior?: boolean;
 }
@@ -168,6 +169,7 @@ export default function NewRemittancePage() {
                 id: Math.random().toString(),
                 distributor_id: resolvedDists[0].id,
                 inr_amount: "",
+                channel: "BANK",
                 notes: "",
               },
             ];
@@ -357,6 +359,7 @@ export default function NewRemittancePage() {
         id: Math.random().toString(),
         distributor_id: distributors[0].id,
         inr_amount: "",
+        channel: "BANK",
         notes: "",
       },
     ]);
@@ -417,17 +420,26 @@ export default function NewRemittancePage() {
       return;
     }
 
-    if (Math.abs(totalOrderInr - totalAllocatedInr) > 0.01) {
-      if (totalAllocatedInr < totalOrderInr) {
+    const diff = Math.round((totalOrderInr - totalAllocatedInr + Number.EPSILON) * 1000) / 1000;
+    if (Math.abs(diff) > 1.00) {
+      if (diff > 0) {
         setError(
-          `India Distribution Split is mandatory: Full order amount must be distributed. Remaining unallocated: ₹${(totalOrderInr - totalAllocatedInr).toLocaleString("en-IN")}`
+          `India Distribution Split is mandatory: Full order amount must be distributed. Remaining unallocated: ₹${diff.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}`
         );
       } else {
         setError(
-          `Total distributed (₹${totalAllocatedInr.toLocaleString("en-IN")}) exceeds customer order (₹${totalOrderInr.toLocaleString("en-IN")}) by ₹${(totalAllocatedInr - totalOrderInr).toLocaleString("en-IN")}`
+          `Total distributed (₹${totalAllocatedInr.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}) exceeds customer order by ₹${Math.abs(diff).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}`
         );
       }
       return;
+    }
+
+    // Auto-absorb minor fractional discrepancy <= 1.00 INR (e.g. 0.20 INR from floating-point or rounded splits) into the last split row
+    if (Math.abs(diff) > 0 && Math.abs(diff) <= 1.00 && splits.length > 0) {
+      const lastIdx = splits.length - 1;
+      const curAmt = parseFloat(splits[lastIdx].inr_amount) || 0;
+      const adjustedAmt = Math.round((curAmt + diff + Number.EPSILON) * 1000) / 1000;
+      splits[lastIdx].inr_amount = String(adjustedAmt);
     }
 
     setError(null);
@@ -453,8 +465,13 @@ export default function NewRemittancePage() {
           const pInfo = priorTransfersMap[s.distributor_id];
           const shouldDeduct = s.deduct_prior === true;
 
+          let noteText = s.notes?.trim() || "";
+          if (s.channel && s.channel !== "DEFAULT") {
+            const chanTag = `[${s.channel}]`;
+            noteText = noteText ? `${chanTag} ${noteText}` : chanTag;
+          }
+
           if (!pInfo || !pInfo.hasPriorTransfers || !shouldDeduct) {
-            let noteText = s.notes || "";
             if (pInfo && pInfo.hasPriorTransfers && !shouldDeduct) {
               const keepNote = `[Prior advance of ₹${pInfo.availablePriorBalanceInr.toLocaleString("en-IN")} kept as-is (untouched); Full ₹${splitAmt.toLocaleString("en-IN")} payable separately]`;
               noteText = noteText ? `${noteText} • ${keepNote}` : keepNote;
@@ -477,7 +494,6 @@ export default function NewRemittancePage() {
           const balanceInr = Math.max(0, splitAmt - paidInr);
           remainingPriorTracker[partyKey] = Math.max(0, currentPriorAvail - paidInr);
 
-          let noteText = s.notes || "";
           if (paidInr > 0) {
             const offsetNote = `[Offset ₹${paidInr.toLocaleString("en-IN")} from prior transfer; Remaining to pay: ₹${balanceInr.toLocaleString("en-IN")}]`;
             noteText = noteText ? `${noteText} • ${offsetNote}` : offsetNote;
@@ -916,38 +932,73 @@ export default function NewRemittancePage() {
             </div>
 
             {/* Allocation Status Indicator */}
-            <div
-              className={`p-2.5 rounded-lg border text-xs flex items-center justify-between transition-colors ${
-                totalOrderInr === 0
-                  ? "bg-slate-50 border-slate-200 text-slate-600"
-                  : Math.abs(totalOrderInr - totalAllocatedInr) < 0.01
-                  ? "bg-emerald-50 border-emerald-200 text-emerald-900"
-                  : remainingInr > 0
-                  ? "bg-amber-50 border-amber-200 text-amber-900"
-                  : "bg-rose-50 border-rose-200 text-rose-900"
-              }`}
-            >
-              <span>
-                Allocated: <strong>₹{totalAllocatedInr.toLocaleString("en-IN")}</strong> / ₹{totalOrderInr.toLocaleString("en-IN")}
-              </span>
-              <span>
-                {totalOrderInr === 0 ? (
-                  <span className="text-slate-400">Enter order amount above</span>
-                ) : Math.abs(totalOrderInr - totalAllocatedInr) < 0.01 ? (
-                  <strong className="text-emerald-700 flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> 100% Allocated
-                  </strong>
-                ) : remainingInr > 0 ? (
-                  <span className="text-amber-800 font-semibold">
-                    Remaining: <strong>₹{remainingInr.toLocaleString("en-IN")}</strong>
-                  </span>
-                ) : (
-                  <span className="text-rose-700 font-semibold">
-                    Over-allocated by <strong>₹{(totalAllocatedInr - totalOrderInr).toLocaleString("en-IN")}</strong>
-                  </span>
-                )}
-              </span>
-            </div>
+            {(() => {
+              const diff = Math.round((totalOrderInr - totalAllocatedInr + Number.EPSILON) * 1000) / 1000;
+              const isExact = totalOrderInr > 0 && Math.abs(diff) < 0.001;
+              const isFractional = totalOrderInr > 0 && Math.abs(diff) <= 1.00 && !isExact;
+
+              return (
+                <div
+                  className={`p-2.5 rounded-lg border text-xs flex flex-wrap items-center justify-between gap-2 transition-colors ${
+                    totalOrderInr === 0
+                      ? "bg-slate-50 border-slate-200 text-slate-600"
+                      : isExact
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+                      : isFractional
+                      ? "bg-teal-50 border-teal-200 text-teal-900"
+                      : diff > 0
+                      ? "bg-amber-50 border-amber-200 text-amber-900"
+                      : "bg-rose-50 border-rose-200 text-rose-900"
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 font-mono">
+                    <span>Allocated:</span>
+                    <strong>₹{totalAllocatedInr.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</strong>
+                    <span>/</span>
+                    <span>₹{totalOrderInr.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {totalOrderInr === 0 ? (
+                      <span className="text-slate-400">Enter order amount above</span>
+                    ) : isExact ? (
+                      <strong className="text-emerald-700 flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> 100% Allocated
+                      </strong>
+                    ) : isFractional ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-teal-800 font-semibold text-[11px]">
+                          ⚡ Fraction diff: {diff > 0 ? `+₹${diff.toFixed(2)}` : `-₹${Math.abs(diff).toFixed(2)}`} (Auto-absorbed on submit)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (splits.length > 0) {
+                              const last = splits[splits.length - 1];
+                              const cur = parseFloat(last.inr_amount) || 0;
+                              const nextVal = Math.round((cur + diff + Number.EPSILON) * 1000) / 1000;
+                              updateSplit(last.id, "inr_amount", String(nextVal));
+                            }
+                          }}
+                          className="px-2 py-0.5 text-[11px] font-bold bg-teal-200 hover:bg-teal-300 text-teal-900 rounded border border-teal-300 transition-colors shadow-xs cursor-pointer flex items-center gap-1"
+                          title="Auto-balance fraction to last split"
+                        >
+                          Auto-balance Fraction
+                        </button>
+                      </div>
+                    ) : diff > 0 ? (
+                      <span className="text-amber-800 font-semibold">
+                        Remaining: <strong>₹{diff.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</strong>
+                      </span>
+                    ) : (
+                      <span className="text-rose-700 font-semibold">
+                        Over-allocated by <strong>₹{Math.abs(diff).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</strong>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Split Rows */}
             {splits.map((s, idx) => (
@@ -980,8 +1031,8 @@ export default function NewRemittancePage() {
                     )}
                   </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                  <div className="sm:col-span-5">
                     <div className="flex items-center justify-between mb-0.5">
                       <label className="block text-[10px] uppercase font-bold text-slate-600">
                         India Party *
@@ -1022,7 +1073,7 @@ export default function NewRemittancePage() {
                       </option>
                     </select>
                   </div>
-                  <div>
+                  <div className="sm:col-span-4">
                     <label className="block text-[10px] uppercase font-bold text-slate-600 mb-0.5">
                       INR Amount *
                     </label>
@@ -1041,6 +1092,34 @@ export default function NewRemittancePage() {
                       className="w-full text-xs font-bold border border-slate-300 rounded p-2 bg-white text-slate-900 font-mono"
                     />
                   </div>
+                  <div className="sm:col-span-3">
+                    <label className="block text-[10px] uppercase font-bold text-slate-600 mb-0.5">
+                      Channel / Mode
+                    </label>
+                    <select
+                      value={s.channel || "BANK"}
+                      onChange={(e) => updateSplit(s.id, "channel", e.target.value)}
+                      className="w-full text-xs font-bold border border-slate-300 rounded p-2 bg-white text-slate-900"
+                    >
+                      <option value="BANK">BANK</option>
+                      <option value="GPAY">GPAY</option>
+                      <option value="CASH">CASH</option>
+                      <option value="HAWALA">HAWALA</option>
+                      <option value="DEFAULT">DEFAULT</option>
+                      <option value="OTHER">OTHER</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Optional Split Notes / Reference */}
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Optional reference / split notes (e.g. UPI Ref, Branch, Account)..."
+                    value={s.notes || ""}
+                    onChange={(e) => updateSplit(s.id, "notes", e.target.value)}
+                    className="w-full text-xs border border-slate-200 rounded px-2.5 py-1.5 bg-white text-slate-700 placeholder:text-slate-400"
+                  />
                 </div>
 
                 {/* Prior Transfer Offset & Decision Card — Only appears if party has prior advance */}
