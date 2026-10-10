@@ -240,8 +240,9 @@ function CustomerRemittancesContent() {
         setEditSplits(
           splitsData.map((s: any) => {
             const rawNote = s.notes || "";
-            const matchChannel = rawNote.match(/^\[(BANK|GPAY|CASH|HAWALA|DEFAULT|OTHER)\]\s*(.*)$/);
-            const channel = matchChannel ? matchChannel[1] : "BANK";
+            const matchChannel = rawNote.match(/^\[(GPAY|CASH|DEFAULT|OTHER|BANK|HAWALA)\]\s*(.*)$/);
+            const matched = matchChannel ? matchChannel[1] : "DEFAULT";
+            const channel = (matched === "BANK" || matched === "HAWALA") ? "DEFAULT" : matched;
             const cleanNotes = matchChannel ? matchChannel[2] : rawNote;
             return {
               id: s.id,
@@ -258,7 +259,7 @@ function CustomerRemittancesContent() {
             id: `new-${Date.now()}`,
             distributor_id: indiaParties[0]?.id || "",
             inr_amount: String(t.inr_amount),
-            channel: "BANK",
+            channel: "DEFAULT",
             notes: "",
           },
         ]);
@@ -270,7 +271,7 @@ function CustomerRemittancesContent() {
           id: `new-${Date.now()}`,
           distributor_id: indiaParties[0]?.id || "",
           inr_amount: String(t.inr_amount),
-          channel: "BANK",
+          channel: "DEFAULT",
           notes: "",
         },
       ]);
@@ -293,7 +294,7 @@ function CustomerRemittancesContent() {
         id: `new-${Date.now()}-${Math.random()}`,
         distributor_id: nextParty.id,
         inr_amount: rem > 0 ? String(rem) : "",
-        channel: "BANK",
+        channel: "DEFAULT",
         notes: "",
       },
     ]);
@@ -1131,7 +1132,7 @@ function CustomerRemittancesContent() {
                             </div>
                             <div className="sm:col-span-3">
                               <select
-                                value={s.channel || "BANK"}
+                                value={s.channel || "DEFAULT"}
                                 onChange={(e) => {
                                   const val = e.target.value;
                                   setEditSplits((prev) => {
@@ -1142,11 +1143,9 @@ function CustomerRemittancesContent() {
                                 }}
                                 className="w-full text-xs font-bold border border-slate-300 rounded p-1.5 text-slate-900 bg-white"
                               >
-                                <option value="BANK">BANK</option>
+                                <option value="DEFAULT">DEFAULT</option>
                                 <option value="GPAY">GPAY</option>
                                 <option value="CASH">CASH</option>
-                                <option value="HAWALA">HAWALA</option>
-                                <option value="DEFAULT">DEFAULT</option>
                                 <option value="OTHER">OTHER</option>
                               </select>
                             </div>

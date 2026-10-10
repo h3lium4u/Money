@@ -169,7 +169,7 @@ export default function NewRemittancePage() {
                 id: Math.random().toString(),
                 distributor_id: resolvedDists[0].id,
                 inr_amount: "",
-                channel: "BANK",
+                channel: "DEFAULT",
                 notes: "",
               },
             ];
@@ -359,7 +359,7 @@ export default function NewRemittancePage() {
         id: Math.random().toString(),
         distributor_id: distributors[0].id,
         inr_amount: "",
-        channel: "BANK",
+        channel: "DEFAULT",
         notes: "",
       },
     ]);
@@ -1097,15 +1097,13 @@ export default function NewRemittancePage() {
                       Channel / Mode
                     </label>
                     <select
-                      value={s.channel || "BANK"}
+                      value={s.channel || "DEFAULT"}
                       onChange={(e) => updateSplit(s.id, "channel", e.target.value)}
                       className="w-full text-xs font-bold border border-slate-300 rounded p-2 bg-white text-slate-900"
                     >
-                      <option value="BANK">BANK</option>
+                      <option value="DEFAULT">DEFAULT</option>
                       <option value="GPAY">GPAY</option>
                       <option value="CASH">CASH</option>
-                      <option value="HAWALA">HAWALA</option>
-                      <option value="DEFAULT">DEFAULT</option>
                       <option value="OTHER">OTHER</option>
                     </select>
                   </div>
