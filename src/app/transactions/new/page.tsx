@@ -53,7 +53,7 @@ export default function NewDubaiClientTransactionPage() {
   const [customerId, setCustomerId] = useState("");
   
   // Total entry
-  const [inrAmounts, setInrAmounts] = useState<string[]>([""]);
+  const [inrAmounts, setInrAmounts] = useState<string[]>(["", "", ""]);
   const [manualRate, setManualRate] = useState<string>("");
   const [paidAmounts, setPaidAmounts] = useState<string[]>([""]);
   const [notes, setNotes] = useState("");
@@ -436,9 +436,14 @@ export default function NewDubaiClientTransactionPage() {
           {/* Section 2: Total Order Amount (INR) Entry */}
           <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             <div className="flex flex-wrap items-center justify-between gap-1">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Total Order Amount (INR)
-              </label>
+              <div className="flex items-center gap-2">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Total Order Amount (INR)
+                </label>
+                <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded font-mono font-semibold">
+                  {validAmounts.length} of {inrAmounts.length} entered
+                </span>
+              </div>
               <button
                 type="button"
                 onClick={handleAddAmount}
@@ -454,15 +459,17 @@ export default function NewDubaiClientTransactionPage() {
                 <div key={idx} className="flex items-center gap-2">
                   <div className="relative flex-1">
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-slate-400 dark:text-slate-500 font-bold text-xs select-none">
-                      <span className="font-mono">₹</span>
+                      <span className="font-mono">#{idx + 1}</span>
+                      <span className="text-slate-300 dark:text-slate-600">|</span>
+                      <span className="text-slate-500 dark:text-slate-400 font-bold text-sm">₹</span>
                     </div>
                     <input
                       type="text"
                       inputMode="decimal"
-                      placeholder="Enter Total INR Amount (e.g. 500000)"
+                      placeholder={idx === 0 ? "Enter Total INR Amount (e.g. 500000)" : idx === 1 ? "Enter Total INR Amount (e.g. 300000)" : "Enter Total INR Amount (e.g. 200000)"}
                       value={amount}
                       onChange={(e) => handleAmountChange(idx, e.target.value)}
-                      className="w-full text-sm font-bold pl-8 pr-3 py-2.5 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs font-mono"
+                      className="w-full text-sm font-bold pl-16 pr-3 py-2.5 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs font-mono"
                     />
                   </div>
                   {inrAmounts.length > 1 && (

@@ -67,11 +67,11 @@ export default function NewRemittancePage() {
   const [date, setDate] = useState(getTodayDateString());
   const dateInputRef = useRef<HTMLInputElement>(null);
   const [customerId, setCustomerId] = useState("");
-  const [inrAmounts, setInrAmounts] = useState<string[]>([""]);
+  const [inrAmounts, setInrAmounts] = useState<string[]>(["", "", ""]);
   const [customerRate, setCustomerRate] = useState<string>("");
   const [baseRate, setBaseRate] = useState<string>("");
-  const [deliveryMode, setDeliveryMode] = useState<"AED" | "PCT">("AED");
-  const [deliveryValue, setDeliveryValue] = useState<string>("");
+  const [deliveryMode, setDeliveryMode] = useState<"AED" | "PCT">("PCT");
+  const [deliveryValue, setDeliveryValue] = useState<string>("20");
   const [notes, setNotes] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
@@ -529,7 +529,8 @@ export default function NewRemittancePage() {
       setShowConfirmModal(false);
       setSplits([]);
       setInrAmounts(["", "", ""]);
-      setDeliveryValue("");
+      setDeliveryMode("PCT");
+      setDeliveryValue("20");
       setNotes("");
       toast.success("Remittance transfer saved successfully");
     } catch (err: any) {
@@ -587,7 +588,8 @@ export default function NewRemittancePage() {
               onClick={() => {
                 setSuccessTxn(null);
                 setInrAmounts(["", "", ""]);
-                setDeliveryValue("");
+                setDeliveryMode("PCT");
+                setDeliveryValue("20");
                 setNotes("");
                 setDate(getTodayDateString());
               }}
@@ -822,7 +824,7 @@ export default function NewRemittancePage() {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  Delivery Charge ({deliveryMode})
+                  Delivery Charge ({deliveryMode === "PCT" ? "%" : "AED"})
                 </label>
                 <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded text-[10px] font-bold">
                   <button
