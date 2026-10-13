@@ -3,10 +3,14 @@
  * All financial logic MUST be executed server-side. The frontend is never authoritative.
  */
 
+export type RateConvention = "AED_PER_1000" | "INR_PER_AED";
+
 export interface TransactionInputs {
   inrAmount: number;
-  customerRate: number; // e.g. 38.25 (AED per 1000 INR)
+  customerRate: number; // e.g. 38.25 (AED per 1000 INR) or 26.144 (INR per AED)
+  customerRateConvention?: RateConvention;
   baseRate: number; // e.g. 26.82 (INR per AED) or 37.25 (AED per 1000 INR)
+  baseRateConvention?: RateConvention;
   deliveryChargePct?: number; // default 0.20 (20%)
   deliveryChargeAed?: number; // fixed delivery charge in AED
 }
@@ -14,9 +18,11 @@ export interface TransactionInputs {
 export interface TransactionCalculationResult {
   inrAmount: number;
   customerRate: number;
+  customerRateConvention: RateConvention;
   customerRateInrPerAed: number;
   aedAmount: number; // AED charged to customer
   baseRate: number;
+  baseRateConvention: RateConvention;
   baseRateAedPer1000: number;
   baseRateInrPerAed: number;
   costAed: number; // Base cost to the business in AED
@@ -108,23 +114,27 @@ export function calculateTransaction(inputs: TransactionInputs): TransactionCalc
   if (isNaN(custRate) || custRate <= 0) throw new Error("Customer rate must be greater than zero");
   if (isNaN(baseRate) || baseRate <= 0) throw new Error("Base rate must be greater than zero");
 
+  // Explicit Rate Convention with safe backward-compatible fallback
+  const custConvention: RateConvention =
+    inputs.customerRateConvention || (custRate >= 30 ? "AED_PER_1000" : "INR_PER_AED");
+  const baseConvention: RateConvention =
+    inputs.baseRateConvention || (baseRate >= 30 ? "AED_PER_1000" : "INR_PER_AED");
+
   // Determine Customer Rate convention & exact AED amount charged
-  // Rate >= 30: AED per 1000 INR (e.g. 38.25 AED for 1,000 INR) -> AED = (INR * Rate) / 1000
-  // Rate < 30: INR per 1 AED (e.g. 26.144 INR for 1 AED) -> AED = INR / Rate
-  const rawAedAmount = custRate >= 30 ? (inr * custRate) / 1000 : inr / custRate;
+  // AED_PER_1000: AED per 1000 INR (e.g. 38.25 AED for 1,000 INR) -> AED = (INR * Rate) / 1000
+  // INR_PER_AED: INR per 1 AED (e.g. 26.144 INR for 1 AED) -> AED = INR / Rate
+  const rawAedAmount = custConvention === "AED_PER_1000" ? (inr * custRate) / 1000 : inr / custRate;
   const aedAmount = roundTo(rawAedAmount, 3);
 
-  const customerRatePer1000 = custRate >= 30 ? custRate : inrPerAedToRatePer1000(custRate);
-  const customerRateInrPerAed = custRate < 30 ? custRate : ratePer1000ToInrPerAed(custRate);
+  const customerRatePer1000 = custConvention === "AED_PER_1000" ? custRate : inrPerAedToRatePer1000(custRate);
+  const customerRateInrPerAed = custConvention === "INR_PER_AED" ? custRate : ratePer1000ToInrPerAed(custRate);
 
   // Determine Base Rate convention & exact Wholesale Cost AED
-  // Rate >= 30: AED per 1000 INR (e.g. 38.25 AED for 1,000 INR) -> Cost AED = (INR * Rate) / 1000
-  // Rate < 30: INR per 1 AED (e.g. 26.82 INR for 1 AED) -> Cost AED = INR / Rate
-  const rawCostAed = baseRate >= 30 ? (inr * baseRate) / 1000 : inr / baseRate;
+  const rawCostAed = baseConvention === "AED_PER_1000" ? (inr * baseRate) / 1000 : inr / baseRate;
   const costAed = roundTo(rawCostAed, 3);
 
-  const baseRatePer1000 = baseRate >= 30 ? baseRate : inrPerAedToRatePer1000(baseRate);
-  const baseRateInrPerAed = baseRate < 30 ? baseRate : ratePer1000ToInrPerAed(baseRate);
+  const baseRatePer1000 = baseConvention === "AED_PER_1000" ? baseRate : inrPerAedToRatePer1000(baseRate);
+  const baseRateInrPerAed = baseConvention === "INR_PER_AED" ? baseRate : ratePer1000ToInrPerAed(baseRate);
 
   // Gross Profit AED = AED Charged - Cost AED
   const rawGrossProfit = rawAedAmount - rawCostAed;
@@ -156,10 +166,12 @@ export function calculateTransaction(inputs: TransactionInputs): TransactionCalc
 
   return {
     inrAmount: roundTo(inr, 3),
-    customerRate: roundTo(customerRatePer1000, 3),
+    customerRate: roundTo(custRate, 3),
+    customerRateConvention: custConvention,
     customerRateInrPerAed: roundTo(customerRateInrPerAed, 3),
     aedAmount,
     baseRate: roundTo(baseRate, 3),
+    baseRateConvention: baseConvention,
     baseRateAedPer1000: roundTo(baseRatePer1000, 3),
     baseRateInrPerAed: roundTo(baseRateInrPerAed, 3),
     costAed,

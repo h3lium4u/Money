@@ -62,10 +62,15 @@ export async function POST(request: Request) {
     const deliveryPct = body.deliveryChargePct !== undefined ? Number(body.deliveryChargePct) : (body.delivery_charge_pct !== undefined ? Number(body.delivery_charge_pct) : undefined);
     const deliveryChargeAed = body.deliveryChargeAed !== undefined ? Number(body.deliveryChargeAed) : (body.delivery_charge_aed !== undefined ? Number(body.delivery_charge_aed) : (body.deliveryAmount !== undefined ? Number(body.deliveryAmount) : undefined));
 
+    const custConvention = body.customerRateConvention || body.customer_rate_convention;
+    const baseConvention = body.baseRateConvention || body.base_rate_convention;
+
     const result = calculateTransaction({
       inrAmount: inr,
       customerRate: custRate,
+      customerRateConvention: custConvention,
       baseRate,
+      baseRateConvention: baseConvention,
       deliveryChargePct: deliveryPct,
       deliveryChargeAed,
     });

@@ -60,10 +60,12 @@ export interface TransactionRecord {
   inr_amount: number;
   total?: number;
   customer_rate: number;
+  customer_rate_convention?: "AED_PER_1000" | "INR_PER_AED";
   manual_rate?: number;
   aed_amount: number;
   in_dhirams?: number;
   base_rate: number;
+  base_rate_convention?: "AED_PER_1000" | "INR_PER_AED";
   wholesale_rate?: number;
   cost_aed: number;
   gross_profit_aed: number;
@@ -211,6 +213,8 @@ function mapTransactionRecord(r: any): TransactionRecord {
   const pendingAed = roundTo(Math.max(0, aedAmount - paidAed), 3);
   const customerRate = roundTo(Number(r.customer_rate), 3);
   const baseRate = roundTo(Number(r.base_rate), 3);
+  const customerRateConvention = (r.customer_rate_convention as "AED_PER_1000" | "INR_PER_AED") || (customerRate >= 30 ? "AED_PER_1000" : "INR_PER_AED");
+  const baseRateConvention = (r.base_rate_convention as "AED_PER_1000" | "INR_PER_AED") || (baseRate >= 30 ? "AED_PER_1000" : "INR_PER_AED");
 
   return {
     id: r.id,
@@ -224,10 +228,12 @@ function mapTransactionRecord(r: any): TransactionRecord {
     inr_amount: inrAmount,
     total: inrAmount,
     customer_rate: customerRate,
+    customer_rate_convention: customerRateConvention,
     manual_rate: customerRate,
     aed_amount: aedAmount,
     in_dhirams: aedAmount,
     base_rate: baseRate,
+    base_rate_convention: baseRateConvention,
     wholesale_rate: baseRate,
     cost_aed: roundTo(Number(r.cost_aed), 3),
     gross_profit_aed: roundTo(Number(r.gross_profit_aed), 3),
@@ -877,8 +883,10 @@ export async function createTransaction(data: {
   inr_amount?: number;
   total?: number;
   customer_rate?: number;
+  customer_rate_convention?: "AED_PER_1000" | "INR_PER_AED";
   manual_rate?: number;
   base_rate?: number;
+  base_rate_convention?: "AED_PER_1000" | "INR_PER_AED";
   paid_amount?: number;
   paid_aed?: number;
   delivery_charge_pct?: number;
@@ -900,6 +908,11 @@ export async function createTransaction(data: {
   const manualRate = Number(data.manual_rate ?? data.customer_rate);
   const paidAmount = Number(data.paid_amount ?? data.paid_aed ?? 0);
 
+  const custConv: "AED_PER_1000" | "INR_PER_AED" =
+    data.customer_rate_convention || (manualRate >= 30 ? "AED_PER_1000" : "INR_PER_AED");
+  const baseConv: "AED_PER_1000" | "INR_PER_AED" =
+    data.base_rate_convention || (data.base_rate !== undefined ? (Number(data.base_rate) >= 30 ? "AED_PER_1000" : "INR_PER_AED") : "INR_PER_AED");
+
   let inrAmount = total;
   let customerRate = manualRate;
   let aedAmount = 0;
@@ -914,7 +927,9 @@ export async function createTransaction(data: {
     const calc = calculateTransaction({
       inrAmount: total,
       customerRate: manualRate,
+      customerRateConvention: custConv,
       baseRate: Number(data.base_rate),
+      baseRateConvention: baseConv,
       deliveryChargePct: data.delivery_charge_pct,
       deliveryChargeAed: data.delivery_charge_aed,
     });
@@ -951,18 +966,18 @@ export async function createTransaction(data: {
   await execute(`
     INSERT INTO transactions (
       id, transaction_number, transaction_date, customer_id,
-      inr_amount, customer_rate, aed_amount, base_rate,
+      inr_amount, customer_rate, customer_rate_convention, aed_amount, base_rate, base_rate_convention,
       cost_aed, gross_profit_aed, delivery_charge_pct, delivery_charge_aed,
       net_profit_aed, distributor_id, status, notes, is_demo
     ) VALUES (
       $1, $2, $3, $4,
-      $5, $6, $7, $8,
-      $9, $10, $11, $12,
-      $13, $14, 'CONFIRMED', $15, false
+      $5, $6, $7, $8, $9, $10,
+      $11, $12, $13, $14,
+      $15, $16, 'CONFIRMED', $17, false
     )
   `, [
     id, txnNumber, data.transaction_date, data.customer_id,
-    inrAmount, customerRate, aedAmount, baseRate,
+    inrAmount, customerRate, custConv, aedAmount, baseRate, baseConv,
     costAed, grossProfitAed, deliveryPct, deliveryChargeAed,
     netProfitAed, data.distributor_id || null, data.notes || null
   ]);
@@ -2317,8 +2332,10 @@ export async function updateTransaction(id: string, data: {
   inr_amount?: number;
   total?: number;
   customer_rate?: number;
+  customer_rate_convention?: "AED_PER_1000" | "INR_PER_AED";
   manual_rate?: number;
   base_rate?: number;
+  base_rate_convention?: "AED_PER_1000" | "INR_PER_AED";
   paid_amount?: number;
   paid_aed?: number;
   delivery_charge_pct?: number;
@@ -2340,6 +2357,11 @@ export async function updateTransaction(id: string, data: {
   const transactionDate = data.transaction_date ?? existing.transaction_date;
   const customerId = data.customer_id ?? existing.customer_id;
   const notes = data.notes !== undefined ? data.notes : existing.notes;
+
+  const custConv: "AED_PER_1000" | "INR_PER_AED" =
+    data.customer_rate_convention || existing.customer_rate_convention || (manualRate >= 30 ? "AED_PER_1000" : "INR_PER_AED");
+  const baseConv: "AED_PER_1000" | "INR_PER_AED" =
+    data.base_rate_convention || existing.base_rate_convention || ((data.base_rate !== undefined ? Number(data.base_rate) : existing.base_rate) >= 30 ? "AED_PER_1000" : "INR_PER_AED");
 
   // Validate splits if INR amount changed and splits are not explicitly being replaced
   if (!data.splits) {
@@ -2364,7 +2386,9 @@ export async function updateTransaction(id: string, data: {
     const calc = calculateTransaction({
       inrAmount: total,
       customerRate: manualRate,
+      customerRateConvention: custConv,
       baseRate: Number(data.base_rate),
+      baseRateConvention: baseConv,
       deliveryChargePct: data.delivery_charge_pct !== undefined ? data.delivery_charge_pct : existing.delivery_charge_pct,
       deliveryChargeAed: data.delivery_charge_aed !== undefined ? data.delivery_charge_aed : existing.delivery_charge_aed,
     });
@@ -2397,14 +2421,16 @@ export async function updateTransaction(id: string, data: {
   await execute(`
     UPDATE transactions
     SET transaction_date = $1, customer_id = $2, inr_amount = $3,
-        customer_rate = $4, aed_amount = $5, base_rate = $6,
-        cost_aed = $7, gross_profit_aed = $8, delivery_charge_pct = $9,
-        delivery_charge_aed = $10, net_profit_aed = $11, notes = $12,
+        customer_rate = $4, customer_rate_convention = $5,
+        aed_amount = $6, base_rate = $7, base_rate_convention = $8,
+        cost_aed = $9, gross_profit_aed = $10, delivery_charge_pct = $11,
+        delivery_charge_aed = $12, net_profit_aed = $13, notes = $14,
         updated_at = NOW()
-    WHERE id = $13
+    WHERE id = $15
   `, [
     transactionDate, customerId, inrAmount,
-    customerRate, aedAmount, baseRate,
+    customerRate, custConv,
+    aedAmount, baseRate, baseConv,
     costAed, grossProfitAed, deliveryPct,
     deliveryChargeAed, netProfitAed, notes || null,
     id

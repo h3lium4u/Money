@@ -79,6 +79,7 @@ function CustomerRemittancesContent() {
   const [editCustomerId, setEditCustomerId] = useState("");
   const [editInr, setEditInr] = useState("");
   const [editCustRate, setEditCustRate] = useState("");
+  const [editCustRateConvention, setEditCustRateConvention] = useState<"AED_PER_1000" | "INR_PER_AED">("AED_PER_1000");
   const [editPaidAmount, setEditPaidAmount] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editReason, setEditReason] = useState("");
@@ -227,6 +228,7 @@ function CustomerRemittancesContent() {
     setEditCustomerId(t.customer_id);
     setEditInr(String(t.inr_amount));
     setEditCustRate(String(t.customer_rate));
+    setEditCustRateConvention(t.customer_rate_convention || (Number(t.customer_rate) >= 30 ? "AED_PER_1000" : "INR_PER_AED"));
     setEditPaidAmount(String(t.paid_aed ?? "0"));
     setEditNotes(t.notes || "");
     setEditReason("");
@@ -406,6 +408,7 @@ function CustomerRemittancesContent() {
           customer_id: editCustomerId,
           inr_amount: parsedEditInr,
           customer_rate: parseFloat(editCustRate),
+          customer_rate_convention: editCustRateConvention,
           paid_amount: parseFloat(editPaidAmount || "0"),
           notes: editNotes || undefined,
           reason: editReason || undefined,
@@ -864,7 +867,9 @@ function CustomerRemittancesContent() {
                           <div className="font-bold text-slate-800 dark:text-slate-200 text-xs">
                             {Number(t.customer_rate).toFixed(3)}
                           </div>
-                          <span className="text-[9px] text-slate-400">AED/1000</span>
+                          <span className="text-[9px] text-slate-400">
+                            {t.customer_rate_convention === "INR_PER_AED" ? "INR/AED" : "AED/1000"}
+                          </span>
                         </td>
 
                         <td className="px-3.5 py-2.5 font-mono whitespace-nowrap">
@@ -1019,7 +1024,29 @@ function CustomerRemittancesContent() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Customer Rate</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold text-slate-700 uppercase">Customer Rate</label>
+                      <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded text-[10px] font-bold">
+                        <button
+                          type="button"
+                          onClick={() => setEditCustRateConvention("AED_PER_1000")}
+                          className={`px-1.5 py-0.5 rounded cursor-pointer transition-colors ${
+                            editCustRateConvention === "AED_PER_1000" ? "bg-teal-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
+                          }`}
+                        >
+                          AED / 1k
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditCustRateConvention("INR_PER_AED")}
+                          className={`px-1.5 py-0.5 rounded cursor-pointer transition-colors ${
+                            editCustRateConvention === "INR_PER_AED" ? "bg-teal-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
+                          }`}
+                        >
+                          INR / AED
+                        </button>
+                      </div>
+                    </div>
                     <input
                       type="text"
                       inputMode="decimal"

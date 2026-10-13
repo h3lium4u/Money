@@ -42,8 +42,10 @@ interface DistributorOption {
 interface CalculationPreview {
   inrAmount: number;
   customerRate: number;
+  customerRateConvention?: "AED_PER_1000" | "INR_PER_AED";
   aedAmount: number;
   baseRate: number;
+  baseRateConvention?: "AED_PER_1000" | "INR_PER_AED";
   costAed: number;
   grossProfitAed: number;
   deliveryChargePct: number;
@@ -70,7 +72,9 @@ export default function NewRemittancePage() {
   const [customerId, setCustomerId] = useState("");
   const [inrAmounts, setInrAmounts] = useState<string[]>(["", "", ""]);
   const [customerRate, setCustomerRate] = useState<string>("");
+  const [customerRateConvention, setCustomerRateConvention] = useState<"AED_PER_1000" | "INR_PER_AED">("AED_PER_1000");
   const [baseRate, setBaseRate] = useState<string>("");
+  const [baseRateConvention, setBaseRateConvention] = useState<"AED_PER_1000" | "INR_PER_AED">("INR_PER_AED");
   const [deliveryMode, setDeliveryMode] = useState<"AED" | "PCT">("PCT");
   const [deliveryValue, setDeliveryValue] = useState<string>("20");
   const [notes, setNotes] = useState("");
@@ -319,7 +323,9 @@ export default function NewRemittancePage() {
         const bodyPayload: any = {
           inrAmount: inr,
           customerRate: cRate,
+          customerRateConvention,
           baseRate: bRate,
+          baseRateConvention,
         };
 
         if (deliveryMode === "AED") {
@@ -345,7 +351,7 @@ export default function NewRemittancePage() {
     }, 150);
 
     return () => clearTimeout(timer);
-  }, [inrAmounts, customerRate, baseRate, deliveryMode, deliveryValue, totalOrderInr]);
+  }, [inrAmounts, customerRate, customerRateConvention, baseRate, baseRateConvention, deliveryMode, deliveryValue, totalOrderInr]);
 
   // Splits Calculation (3 decimal precision)
   const totalAllocatedInr = Math.round((splits.reduce((sum, s) => sum + (parseFloat(s.inr_amount) || 0), 0) + Number.EPSILON) * 1000) / 1000;
@@ -525,7 +531,9 @@ export default function NewRemittancePage() {
         customer_id: customerId,
         inr_amount: inr,
         customer_rate: cRate,
+        customer_rate_convention: customerRateConvention,
         base_rate: bRate,
+        base_rate_convention: baseRateConvention,
         notes: finalNotes,
         splits: payloadSplits.length > 0 ? payloadSplits : undefined,
       };
@@ -797,15 +805,36 @@ export default function NewRemittancePage() {
           {/* Section: Rates */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
-                <span>Daily Rate (Customer)</span>
-                <span className="text-[10px] text-teal-700 font-bold">AED / 1000 INR</span>
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Daily Rate (Customer)
+                </label>
+                <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded text-[10px] font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setCustomerRateConvention("AED_PER_1000")}
+                    className={`px-1.5 py-0.5 rounded cursor-pointer transition-colors ${
+                      customerRateConvention === "AED_PER_1000" ? "bg-teal-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    AED / 1k
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCustomerRateConvention("INR_PER_AED")}
+                    className={`px-1.5 py-0.5 rounded cursor-pointer transition-colors ${
+                      customerRateConvention === "INR_PER_AED" ? "bg-teal-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    INR / AED
+                  </button>
+                </div>
+              </div>
               <input
                 type="text"
                 inputMode="decimal"
                 required
-                placeholder="e.g. 38.25"
+                placeholder={customerRateConvention === "AED_PER_1000" ? "e.g. 38.25" : "e.g. 26.14"}
                 value={customerRate}
                 onChange={(e) => {
                   const clean = e.target.value.replace(/,/g, "");
@@ -818,15 +847,36 @@ export default function NewRemittancePage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
-                <span>My Rate (Base Cost)</span>
-                <span className="text-[10px] text-blue-700 font-bold">INR / 1 AED</span>
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  My Rate (Base Cost)
+                </label>
+                <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded text-[10px] font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setBaseRateConvention("INR_PER_AED")}
+                    className={`px-1.5 py-0.5 rounded cursor-pointer transition-colors ${
+                      baseRateConvention === "INR_PER_AED" ? "bg-blue-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    INR / AED
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBaseRateConvention("AED_PER_1000")}
+                    className={`px-1.5 py-0.5 rounded cursor-pointer transition-colors ${
+                      baseRateConvention === "AED_PER_1000" ? "bg-blue-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    AED / 1k
+                  </button>
+                </div>
+              </div>
               <input
                 type="text"
                 inputMode="decimal"
                 required
-                placeholder="e.g. 26.20"
+                placeholder={baseRateConvention === "INR_PER_AED" ? "e.g. 26.20" : "e.g. 38.16"}
                 value={baseRate}
                 onChange={(e) => {
                   const clean = e.target.value.replace(/,/g, "");
@@ -1292,7 +1342,9 @@ export default function NewRemittancePage() {
                     {preview.aedAmount.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED
                   </div>
                   <span className="text-[10px] text-teal-700 font-mono">
-                    = (₹{preview.inrAmount.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} / 1000) × {preview.customerRate.toFixed(3)}
+                    {preview.customerRateConvention === "AED_PER_1000"
+                      ? `= (₹${preview.inrAmount.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} / 1000) × ${preview.customerRate.toFixed(3)}`
+                      : `= ₹${preview.inrAmount.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} / ${preview.customerRate.toFixed(3)}`}
                   </span>
                 </div>
 
@@ -1619,11 +1671,11 @@ export default function NewRemittancePage() {
                 <div className="grid grid-cols-2 gap-2 text-slate-700 pb-2 border-b border-slate-200">
                   <div>
                     <span className="text-[10px] text-slate-400 font-bold uppercase">Customer Rate</span>
-                    <p className="font-mono font-bold text-slate-900">{customerRate} AED / 1000</p>
+                    <p className="font-mono font-bold text-slate-900">{customerRate} {customerRateConvention === "AED_PER_1000" ? "AED / 1000" : "INR / AED"}</p>
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-400 font-bold uppercase">Base Rate</span>
-                    <p className="font-mono font-bold text-slate-900">{baseRate}</p>
+                    <p className="font-mono font-bold text-slate-900">{baseRate} {baseRateConvention === "INR_PER_AED" ? "INR / AED" : "AED / 1000"}</p>
                   </div>
                 </div>
 
