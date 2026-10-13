@@ -2497,10 +2497,10 @@ export async function deleteTransaction(id: string): Promise<void> {
 
   const splits = await query(`SELECT DISTINCT distributor_id FROM distribution_splits WHERE transaction_id = $1`, [id]);
   await execute(`DELETE FROM distribution_splits WHERE transaction_id = $1`, [id]);
-  await execute(`UPDATE customer_payments SET transaction_id = NULL WHERE transaction_id = $1`, [id]);
+  await execute(`DELETE FROM customer_payments WHERE transaction_id = $1`, [id]);
   await execute(`DELETE FROM audit_logs WHERE entity_id = $1`, [id]);
   await execute(`DELETE FROM transactions WHERE id = $1`, [id]);
-  invalidatePartyTransfersCache();
+  invalidateAllCaches();
 
   for (const s of splits) {
     if (s.distributor_id) {

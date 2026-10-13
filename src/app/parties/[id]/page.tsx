@@ -117,7 +117,20 @@ export default function PartyDetailPage() {
         method: "DELETE",
       });
       if (res.ok) {
+        const targetPmtId = deletePaymentId;
         setDeletePaymentId(null);
+        setData((prev: any) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            entries: Array.isArray(prev.entries)
+              ? prev.entries.filter((e: any) => e.id !== targetPmtId)
+              : prev.entries,
+            ledger: Array.isArray(prev.ledger)
+              ? prev.ledger.filter((e: any) => e.id !== targetPmtId)
+              : prev.ledger,
+          };
+        });
         fetchPartyLedger();
       }
     } catch (err) {

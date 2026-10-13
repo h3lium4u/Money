@@ -482,16 +482,19 @@ function CustomerRemittancesContent() {
 
   async function handleConfirmDelete() {
     if (!deletingTxn) return;
+    const targetId = deletingTxn.id;
     setIsDeleting(true);
     setDeleteError(null);
     try {
-      const res = await fetch(`/api/transactions/${deletingTxn.id}?action=delete`, {
+      const res = await fetch(`/api/transactions/${targetId}?action=delete`, {
         method: "DELETE",
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
       setDeletingTxn(null);
+      // Immediately remove from live state
+      setTransactions((prev) => prev.filter((t) => t.id !== targetId));
       fetchTransactions();
       toast.success("Remittance deleted permanently");
     } catch (err: any) {
@@ -504,9 +507,10 @@ function CustomerRemittancesContent() {
 
   async function handleConfirmVoid() {
     if (!voidingTxn) return;
+    const targetId = voidingTxn.id;
     setIsVoiding(true);
     try {
-      const res = await fetch(`/api/transactions/${voidingTxn.id}?action=void`, {
+      const res = await fetch(`/api/transactions/${targetId}?action=void`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason: voidReason || "User voided remittance" }),
@@ -514,6 +518,8 @@ function CustomerRemittancesContent() {
       if (res.ok) {
         setVoidingTxn(null);
         setVoidReason("");
+        // Immediately update status in live state
+        setTransactions((prev) => prev.map((t) => (t.id === targetId ? { ...t, status: "VOIDED" } : t)));
         fetchTransactions();
         toast.success("Remittance voided successfully");
       } else {

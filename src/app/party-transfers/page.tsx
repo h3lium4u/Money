@@ -582,10 +582,11 @@ function PartyTransfersContent() {
   // Void
   async function handleConfirmVoid() {
     if (!voidingTxn) return;
+    const targetId = voidingTxn.id;
     setIsVoiding(true);
     setVoidError(null);
     try {
-      const res = await fetch(`/api/transactions/${voidingTxn.id}/void`, {
+      const res = await fetch(`/api/transactions/${targetId}/void`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason: voidReason || "User voided party transfer" }),
@@ -595,7 +596,10 @@ function PartyTransfersContent() {
         throw new Error(errJson.error || "Failed to void transaction");
       }
       setVoidingTxn(null);
-      await loadData();
+      // Immediately reflect void status in live state
+      setTransfers((prev) => prev.map((t) => (t.id === targetId ? { ...t, status: "VOIDED" } : t)));
+      clientPartyTransfersCache = null;
+      await loadData(true);
       toast.success("Transfer voided successfully");
     } catch (err: any) {
       setVoidError(err.message || "Failed to void transaction");
@@ -608,10 +612,11 @@ function PartyTransfersContent() {
   // Delete
   async function handleConfirmDelete() {
     if (!deletingTxn) return;
+    const targetId = deletingTxn.id;
     setIsDeleting(true);
     setDeleteError(null);
     try {
-      const res = await fetch(`/api/transactions/${deletingTxn.id}`, {
+      const res = await fetch(`/api/transactions/${targetId}`, {
         method: "DELETE",
       });
       if (!res.ok) {
@@ -619,7 +624,10 @@ function PartyTransfersContent() {
         throw new Error(errJson.error || "Failed to delete transaction");
       }
       setDeletingTxn(null);
-      await loadData();
+      // Immediately remove from live state
+      setTransfers((prev) => prev.filter((t) => t.id !== targetId));
+      clientPartyTransfersCache = null;
+      await loadData(true);
       toast.success("Transfer deleted permanently");
     } catch (err: any) {
       setDeleteError(err.message || "Failed to delete transaction");

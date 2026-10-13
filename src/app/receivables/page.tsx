@@ -308,11 +308,14 @@ export default function ReceivablesPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to delete customer");
 
-      if (expandedCustId === deleteCustomerTarget.id) {
+      const targetCustId = deleteCustomerTarget.id;
+      if (expandedCustId === targetCustId) {
         setExpandedCustId(null);
       }
 
       setDeleteCustomerTarget(null);
+      // Immediately remove customer from live state
+      setCustomers((prev) => prev.filter((c) => c.id !== targetCustId));
       toast.success("Customer removed successfully");
       await fetchCustomers();
     } catch (err: any) {
@@ -380,10 +383,12 @@ export default function ReceivablesPage() {
 
   async function handleDeletePayment() {
     if (!deletingPaymentId || !deletingPaymentCustId) return;
+    const targetPmtId = deletingPaymentId;
+    const targetCustId = deletingPaymentCustId;
     setIsDeletingPayment(true);
     try {
       const res = await fetch(
-        `/api/customers/${deletingPaymentCustId}/payments?paymentId=${deletingPaymentId}`,
+        `/api/customers/${targetCustId}/payments?paymentId=${targetPmtId}`,
         { method: "DELETE" }
       );
       if (res.ok) {
@@ -391,10 +396,13 @@ export default function ReceivablesPage() {
         setDeletingPaymentId(null);
         setDeletingPaymentCustId(null);
 
+        // Immediately remove payment from live list
+        setAllPayments((prev: any[]) => prev.filter((p: any) => p.id !== targetPmtId));
+
         // Invalidate ledger cache
         setCustomerLedgerMap((prev) => {
           const next = { ...prev };
-          delete next[deletingPaymentCustId];
+          delete next[targetCustId];
           return next;
         });
 

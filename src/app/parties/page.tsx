@@ -221,7 +221,10 @@ export default function PartiesPage() {
         throw new Error(data.error || "Failed to delete party");
       }
 
+      const targetId = deletePartyTarget.id;
       setDeletePartyTarget(null);
+      // Immediately remove party from live state
+      setParties((prev) => prev.filter((p) => p.id !== targetId));
       fetchParties();
       fetchSplitSummary();
     } catch (err: any) {
