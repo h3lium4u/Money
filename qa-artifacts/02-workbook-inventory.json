@@ -1,0 +1,3941 @@
+{
+  "filename": "AYYAN JAN(5).xlsx",
+  "analysisDate": "2026-10-13T15:15:04.132Z",
+  "sheetCount": 7,
+  "sheets": [
+    {
+      "name": "COLLECTION & PROFIT",
+      "id": 1,
+      "state": "visible",
+      "rowCount": 192,
+      "columnCount": 134,
+      "formulaCount": 11373,
+      "mergedCellCount": 5,
+      "headers": [
+        {
+          "row": 1,
+          "cells": [
+            {
+              "col": 2,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 3,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 4,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 5,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 6,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 7,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 8,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 9,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 10,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 11,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 12,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 13,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 14,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 15,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 16,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 17,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 18,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 19,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 20,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 21,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 22,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 23,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 24,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 25,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 26,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 27,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 28,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 29,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 30,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 31,
+              "text": "BANK  ORDERS"
+            },
+            {
+              "col": 40,
+              "text": "DAILY RATE"
+            }
+          ]
+        },
+        {
+          "row": 2,
+          "cells": [
+            {
+              "col": 1,
+              "text": "DATE"
+            },
+            {
+              "col": 2,
+              "text": "SAMI"
+            },
+            {
+              "col": 3,
+              "text": "DIVAN"
+            },
+            {
+              "col": 4,
+              "text": "FAIZ BU"
+            },
+            {
+              "col": 5,
+              "text": "RAKSAN"
+            },
+            {
+              "col": 6,
+              "text": "SATHIK"
+            },
+            {
+              "col": 7,
+              "text": "AJIFER"
+            },
+            {
+              "col": 8,
+              "text": "ABBAS"
+            },
+            {
+              "col": 9,
+              "text": "ARAFATH"
+            },
+            {
+              "col": 10,
+              "text": "AKBAR DRY"
+            },
+            {
+              "col": 11,
+              "text": "SMS"
+            },
+            {
+              "col": 12,
+              "text": "BUHARI"
+            },
+            {
+              "col": 13,
+              "text": "MALIK"
+            },
+            {
+              "col": 14,
+              "text": "KADHAR"
+            },
+            {
+              "col": 15,
+              "text": "JAHIR"
+            },
+            {
+              "col": 16,
+              "text": "FAYAS"
+            },
+            {
+              "col": 17,
+              "text": "AJMAL"
+            },
+            {
+              "col": 18,
+              "text": "SALEEM"
+            },
+            {
+              "col": 19,
+              "text": "IBRM APS"
+            },
+            {
+              "col": 20,
+              "text": "RIYAS"
+            },
+            {
+              "col": 21,
+              "text": "yuvraj"
+            },
+            {
+              "col": 22,
+              "text": "FAIZAL"
+            },
+            {
+              "col": 23,
+              "text": "SHAHUL"
+            },
+            {
+              "col": 24,
+              "text": "ASF AKBAR"
+            },
+            {
+              "col": 25,
+              "text": "GANI"
+            },
+            {
+              "col": 26,
+              "text": "BEER"
+            },
+            {
+              "col": 27,
+              "text": "ASF SHAJHN"
+            },
+            {
+              "col": 28,
+              "text": "NAISAR"
+            },
+            {
+              "col": 29,
+              "text": "ADIL RAS"
+            },
+            {
+              "col": 30,
+              "text": "THARIK"
+            },
+            {
+              "col": 31,
+              "text": "TOTAL"
+            },
+            {
+              "col": 33,
+              "text": "SALA"
+            },
+            {
+              "col": 34,
+              "text": "SARABU"
+            },
+            {
+              "col": 35,
+              "text": "MK"
+            },
+            {
+              "col": 36,
+              "text": "ISMAIL"
+            },
+            {
+              "col": 37,
+              "text": "NNG"
+            },
+            {
+              "col": 38,
+              "text": "TOTAL"
+            },
+            {
+              "col": 40,
+              "text": "BENI"
+            }
+          ]
+        },
+        {
+          "row": 3,
+          "cells": [
+            {
+              "col": 1,
+              "text": "Sat May 02 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 2,
+              "text": "0"
+            },
+            {
+              "col": 3,
+              "text": "0"
+            },
+            {
+              "col": 4,
+              "text": "0"
+            },
+            {
+              "col": 5,
+              "text": "0"
+            },
+            {
+              "col": 6,
+              "text": "0"
+            },
+            {
+              "col": 7,
+              "text": "0"
+            },
+            {
+              "col": 8,
+              "text": "0"
+            },
+            {
+              "col": 9,
+              "text": "0"
+            },
+            {
+              "col": 10,
+              "text": "0"
+            },
+            {
+              "col": 11,
+              "text": "0"
+            },
+            {
+              "col": 12,
+              "text": "0"
+            },
+            {
+              "col": 13,
+              "text": "0"
+            },
+            {
+              "col": 14,
+              "text": "0"
+            },
+            {
+              "col": 15,
+              "text": "0"
+            },
+            {
+              "col": 16,
+              "text": "0"
+            },
+            {
+              "col": 17,
+              "text": "0"
+            },
+            {
+              "col": 18,
+              "text": "0"
+            },
+            {
+              "col": 19,
+              "text": "0"
+            },
+            {
+              "col": 20,
+              "text": "0"
+            },
+            {
+              "col": 21,
+              "text": "0"
+            },
+            {
+              "col": 22,
+              "text": "0"
+            },
+            {
+              "col": 23,
+              "text": "0"
+            },
+            {
+              "col": 24,
+              "text": "0"
+            },
+            {
+              "col": 25,
+              "text": "0"
+            },
+            {
+              "col": 26,
+              "text": "0"
+            },
+            {
+              "col": 27,
+              "text": "0"
+            },
+            {
+              "col": 28,
+              "text": "0"
+            },
+            {
+              "col": 29,
+              "text": "0"
+            },
+            {
+              "col": 30,
+              "text": "0"
+            },
+            {
+              "col": 31,
+              "text": "[object Object]"
+            },
+            {
+              "col": 33,
+              "text": "0"
+            },
+            {
+              "col": 34,
+              "text": "0"
+            },
+            {
+              "col": 35,
+              "text": "0"
+            },
+            {
+              "col": 36,
+              "text": "0"
+            },
+            {
+              "col": 37,
+              "text": "0"
+            },
+            {
+              "col": 38,
+              "text": "[object Object]"
+            },
+            {
+              "col": 40,
+              "text": "42"
+            }
+          ]
+        },
+        {
+          "row": 4,
+          "cells": [
+            {
+              "col": 1,
+              "text": "Sun May 03 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 2,
+              "text": "0"
+            },
+            {
+              "col": 3,
+              "text": "69600"
+            },
+            {
+              "col": 4,
+              "text": "0"
+            },
+            {
+              "col": 5,
+              "text": "0"
+            },
+            {
+              "col": 6,
+              "text": "0"
+            },
+            {
+              "col": 7,
+              "text": "0"
+            },
+            {
+              "col": 8,
+              "text": "0"
+            },
+            {
+              "col": 9,
+              "text": "0"
+            },
+            {
+              "col": 10,
+              "text": "0"
+            },
+            {
+              "col": 11,
+              "text": "0"
+            },
+            {
+              "col": 12,
+              "text": "0"
+            },
+            {
+              "col": 13,
+              "text": "0"
+            },
+            {
+              "col": 14,
+              "text": "0"
+            },
+            {
+              "col": 15,
+              "text": "0"
+            },
+            {
+              "col": 16,
+              "text": "0"
+            },
+            {
+              "col": 17,
+              "text": "0"
+            },
+            {
+              "col": 18,
+              "text": "0"
+            },
+            {
+              "col": 19,
+              "text": "0"
+            },
+            {
+              "col": 20,
+              "text": "0"
+            },
+            {
+              "col": 21,
+              "text": "0"
+            },
+            {
+              "col": 22,
+              "text": "0"
+            },
+            {
+              "col": 23,
+              "text": "0"
+            },
+            {
+              "col": 24,
+              "text": "0"
+            },
+            {
+              "col": 25,
+              "text": "0"
+            },
+            {
+              "col": 26,
+              "text": "0"
+            },
+            {
+              "col": 27,
+              "text": "0"
+            },
+            {
+              "col": 28,
+              "text": "0"
+            },
+            {
+              "col": 29,
+              "text": "0"
+            },
+            {
+              "col": 30,
+              "text": "0"
+            },
+            {
+              "col": 31,
+              "text": "[object Object]"
+            },
+            {
+              "col": 33,
+              "text": "69600"
+            },
+            {
+              "col": 34,
+              "text": "0"
+            },
+            {
+              "col": 35,
+              "text": "0"
+            },
+            {
+              "col": 36,
+              "text": "0"
+            },
+            {
+              "col": 37,
+              "text": "0"
+            },
+            {
+              "col": 38,
+              "text": "[object Object]"
+            },
+            {
+              "col": 40,
+              "text": "42.09"
+            }
+          ]
+        },
+        {
+          "row": 5,
+          "cells": [
+            {
+              "col": 1,
+              "text": "Mon May 04 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 2,
+              "text": "0"
+            },
+            {
+              "col": 3,
+              "text": "[object Object]"
+            },
+            {
+              "col": 4,
+              "text": "0"
+            },
+            {
+              "col": 5,
+              "text": "[object Object]"
+            },
+            {
+              "col": 6,
+              "text": "[object Object]"
+            },
+            {
+              "col": 7,
+              "text": "[object Object]"
+            },
+            {
+              "col": 8,
+              "text": "[object Object]"
+            },
+            {
+              "col": 9,
+              "text": "0"
+            },
+            {
+              "col": 10,
+              "text": "0"
+            },
+            {
+              "col": 11,
+              "text": "[object Object]"
+            },
+            {
+              "col": 12,
+              "text": "[object Object]"
+            },
+            {
+              "col": 13,
+              "text": "[object Object]"
+            },
+            {
+              "col": 14,
+              "text": "[object Object]"
+            },
+            {
+              "col": 15,
+              "text": "0"
+            },
+            {
+              "col": 16,
+              "text": "100000"
+            },
+            {
+              "col": 17,
+              "text": "0"
+            },
+            {
+              "col": 18,
+              "text": "0"
+            },
+            {
+              "col": 19,
+              "text": "0"
+            },
+            {
+              "col": 20,
+              "text": "0"
+            },
+            {
+              "col": 21,
+              "text": "0"
+            },
+            {
+              "col": 22,
+              "text": "0"
+            },
+            {
+              "col": 23,
+              "text": "0"
+            },
+            {
+              "col": 24,
+              "text": "0"
+            },
+            {
+              "col": 25,
+              "text": "[object Object]"
+            },
+            {
+              "col": 26,
+              "text": "0"
+            },
+            {
+              "col": 27,
+              "text": "0"
+            },
+            {
+              "col": 28,
+              "text": "0"
+            },
+            {
+              "col": 29,
+              "text": "0"
+            },
+            {
+              "col": 30,
+              "text": "0"
+            },
+            {
+              "col": 31,
+              "text": "[object Object]"
+            },
+            {
+              "col": 32,
+              "text": "[object Object]"
+            },
+            {
+              "col": 33,
+              "text": "[object Object]"
+            },
+            {
+              "col": 34,
+              "text": "0"
+            },
+            {
+              "col": 35,
+              "text": "2014700"
+            },
+            {
+              "col": 36,
+              "text": "0"
+            },
+            {
+              "col": 37,
+              "text": "0"
+            },
+            {
+              "col": 38,
+              "text": "[object Object]"
+            },
+            {
+              "col": 40,
+              "text": "38.4"
+            }
+          ]
+        }
+      ],
+      "dataRanges": []
+    },
+    {
+      "name": "RECEIVABLES & BALANCE",
+      "id": 2,
+      "state": "visible",
+      "rowCount": 182,
+      "columnCount": 70,
+      "formulaCount": 5800,
+      "mergedCellCount": 4,
+      "headers": [
+        {
+          "row": 1,
+          "cells": [
+            {
+              "col": 2,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 3,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 4,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 5,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 6,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 7,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 8,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 9,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 10,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 11,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 12,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 13,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 14,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 15,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 16,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 17,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 18,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 19,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 20,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 21,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 22,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 23,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 24,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 25,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 26,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 27,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 28,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 29,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 30,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 31,
+              "text": "RECEIVED AMOUNT"
+            },
+            {
+              "col": 37,
+              "text": "BALANCE AMOUNT"
+            },
+            {
+              "col": 38,
+              "text": "BALANCE AMOUNT"
+            },
+            {
+              "col": 39,
+              "text": "BALANCE AMOUNT"
+            },
+            {
+              "col": 40,
+              "text": "BALANCE AMOUNT"
+            }
+          ]
+        },
+        {
+          "row": 2,
+          "cells": [
+            {
+              "col": 1,
+              "text": "DATE"
+            },
+            {
+              "col": 2,
+              "text": "SAMI"
+            },
+            {
+              "col": 3,
+              "text": "DIVAN"
+            },
+            {
+              "col": 4,
+              "text": "FAIZ BU"
+            },
+            {
+              "col": 5,
+              "text": "RAKSAN"
+            },
+            {
+              "col": 6,
+              "text": "SATHIK"
+            },
+            {
+              "col": 7,
+              "text": "AJIFER"
+            },
+            {
+              "col": 8,
+              "text": "ABBAS"
+            },
+            {
+              "col": 9,
+              "text": "SAMI"
+            },
+            {
+              "col": 10,
+              "text": "AKBAR DRY"
+            },
+            {
+              "col": 11,
+              "text": "SMS"
+            },
+            {
+              "col": 12,
+              "text": "BUHARI"
+            },
+            {
+              "col": 13,
+              "text": "MALIK"
+            },
+            {
+              "col": 14,
+              "text": "KADHAR"
+            },
+            {
+              "col": 15,
+              "text": "JAHIR"
+            },
+            {
+              "col": 16,
+              "text": "FAYAS"
+            },
+            {
+              "col": 17,
+              "text": "AJMAL"
+            },
+            {
+              "col": 18,
+              "text": "SALEEM"
+            },
+            {
+              "col": 19,
+              "text": "a"
+            },
+            {
+              "col": 20,
+              "text": "RIYAS"
+            },
+            {
+              "col": 21,
+              "text": "yuvraj"
+            },
+            {
+              "col": 22,
+              "text": "FAIZAL"
+            },
+            {
+              "col": 23,
+              "text": "SHAHUL"
+            },
+            {
+              "col": 24,
+              "text": "ASF AKBAR"
+            },
+            {
+              "col": 25,
+              "text": "GANI"
+            },
+            {
+              "col": 26,
+              "text": "BEER"
+            },
+            {
+              "col": 27,
+              "text": "ASF SHAJHN"
+            },
+            {
+              "col": 28,
+              "text": "NAISAR"
+            },
+            {
+              "col": 29,
+              "text": "ADIL RAS"
+            },
+            {
+              "col": 30,
+              "text": "THARIK"
+            },
+            {
+              "col": 31,
+              "text": "TOTAL"
+            },
+            {
+              "col": 33,
+              "text": "RECVD"
+            },
+            {
+              "col": 34,
+              "text": "PAID"
+            },
+            {
+              "col": 35,
+              "text": "BALANC"
+            },
+            {
+              "col": 37,
+              "text": "SAMI"
+            },
+            {
+              "col": 38,
+              "text": "DIVAN"
+            },
+            {
+              "col": 39,
+              "text": "FAIZ BU"
+            },
+            {
+              "col": 40,
+              "text": "RAKSAN"
+            }
+          ]
+        },
+        {
+          "row": 3,
+          "cells": [
+            {
+              "col": 2,
+              "text": "[object Object]"
+            },
+            {
+              "col": 3,
+              "text": "[object Object]"
+            },
+            {
+              "col": 4,
+              "text": "[object Object]"
+            },
+            {
+              "col": 5,
+              "text": "[object Object]"
+            },
+            {
+              "col": 6,
+              "text": "[object Object]"
+            },
+            {
+              "col": 7,
+              "text": "[object Object]"
+            },
+            {
+              "col": 8,
+              "text": "[object Object]"
+            },
+            {
+              "col": 9,
+              "text": "[object Object]"
+            },
+            {
+              "col": 10,
+              "text": "[object Object]"
+            },
+            {
+              "col": 11,
+              "text": "[object Object]"
+            },
+            {
+              "col": 12,
+              "text": "[object Object]"
+            },
+            {
+              "col": 13,
+              "text": "[object Object]"
+            },
+            {
+              "col": 14,
+              "text": "[object Object]"
+            },
+            {
+              "col": 15,
+              "text": "[object Object]"
+            },
+            {
+              "col": 16,
+              "text": "[object Object]"
+            },
+            {
+              "col": 23,
+              "text": "[object Object]"
+            },
+            {
+              "col": 24,
+              "text": "9"
+            },
+            {
+              "col": 25,
+              "text": "[object Object]"
+            },
+            {
+              "col": 26,
+              "text": "[object Object]"
+            },
+            {
+              "col": 27,
+              "text": "[object Object]"
+            },
+            {
+              "col": 28,
+              "text": "[object Object]"
+            },
+            {
+              "col": 29,
+              "text": "[object Object]"
+            },
+            {
+              "col": 30,
+              "text": "[object Object]"
+            },
+            {
+              "col": 31,
+              "text": "[object Object]"
+            },
+            {
+              "col": 37,
+              "text": "[object Object]"
+            },
+            {
+              "col": 38,
+              "text": "[object Object]"
+            },
+            {
+              "col": 39,
+              "text": "[object Object]"
+            },
+            {
+              "col": 40,
+              "text": "[object Object]"
+            }
+          ]
+        },
+        {
+          "row": 4,
+          "cells": [
+            {
+              "col": 1,
+              "text": "PREV BAL"
+            },
+            {
+              "col": 2,
+              "text": "0"
+            },
+            {
+              "col": 3,
+              "text": "0"
+            },
+            {
+              "col": 4,
+              "text": "0"
+            },
+            {
+              "col": 5,
+              "text": "0"
+            },
+            {
+              "col": 6,
+              "text": "0"
+            },
+            {
+              "col": 7,
+              "text": "0"
+            },
+            {
+              "col": 8,
+              "text": "0"
+            },
+            {
+              "col": 9,
+              "text": "0"
+            },
+            {
+              "col": 10,
+              "text": "0"
+            },
+            {
+              "col": 11,
+              "text": "0"
+            },
+            {
+              "col": 12,
+              "text": "0"
+            },
+            {
+              "col": 13,
+              "text": "0"
+            },
+            {
+              "col": 14,
+              "text": "0"
+            },
+            {
+              "col": 15,
+              "text": "0"
+            },
+            {
+              "col": 16,
+              "text": "0"
+            },
+            {
+              "col": 23,
+              "text": "0"
+            },
+            {
+              "col": 24,
+              "text": "0"
+            },
+            {
+              "col": 25,
+              "text": "0"
+            },
+            {
+              "col": 26,
+              "text": "0"
+            },
+            {
+              "col": 27,
+              "text": "0"
+            },
+            {
+              "col": 28,
+              "text": "0"
+            },
+            {
+              "col": 29,
+              "text": "0"
+            },
+            {
+              "col": 30,
+              "text": "0"
+            },
+            {
+              "col": 31,
+              "text": "[object Object]"
+            },
+            {
+              "col": 37,
+              "text": "0"
+            },
+            {
+              "col": 38,
+              "text": "-5968"
+            },
+            {
+              "col": 39,
+              "text": "0"
+            },
+            {
+              "col": 40,
+              "text": "[object Object]"
+            }
+          ]
+        },
+        {
+          "row": 5,
+          "cells": [
+            {
+              "col": 1,
+              "text": "Sat May 02 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 2,
+              "text": "0"
+            },
+            {
+              "col": 3,
+              "text": "0"
+            },
+            {
+              "col": 4,
+              "text": "0"
+            },
+            {
+              "col": 5,
+              "text": "0"
+            },
+            {
+              "col": 6,
+              "text": "0"
+            },
+            {
+              "col": 7,
+              "text": "0"
+            },
+            {
+              "col": 8,
+              "text": "0"
+            },
+            {
+              "col": 9,
+              "text": "0"
+            },
+            {
+              "col": 10,
+              "text": "0"
+            },
+            {
+              "col": 11,
+              "text": "0"
+            },
+            {
+              "col": 12,
+              "text": "0"
+            },
+            {
+              "col": 13,
+              "text": "0"
+            },
+            {
+              "col": 14,
+              "text": "0"
+            },
+            {
+              "col": 15,
+              "text": "0"
+            },
+            {
+              "col": 16,
+              "text": "0"
+            },
+            {
+              "col": 17,
+              "text": "0"
+            },
+            {
+              "col": 18,
+              "text": "0"
+            },
+            {
+              "col": 19,
+              "text": "0"
+            },
+            {
+              "col": 20,
+              "text": "0"
+            },
+            {
+              "col": 21,
+              "text": "0"
+            },
+            {
+              "col": 22,
+              "text": "0"
+            },
+            {
+              "col": 23,
+              "text": "0"
+            },
+            {
+              "col": 24,
+              "text": "0"
+            },
+            {
+              "col": 25,
+              "text": "0"
+            },
+            {
+              "col": 26,
+              "text": "0"
+            },
+            {
+              "col": 27,
+              "text": "0"
+            },
+            {
+              "col": 28,
+              "text": "0"
+            },
+            {
+              "col": 29,
+              "text": "0"
+            },
+            {
+              "col": 30,
+              "text": "0"
+            },
+            {
+              "col": 31,
+              "text": "[object Object]"
+            },
+            {
+              "col": 33,
+              "text": "0"
+            },
+            {
+              "col": 34,
+              "text": "0"
+            },
+            {
+              "col": 35,
+              "text": "[object Object]"
+            },
+            {
+              "col": 37,
+              "text": "[object Object]"
+            },
+            {
+              "col": 38,
+              "text": "[object Object]"
+            },
+            {
+              "col": 39,
+              "text": "[object Object]"
+            },
+            {
+              "col": 40,
+              "text": "[object Object]"
+            }
+          ]
+        }
+      ],
+      "dataRanges": []
+    },
+    {
+      "name": "INDIA DISTRIBUTION",
+      "id": 3,
+      "state": "visible",
+      "rowCount": 165,
+      "columnCount": 37,
+      "formulaCount": 3215,
+      "mergedCellCount": 7,
+      "headers": [
+        {
+          "row": 2,
+          "cells": [
+            {
+              "col": 1,
+              "text": "[object Object]"
+            },
+            {
+              "col": 2,
+              "text": "BANK DEPOSIT"
+            },
+            {
+              "col": 3,
+              "text": "BANK DEPOSIT"
+            },
+            {
+              "col": 4,
+              "text": "BANK DEPOSIT"
+            },
+            {
+              "col": 5,
+              "text": "WHOLE SALE  DISTRIBUTED IN INDIA TO FASLM"
+            },
+            {
+              "col": 6,
+              "text": "WHOLE SALE  DISTRIBUTED IN INDIA TO FASLM"
+            },
+            {
+              "col": 7,
+              "text": "WHOLE SALE  DISTRIBUTED IN INDIA TO FASLM"
+            },
+            {
+              "col": 8,
+              "text": "WHOLE SALE  DISTRIBUTED IN INDIA TO FASLM"
+            },
+            {
+              "col": 9,
+              "text": "WHOLE SALE  DISTRIBUTED IN INDIA TO FASLM"
+            },
+            {
+              "col": 10,
+              "text": "WHOLE SALE  DISTRIBUTED IN INDIA TO FASLM"
+            },
+            {
+              "col": 12,
+              "text": "WHOLESALE RATE"
+            },
+            {
+              "col": 13,
+              "text": "IN DIRHAMS"
+            },
+            {
+              "col": 14,
+              "text": "PAID AMOUNT"
+            },
+            {
+              "col": 15,
+              "text": "BALANCE TO BE PAID"
+            },
+            {
+              "col": 16,
+              "text": "DAILY BALANCE"
+            },
+            {
+              "col": 17,
+              "text": "WHOLESALE RATE"
+            },
+            {
+              "col": 18,
+              "text": "IN DIRHAMS"
+            },
+            {
+              "col": 19,
+              "text": "PAID AMOUNT"
+            },
+            {
+              "col": 20,
+              "text": "BALANCE TO BE PAID"
+            },
+            {
+              "col": 21,
+              "text": "DAILY BALANCE"
+            },
+            {
+              "col": 22,
+              "text": "WHOLESALE RATE"
+            },
+            {
+              "col": 23,
+              "text": "IN DIRHAMS"
+            },
+            {
+              "col": 24,
+              "text": "PAID AMOUNT"
+            },
+            {
+              "col": 25,
+              "text": "BALANCE TO BE PAID"
+            },
+            {
+              "col": 26,
+              "text": "DAILY BALANCE"
+            },
+            {
+              "col": 27,
+              "text": "WHOLESALE RATE"
+            },
+            {
+              "col": 28,
+              "text": "IN DIRHAMS"
+            },
+            {
+              "col": 29,
+              "text": "PAID AMOUNT"
+            },
+            {
+              "col": 30,
+              "text": "BALANCE TO BE PAID"
+            },
+            {
+              "col": 31,
+              "text": "DAILY BALANCE"
+            },
+            {
+              "col": 32,
+              "text": "WHOLESALE RATE"
+            },
+            {
+              "col": 33,
+              "text": "IN DIRHAMS"
+            },
+            {
+              "col": 34,
+              "text": "PAID AMOUNT"
+            },
+            {
+              "col": 35,
+              "text": "BALANCE TO BE PAID"
+            },
+            {
+              "col": 36,
+              "text": "DAILY BALANCE"
+            }
+          ]
+        },
+        {
+          "row": 3,
+          "cells": [
+            {
+              "col": 2,
+              "text": "TOTAL AMOUNT"
+            },
+            {
+              "col": 3,
+              "text": "FASLMM"
+            },
+            {
+              "col": 5,
+              "text": "AWAFI"
+            },
+            {
+              "col": 6,
+              "text": "NF2"
+            },
+            {
+              "col": 7,
+              "text": "HAJA"
+            },
+            {
+              "col": 8,
+              "text": "SARABU"
+            },
+            {
+              "col": 9,
+              "text": "BASID"
+            },
+            {
+              "col": 10,
+              "text": "COMMISON"
+            },
+            {
+              "col": 12,
+              "text": "MUHI"
+            },
+            {
+              "col": 13,
+              "text": "MUHI"
+            },
+            {
+              "col": 14,
+              "text": "MUHI"
+            },
+            {
+              "col": 15,
+              "text": "MUHI"
+            },
+            {
+              "col": 16,
+              "text": "MUHI"
+            },
+            {
+              "col": 17,
+              "text": "NF2"
+            },
+            {
+              "col": 18,
+              "text": "NF2"
+            },
+            {
+              "col": 19,
+              "text": "NF2"
+            },
+            {
+              "col": 20,
+              "text": "NF2"
+            },
+            {
+              "col": 21,
+              "text": "NF2"
+            },
+            {
+              "col": 22,
+              "text": "HAJA"
+            },
+            {
+              "col": 23,
+              "text": "HAJA"
+            },
+            {
+              "col": 24,
+              "text": "HAJA"
+            },
+            {
+              "col": 25,
+              "text": "HAJA"
+            },
+            {
+              "col": 26,
+              "text": "HAJA"
+            },
+            {
+              "col": 27,
+              "text": "SARABU"
+            },
+            {
+              "col": 28,
+              "text": "SARABU"
+            },
+            {
+              "col": 29,
+              "text": "SARABU"
+            },
+            {
+              "col": 30,
+              "text": "SARABU"
+            },
+            {
+              "col": 31,
+              "text": "SARABU"
+            },
+            {
+              "col": 32,
+              "text": "BASID"
+            },
+            {
+              "col": 33,
+              "text": "BASID"
+            },
+            {
+              "col": 34,
+              "text": "BASID"
+            },
+            {
+              "col": 35,
+              "text": "BASID"
+            },
+            {
+              "col": 36,
+              "text": "BASID"
+            }
+          ]
+        },
+        {
+          "row": 4,
+          "cells": [
+            {
+              "col": 2,
+              "text": "[object Object]"
+            },
+            {
+              "col": 5,
+              "text": "[object Object]"
+            },
+            {
+              "col": 10,
+              "text": "[object Object]"
+            },
+            {
+              "col": 11,
+              "text": "[object Object]"
+            },
+            {
+              "col": 13,
+              "text": "[object Object]"
+            },
+            {
+              "col": 14,
+              "text": "[object Object]"
+            },
+            {
+              "col": 15,
+              "text": "[object Object]"
+            },
+            {
+              "col": 18,
+              "text": "[object Object]"
+            },
+            {
+              "col": 19,
+              "text": "[object Object]"
+            },
+            {
+              "col": 20,
+              "text": "[object Object]"
+            },
+            {
+              "col": 23,
+              "text": "[object Object]"
+            },
+            {
+              "col": 24,
+              "text": "[object Object]"
+            },
+            {
+              "col": 25,
+              "text": "[object Object]"
+            },
+            {
+              "col": 28,
+              "text": "[object Object]"
+            },
+            {
+              "col": 29,
+              "text": "[object Object]"
+            },
+            {
+              "col": 30,
+              "text": "[object Object]"
+            },
+            {
+              "col": 33,
+              "text": "[object Object]"
+            },
+            {
+              "col": 34,
+              "text": "[object Object]"
+            },
+            {
+              "col": 35,
+              "text": "[object Object]"
+            }
+          ]
+        },
+        {
+          "row": 5,
+          "cells": [
+            {
+              "col": 1,
+              "text": "closing balance"
+            }
+          ]
+        }
+      ],
+      "dataRanges": []
+    },
+    {
+      "name": "BANK DISTRIP",
+      "id": 7,
+      "state": "visible",
+      "rowCount": 163,
+      "columnCount": 32,
+      "formulaCount": 1241,
+      "mergedCellCount": 6,
+      "headers": [
+        {
+          "row": 1,
+          "cells": [
+            {
+              "col": 1,
+              "text": "MK"
+            },
+            {
+              "col": 2,
+              "text": "MK"
+            },
+            {
+              "col": 3,
+              "text": "MK"
+            },
+            {
+              "col": 4,
+              "text": "MK"
+            },
+            {
+              "col": 5,
+              "text": "MK"
+            },
+            {
+              "col": 7,
+              "text": "SALA"
+            },
+            {
+              "col": 8,
+              "text": "SALA"
+            },
+            {
+              "col": 9,
+              "text": "SALA"
+            },
+            {
+              "col": 10,
+              "text": "SALA"
+            },
+            {
+              "col": 11,
+              "text": "SALA"
+            },
+            {
+              "col": 13,
+              "text": "USAIN"
+            },
+            {
+              "col": 14,
+              "text": "USAIN"
+            },
+            {
+              "col": 15,
+              "text": "USAIN"
+            },
+            {
+              "col": 16,
+              "text": "USAIN"
+            },
+            {
+              "col": 17,
+              "text": "USAIN"
+            },
+            {
+              "col": 19,
+              "text": "MK"
+            },
+            {
+              "col": 20,
+              "text": "MK"
+            },
+            {
+              "col": 21,
+              "text": "MK"
+            },
+            {
+              "col": 22,
+              "text": "MK"
+            },
+            {
+              "col": 23,
+              "text": "MK"
+            },
+            {
+              "col": 25,
+              "text": "BLACK GRP"
+            },
+            {
+              "col": 26,
+              "text": "BLACK GRP"
+            },
+            {
+              "col": 27,
+              "text": "BLACK GRP"
+            },
+            {
+              "col": 28,
+              "text": "BLACK GRP"
+            },
+            {
+              "col": 29,
+              "text": "BLACK GRP"
+            },
+            {
+              "col": 31,
+              "text": "TALLY"
+            },
+            {
+              "col": 32,
+              "text": "TALLY"
+            }
+          ]
+        },
+        {
+          "row": 2,
+          "cells": [
+            {
+              "col": 1,
+              "text": "DATE"
+            },
+            {
+              "col": 2,
+              "text": "ORDER"
+            },
+            {
+              "col": 3,
+              "text": "COM"
+            },
+            {
+              "col": 4,
+              "text": "PAID"
+            },
+            {
+              "col": 5,
+              "text": "BAL"
+            },
+            {
+              "col": 7,
+              "text": "DATE"
+            },
+            {
+              "col": 8,
+              "text": "ORDER"
+            },
+            {
+              "col": 9,
+              "text": "COM"
+            },
+            {
+              "col": 10,
+              "text": "PAID"
+            },
+            {
+              "col": 11,
+              "text": "BAL"
+            },
+            {
+              "col": 13,
+              "text": "DATE"
+            },
+            {
+              "col": 14,
+              "text": "ORDER"
+            },
+            {
+              "col": 15,
+              "text": "COM"
+            },
+            {
+              "col": 16,
+              "text": "PAID"
+            },
+            {
+              "col": 17,
+              "text": "BAL"
+            },
+            {
+              "col": 19,
+              "text": "DATE"
+            },
+            {
+              "col": 20,
+              "text": "ORDER"
+            },
+            {
+              "col": 21,
+              "text": "COM"
+            },
+            {
+              "col": 22,
+              "text": "PAID"
+            },
+            {
+              "col": 23,
+              "text": "BAL"
+            },
+            {
+              "col": 25,
+              "text": "DATE"
+            },
+            {
+              "col": 26,
+              "text": "ORDER"
+            },
+            {
+              "col": 27,
+              "text": "COM"
+            },
+            {
+              "col": 28,
+              "text": "PAID"
+            },
+            {
+              "col": 29,
+              "text": "BAL"
+            }
+          ]
+        },
+        {
+          "row": 3,
+          "cells": [
+            {
+              "col": 1,
+              "text": "TOTAL"
+            },
+            {
+              "col": 2,
+              "text": "[object Object]"
+            },
+            {
+              "col": 3,
+              "text": "[object Object]"
+            },
+            {
+              "col": 4,
+              "text": "[object Object]"
+            },
+            {
+              "col": 7,
+              "text": "TOTAL"
+            },
+            {
+              "col": 8,
+              "text": "[object Object]"
+            },
+            {
+              "col": 9,
+              "text": "[object Object]"
+            },
+            {
+              "col": 10,
+              "text": "[object Object]"
+            },
+            {
+              "col": 11,
+              "text": "0"
+            },
+            {
+              "col": 13,
+              "text": "TOTAL"
+            },
+            {
+              "col": 14,
+              "text": "[object Object]"
+            },
+            {
+              "col": 15,
+              "text": "[object Object]"
+            },
+            {
+              "col": 16,
+              "text": "[object Object]"
+            },
+            {
+              "col": 17,
+              "text": "0"
+            },
+            {
+              "col": 19,
+              "text": "TOTAL"
+            },
+            {
+              "col": 20,
+              "text": "[object Object]"
+            },
+            {
+              "col": 21,
+              "text": "[object Object]"
+            },
+            {
+              "col": 22,
+              "text": "[object Object]"
+            },
+            {
+              "col": 23,
+              "text": "0"
+            },
+            {
+              "col": 25,
+              "text": "TOTAL"
+            },
+            {
+              "col": 26,
+              "text": "[object Object]"
+            },
+            {
+              "col": 27,
+              "text": "[object Object]"
+            },
+            {
+              "col": 28,
+              "text": "[object Object]"
+            },
+            {
+              "col": 29,
+              "text": "0"
+            }
+          ]
+        },
+        {
+          "row": 4,
+          "cells": [
+            {
+              "col": 1,
+              "text": "Sat May 02 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 2,
+              "text": "[object Object]"
+            },
+            {
+              "col": 3,
+              "text": "0"
+            },
+            {
+              "col": 4,
+              "text": "0"
+            },
+            {
+              "col": 5,
+              "text": "[object Object]"
+            },
+            {
+              "col": 7,
+              "text": "Sat May 02 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 8,
+              "text": "[object Object]"
+            },
+            {
+              "col": 9,
+              "text": "0"
+            },
+            {
+              "col": 10,
+              "text": "0"
+            },
+            {
+              "col": 11,
+              "text": "[object Object]"
+            },
+            {
+              "col": 13,
+              "text": "Sat May 02 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 14,
+              "text": "[object Object]"
+            },
+            {
+              "col": 15,
+              "text": "0"
+            },
+            {
+              "col": 16,
+              "text": "0"
+            },
+            {
+              "col": 17,
+              "text": "[object Object]"
+            },
+            {
+              "col": 19,
+              "text": "Sat May 02 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 20,
+              "text": "[object Object]"
+            },
+            {
+              "col": 21,
+              "text": "0"
+            },
+            {
+              "col": 22,
+              "text": "0"
+            },
+            {
+              "col": 23,
+              "text": "[object Object]"
+            },
+            {
+              "col": 25,
+              "text": "Sat Jan 17 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 26,
+              "text": "[object Object]"
+            },
+            {
+              "col": 27,
+              "text": "0"
+            },
+            {
+              "col": 28,
+              "text": "0"
+            },
+            {
+              "col": 29,
+              "text": "[object Object]"
+            },
+            {
+              "col": 31,
+              "text": "[object Object]"
+            },
+            {
+              "col": 32,
+              "text": "0"
+            }
+          ]
+        },
+        {
+          "row": 5,
+          "cells": [
+            {
+              "col": 1,
+              "text": "Sun May 03 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 2,
+              "text": "[object Object]"
+            },
+            {
+              "col": 3,
+              "text": "0"
+            },
+            {
+              "col": 4,
+              "text": "-56530"
+            },
+            {
+              "col": 5,
+              "text": "[object Object]"
+            },
+            {
+              "col": 7,
+              "text": "Sun May 03 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 8,
+              "text": "[object Object]"
+            },
+            {
+              "col": 9,
+              "text": "0"
+            },
+            {
+              "col": 10,
+              "text": "0"
+            },
+            {
+              "col": 11,
+              "text": "[object Object]"
+            },
+            {
+              "col": 13,
+              "text": "Sun May 03 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 14,
+              "text": "[object Object]"
+            },
+            {
+              "col": 15,
+              "text": "0"
+            },
+            {
+              "col": 16,
+              "text": "0"
+            },
+            {
+              "col": 17,
+              "text": "[object Object]"
+            },
+            {
+              "col": 19,
+              "text": "Sun May 03 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 20,
+              "text": "0"
+            },
+            {
+              "col": 21,
+              "text": "0"
+            },
+            {
+              "col": 22,
+              "text": "0"
+            },
+            {
+              "col": 23,
+              "text": "[object Object]"
+            },
+            {
+              "col": 25,
+              "text": "Sun Jan 18 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 26,
+              "text": "689825"
+            },
+            {
+              "col": 27,
+              "text": "0"
+            },
+            {
+              "col": 28,
+              "text": "0"
+            },
+            {
+              "col": 29,
+              "text": "[object Object]"
+            },
+            {
+              "col": 31,
+              "text": "[object Object]"
+            },
+            {
+              "col": 32,
+              "text": "0"
+            }
+          ]
+        }
+      ],
+      "dataRanges": []
+    },
+    {
+      "name": "SUMMARY",
+      "id": 4,
+      "state": "visible",
+      "rowCount": 134,
+      "columnCount": 26,
+      "formulaCount": 1620,
+      "mergedCellCount": 2,
+      "headers": [
+        {
+          "row": 1,
+          "cells": [
+            {
+              "col": 1,
+              "text": "SUMMARY"
+            },
+            {
+              "col": 2,
+              "text": "SUMMARY"
+            },
+            {
+              "col": 3,
+              "text": "SUMMARY"
+            },
+            {
+              "col": 4,
+              "text": "SUMMARY"
+            },
+            {
+              "col": 5,
+              "text": "SUMMARY"
+            },
+            {
+              "col": 6,
+              "text": "SUMMARY"
+            },
+            {
+              "col": 7,
+              "text": "SUMMARY"
+            },
+            {
+              "col": 8,
+              "text": "SUMMARY"
+            },
+            {
+              "col": 9,
+              "text": "SUMMARY"
+            },
+            {
+              "col": 10,
+              "text": "SUMMARY"
+            },
+            {
+              "col": 11,
+              "text": "SUMMARY"
+            },
+            {
+              "col": 12,
+              "text": "SUMMARY"
+            },
+            {
+              "col": 13,
+              "text": "SUMMARY"
+            },
+            {
+              "col": 14,
+              "text": "SUMMARY"
+            },
+            {
+              "col": 15,
+              "text": "SUMMARY"
+            },
+            {
+              "col": 16,
+              "text": "SUMMARY"
+            },
+            {
+              "col": 17,
+              "text": "SUMMARY"
+            },
+            {
+              "col": 19,
+              "text": "AMOUNT PAID"
+            },
+            {
+              "col": 20,
+              "text": "AMOUNT PAID"
+            }
+          ]
+        },
+        {
+          "row": 2,
+          "cells": [
+            {
+              "col": 1,
+              "text": "CLOSING"
+            },
+            {
+              "col": 2,
+              "text": "AED BAL"
+            },
+            {
+              "col": 3,
+              "text": "HAND"
+            },
+            {
+              "col": 4,
+              "text": "AWAFI"
+            },
+            {
+              "col": 5,
+              "text": "NF2"
+            },
+            {
+              "col": 6,
+              "text": "HAJA"
+            },
+            {
+              "col": 7,
+              "text": "SARABU"
+            },
+            {
+              "col": 8,
+              "text": "BASID"
+            },
+            {
+              "col": 9,
+              "text": "TOTAL AED"
+            },
+            {
+              "col": 10,
+              "text": "CONVERT"
+            },
+            {
+              "col": 11,
+              "text": "MK"
+            },
+            {
+              "col": 12,
+              "text": "SALA"
+            },
+            {
+              "col": 13,
+              "text": "USAIN"
+            },
+            {
+              "col": 14,
+              "text": "NOOR"
+            },
+            {
+              "col": 15,
+              "text": "BLK"
+            },
+            {
+              "col": 16,
+              "text": "OWN"
+            },
+            {
+              "col": 17,
+              "text": "BALANCE"
+            },
+            {
+              "col": 19,
+              "text": "NAME"
+            },
+            {
+              "col": 20,
+              "text": "AED"
+            }
+          ]
+        },
+        {
+          "row": 3,
+          "cells": [
+            {
+              "col": 1,
+              "text": "Sat May 02 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 2,
+              "text": "[object Object]"
+            },
+            {
+              "col": 3,
+              "text": "[object Object]"
+            },
+            {
+              "col": 4,
+              "text": "[object Object]"
+            },
+            {
+              "col": 5,
+              "text": "[object Object]"
+            },
+            {
+              "col": 6,
+              "text": "[object Object]"
+            },
+            {
+              "col": 7,
+              "text": "[object Object]"
+            },
+            {
+              "col": 8,
+              "text": "[object Object]"
+            },
+            {
+              "col": 9,
+              "text": "[object Object]"
+            },
+            {
+              "col": 10,
+              "text": "[object Object]"
+            },
+            {
+              "col": 11,
+              "text": "[object Object]"
+            },
+            {
+              "col": 12,
+              "text": "[object Object]"
+            },
+            {
+              "col": 13,
+              "text": "[object Object]"
+            },
+            {
+              "col": 14,
+              "text": "[object Object]"
+            },
+            {
+              "col": 15,
+              "text": "[object Object]"
+            },
+            {
+              "col": 16,
+              "text": "0"
+            },
+            {
+              "col": 17,
+              "text": "[object Object]"
+            },
+            {
+              "col": 19,
+              "text": "ROOM"
+            },
+            {
+              "col": 20,
+              "text": "3000"
+            }
+          ]
+        },
+        {
+          "row": 4,
+          "cells": [
+            {
+              "col": 1,
+              "text": "Sun May 03 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 2,
+              "text": "[object Object]"
+            },
+            {
+              "col": 3,
+              "text": "[object Object]"
+            },
+            {
+              "col": 4,
+              "text": "[object Object]"
+            },
+            {
+              "col": 5,
+              "text": "[object Object]"
+            },
+            {
+              "col": 6,
+              "text": "[object Object]"
+            },
+            {
+              "col": 7,
+              "text": "[object Object]"
+            },
+            {
+              "col": 8,
+              "text": "[object Object]"
+            },
+            {
+              "col": 9,
+              "text": "[object Object]"
+            },
+            {
+              "col": 10,
+              "text": "[object Object]"
+            },
+            {
+              "col": 11,
+              "text": "[object Object]"
+            },
+            {
+              "col": 12,
+              "text": "[object Object]"
+            },
+            {
+              "col": 13,
+              "text": "[object Object]"
+            },
+            {
+              "col": 14,
+              "text": "[object Object]"
+            },
+            {
+              "col": 15,
+              "text": "[object Object]"
+            },
+            {
+              "col": 16,
+              "text": "0"
+            },
+            {
+              "col": 17,
+              "text": "[object Object]"
+            },
+            {
+              "col": 19,
+              "text": "NATHAN"
+            },
+            {
+              "col": 20,
+              "text": "8000"
+            }
+          ]
+        },
+        {
+          "row": 5,
+          "cells": [
+            {
+              "col": 1,
+              "text": "Mon May 04 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 2,
+              "text": "[object Object]"
+            },
+            {
+              "col": 3,
+              "text": "[object Object]"
+            },
+            {
+              "col": 4,
+              "text": "[object Object]"
+            },
+            {
+              "col": 5,
+              "text": "[object Object]"
+            },
+            {
+              "col": 6,
+              "text": "[object Object]"
+            },
+            {
+              "col": 7,
+              "text": "[object Object]"
+            },
+            {
+              "col": 8,
+              "text": "[object Object]"
+            },
+            {
+              "col": 9,
+              "text": "[object Object]"
+            },
+            {
+              "col": 10,
+              "text": "[object Object]"
+            },
+            {
+              "col": 11,
+              "text": "[object Object]"
+            },
+            {
+              "col": 12,
+              "text": "[object Object]"
+            },
+            {
+              "col": 13,
+              "text": "[object Object]"
+            },
+            {
+              "col": 14,
+              "text": "[object Object]"
+            },
+            {
+              "col": 15,
+              "text": "[object Object]"
+            },
+            {
+              "col": 16,
+              "text": "0"
+            },
+            {
+              "col": 17,
+              "text": "[object Object]"
+            }
+          ]
+        }
+      ],
+      "dataRanges": []
+    },
+    {
+      "name": "SEPRATE AC\"S",
+      "id": 5,
+      "state": "visible",
+      "rowCount": 90,
+      "columnCount": 99,
+      "formulaCount": 1886,
+      "mergedCellCount": 14,
+      "headers": [
+        {
+          "row": 1,
+          "cells": [
+            {
+              "col": 1,
+              "text": "DIVAN"
+            },
+            {
+              "col": 2,
+              "text": "DIVAN"
+            },
+            {
+              "col": 3,
+              "text": "DIVAN"
+            },
+            {
+              "col": 4,
+              "text": "DIVAN"
+            },
+            {
+              "col": 5,
+              "text": "DIVAN"
+            },
+            {
+              "col": 6,
+              "text": "DIVAN"
+            },
+            {
+              "col": 8,
+              "text": "RAKSAN"
+            },
+            {
+              "col": 9,
+              "text": "RAKSAN"
+            },
+            {
+              "col": 10,
+              "text": "RAKSAN"
+            },
+            {
+              "col": 11,
+              "text": "RAKSAN"
+            },
+            {
+              "col": 12,
+              "text": "RAKSAN"
+            },
+            {
+              "col": 13,
+              "text": "RAKSAN"
+            },
+            {
+              "col": 17,
+              "text": "APPAS"
+            },
+            {
+              "col": 18,
+              "text": "APPAS"
+            },
+            {
+              "col": 19,
+              "text": "APPAS"
+            },
+            {
+              "col": 20,
+              "text": "APPAS"
+            },
+            {
+              "col": 21,
+              "text": "APPAS"
+            },
+            {
+              "col": 22,
+              "text": "APPAS"
+            },
+            {
+              "col": 24,
+              "text": "KADER KAKA"
+            },
+            {
+              "col": 25,
+              "text": "KADER KAKA"
+            },
+            {
+              "col": 26,
+              "text": "KADER KAKA"
+            },
+            {
+              "col": 27,
+              "text": "KADER KAKA"
+            },
+            {
+              "col": 28,
+              "text": "KADER KAKA"
+            },
+            {
+              "col": 29,
+              "text": "KADER KAKA"
+            },
+            {
+              "col": 31,
+              "text": "TRAVEL"
+            },
+            {
+              "col": 32,
+              "text": "TRAVEL"
+            },
+            {
+              "col": 33,
+              "text": "TRAVEL"
+            },
+            {
+              "col": 34,
+              "text": "TRAVEL"
+            },
+            {
+              "col": 35,
+              "text": "TRAVEL"
+            },
+            {
+              "col": 36,
+              "text": "TRAVEL"
+            },
+            {
+              "col": 38,
+              "text": "NAJIB"
+            },
+            {
+              "col": 39,
+              "text": "NAJIB"
+            },
+            {
+              "col": 40,
+              "text": "NAJIB"
+            }
+          ]
+        },
+        {
+          "row": 2,
+          "cells": [
+            {
+              "col": 1,
+              "text": "DATE"
+            },
+            {
+              "col": 2,
+              "text": "ORDER"
+            },
+            {
+              "col": 3,
+              "text": "RATE"
+            },
+            {
+              "col": 4,
+              "text": "AED"
+            },
+            {
+              "col": 5,
+              "text": "AED PAID"
+            },
+            {
+              "col": 6,
+              "text": "BALANCE"
+            },
+            {
+              "col": 8,
+              "text": "DATE"
+            },
+            {
+              "col": 9,
+              "text": "ORDER"
+            },
+            {
+              "col": 10,
+              "text": "RATE"
+            },
+            {
+              "col": 11,
+              "text": "AED"
+            },
+            {
+              "col": 12,
+              "text": "AED PAID"
+            },
+            {
+              "col": 13,
+              "text": "BALANCE"
+            },
+            {
+              "col": 17,
+              "text": "DATE"
+            },
+            {
+              "col": 18,
+              "text": "ORDER"
+            },
+            {
+              "col": 19,
+              "text": "RATE"
+            },
+            {
+              "col": 20,
+              "text": "AED"
+            },
+            {
+              "col": 21,
+              "text": "AED PAID"
+            },
+            {
+              "col": 22,
+              "text": "BALANCE"
+            },
+            {
+              "col": 24,
+              "text": "DATE"
+            },
+            {
+              "col": 25,
+              "text": "ORDER"
+            },
+            {
+              "col": 26,
+              "text": "RATE"
+            },
+            {
+              "col": 27,
+              "text": "AED"
+            },
+            {
+              "col": 28,
+              "text": "AED PAID"
+            },
+            {
+              "col": 29,
+              "text": "BALANCE"
+            },
+            {
+              "col": 31,
+              "text": "DATE"
+            },
+            {
+              "col": 32,
+              "text": "ORDER"
+            },
+            {
+              "col": 33,
+              "text": "RATE"
+            },
+            {
+              "col": 34,
+              "text": "AED"
+            },
+            {
+              "col": 35,
+              "text": "AED PAID"
+            },
+            {
+              "col": 36,
+              "text": "BALANCE"
+            },
+            {
+              "col": 38,
+              "text": "DATE"
+            },
+            {
+              "col": 39,
+              "text": "ORDER"
+            },
+            {
+              "col": 40,
+              "text": "RATE"
+            }
+          ]
+        },
+        {
+          "row": 3,
+          "cells": [
+            {
+              "col": 1,
+              "text": "PRE BAL"
+            },
+            {
+              "col": 6,
+              "text": "-5968"
+            },
+            {
+              "col": 8,
+              "text": "PRE BAL"
+            },
+            {
+              "col": 13,
+              "text": "1124"
+            },
+            {
+              "col": 17,
+              "text": "PRE BAL"
+            },
+            {
+              "col": 22,
+              "text": "823"
+            },
+            {
+              "col": 24,
+              "text": "PRE BAL"
+            },
+            {
+              "col": 29,
+              "text": "58"
+            },
+            {
+              "col": 31,
+              "text": "PRE BAL"
+            },
+            {
+              "col": 36,
+              "text": "170"
+            },
+            {
+              "col": 38,
+              "text": "PRE BAL"
+            }
+          ]
+        },
+        {
+          "row": 4,
+          "cells": [
+            {
+              "col": 1,
+              "text": "[object Object]"
+            },
+            {
+              "col": 2,
+              "text": "0"
+            },
+            {
+              "col": 3,
+              "text": "[object Object]"
+            },
+            {
+              "col": 4,
+              "text": "[object Object]"
+            },
+            {
+              "col": 5,
+              "text": "[object Object]"
+            },
+            {
+              "col": 6,
+              "text": "[object Object]"
+            },
+            {
+              "col": 8,
+              "text": "Sat May 02 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 9,
+              "text": "0"
+            },
+            {
+              "col": 10,
+              "text": "[object Object]"
+            },
+            {
+              "col": 11,
+              "text": "[object Object]"
+            },
+            {
+              "col": 12,
+              "text": "0"
+            },
+            {
+              "col": 13,
+              "text": "[object Object]"
+            },
+            {
+              "col": 17,
+              "text": "Sat May 02 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 18,
+              "text": "0"
+            },
+            {
+              "col": 19,
+              "text": "[object Object]"
+            },
+            {
+              "col": 20,
+              "text": "[object Object]"
+            },
+            {
+              "col": 21,
+              "text": "0"
+            },
+            {
+              "col": 22,
+              "text": "[object Object]"
+            },
+            {
+              "col": 24,
+              "text": "Sat May 02 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 25,
+              "text": "0"
+            },
+            {
+              "col": 26,
+              "text": "38.2"
+            },
+            {
+              "col": 27,
+              "text": "[object Object]"
+            },
+            {
+              "col": 28,
+              "text": "0"
+            },
+            {
+              "col": 29,
+              "text": "[object Object]"
+            },
+            {
+              "col": 31,
+              "text": "Mon Dec 08 2025 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 32,
+              "text": "0"
+            },
+            {
+              "col": 33,
+              "text": "[object Object]"
+            },
+            {
+              "col": 34,
+              "text": "[object Object]"
+            },
+            {
+              "col": 35,
+              "text": "[object Object]"
+            },
+            {
+              "col": 36,
+              "text": "[object Object]"
+            },
+            {
+              "col": 38,
+              "text": "Mon Dec 08 2025 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 39,
+              "text": "[object Object]"
+            },
+            {
+              "col": 40,
+              "text": "[object Object]"
+            }
+          ]
+        },
+        {
+          "row": 5,
+          "cells": [
+            {
+              "col": 1,
+              "text": "[object Object]"
+            },
+            {
+              "col": 2,
+              "text": "69600"
+            },
+            {
+              "col": 3,
+              "text": "38.2"
+            },
+            {
+              "col": 4,
+              "text": "[object Object]"
+            },
+            {
+              "col": 5,
+              "text": "[object Object]"
+            },
+            {
+              "col": 6,
+              "text": "[object Object]"
+            },
+            {
+              "col": 8,
+              "text": "Sun May 03 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 9,
+              "text": "0"
+            },
+            {
+              "col": 10,
+              "text": "[object Object]"
+            },
+            {
+              "col": 11,
+              "text": "[object Object]"
+            },
+            {
+              "col": 12,
+              "text": "0"
+            },
+            {
+              "col": 13,
+              "text": "[object Object]"
+            },
+            {
+              "col": 17,
+              "text": "Sun May 03 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 18,
+              "text": "0"
+            },
+            {
+              "col": 19,
+              "text": "[object Object]"
+            },
+            {
+              "col": 20,
+              "text": "[object Object]"
+            },
+            {
+              "col": 21,
+              "text": "0"
+            },
+            {
+              "col": 22,
+              "text": "[object Object]"
+            },
+            {
+              "col": 24,
+              "text": "Sun May 03 2026 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 25,
+              "text": "0"
+            },
+            {
+              "col": 26,
+              "text": "38.25"
+            },
+            {
+              "col": 27,
+              "text": "[object Object]"
+            },
+            {
+              "col": 28,
+              "text": "0"
+            },
+            {
+              "col": 29,
+              "text": "[object Object]"
+            },
+            {
+              "col": 31,
+              "text": "Tue Dec 09 2025 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 32,
+              "text": "[object Object]"
+            },
+            {
+              "col": 33,
+              "text": "[object Object]"
+            },
+            {
+              "col": 34,
+              "text": "[object Object]"
+            },
+            {
+              "col": 35,
+              "text": "0"
+            },
+            {
+              "col": 36,
+              "text": "[object Object]"
+            },
+            {
+              "col": 38,
+              "text": "Tue Dec 09 2025 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 39,
+              "text": "[object Object]"
+            },
+            {
+              "col": 40,
+              "text": "[object Object]"
+            }
+          ]
+        }
+      ],
+      "dataRanges": []
+    },
+    {
+      "name": "DAILY ACC",
+      "id": 8,
+      "state": "visible",
+      "rowCount": 5,
+      "columnCount": 97,
+      "formulaCount": 37,
+      "mergedCellCount": 14,
+      "headers": [
+        {
+          "row": 1,
+          "cells": [
+            {
+              "col": 1,
+              "text": "KADER"
+            },
+            {
+              "col": 2,
+              "text": "KADER"
+            },
+            {
+              "col": 3,
+              "text": "KADER"
+            },
+            {
+              "col": 4,
+              "text": "KADER"
+            },
+            {
+              "col": 5,
+              "text": "KADER"
+            },
+            {
+              "col": 6,
+              "text": "KADER"
+            },
+            {
+              "col": 8,
+              "text": "AKBAR"
+            },
+            {
+              "col": 9,
+              "text": "AKBAR"
+            },
+            {
+              "col": 10,
+              "text": "AKBAR"
+            },
+            {
+              "col": 11,
+              "text": "AKBAR"
+            },
+            {
+              "col": 12,
+              "text": "AKBAR"
+            },
+            {
+              "col": 13,
+              "text": "AKBAR"
+            },
+            {
+              "col": 15,
+              "text": "TRAVEL"
+            },
+            {
+              "col": 16,
+              "text": "TRAVEL"
+            },
+            {
+              "col": 17,
+              "text": "TRAVEL"
+            },
+            {
+              "col": 18,
+              "text": "TRAVEL"
+            },
+            {
+              "col": 19,
+              "text": "TRAVEL"
+            },
+            {
+              "col": 20,
+              "text": "TRAVEL"
+            },
+            {
+              "col": 22,
+              "text": "SATHIK"
+            },
+            {
+              "col": 23,
+              "text": "SATHIK"
+            },
+            {
+              "col": 24,
+              "text": "SATHIK"
+            },
+            {
+              "col": 25,
+              "text": "SATHIK"
+            },
+            {
+              "col": 26,
+              "text": "SATHIK"
+            },
+            {
+              "col": 27,
+              "text": "SATHIK"
+            },
+            {
+              "col": 29,
+              "text": "SATHAM"
+            },
+            {
+              "col": 30,
+              "text": "SATHAM"
+            },
+            {
+              "col": 31,
+              "text": "SATHAM"
+            },
+            {
+              "col": 32,
+              "text": "SATHAM"
+            },
+            {
+              "col": 33,
+              "text": "SATHAM"
+            },
+            {
+              "col": 34,
+              "text": "SATHAM"
+            },
+            {
+              "col": 36,
+              "text": "SHA MUNI"
+            },
+            {
+              "col": 37,
+              "text": "SHA MUNI"
+            },
+            {
+              "col": 38,
+              "text": "SHA MUNI"
+            },
+            {
+              "col": 39,
+              "text": "SHA MUNI"
+            },
+            {
+              "col": 40,
+              "text": "SHA MUNI"
+            }
+          ]
+        },
+        {
+          "row": 2,
+          "cells": [
+            {
+              "col": 1,
+              "text": "DATE"
+            },
+            {
+              "col": 2,
+              "text": "ORDER"
+            },
+            {
+              "col": 3,
+              "text": "RATE"
+            },
+            {
+              "col": 4,
+              "text": "AED"
+            },
+            {
+              "col": 5,
+              "text": "AED PAID"
+            },
+            {
+              "col": 6,
+              "text": "BALANCE"
+            },
+            {
+              "col": 8,
+              "text": "DATE"
+            },
+            {
+              "col": 9,
+              "text": "ORDER"
+            },
+            {
+              "col": 10,
+              "text": "RATE"
+            },
+            {
+              "col": 11,
+              "text": "AED"
+            },
+            {
+              "col": 12,
+              "text": "AED PAID"
+            },
+            {
+              "col": 13,
+              "text": "BALANCE"
+            },
+            {
+              "col": 15,
+              "text": "DATE"
+            },
+            {
+              "col": 16,
+              "text": "ORDER"
+            },
+            {
+              "col": 17,
+              "text": "RATE"
+            },
+            {
+              "col": 18,
+              "text": "AED"
+            },
+            {
+              "col": 19,
+              "text": "AED PAID"
+            },
+            {
+              "col": 20,
+              "text": "BALANCE"
+            },
+            {
+              "col": 22,
+              "text": "DATE"
+            },
+            {
+              "col": 23,
+              "text": "ORDER"
+            },
+            {
+              "col": 24,
+              "text": "RATE"
+            },
+            {
+              "col": 25,
+              "text": "AED"
+            },
+            {
+              "col": 26,
+              "text": "AED PAID"
+            },
+            {
+              "col": 27,
+              "text": "BALANCE"
+            },
+            {
+              "col": 29,
+              "text": "DATE"
+            },
+            {
+              "col": 30,
+              "text": "ORDER"
+            },
+            {
+              "col": 31,
+              "text": "RATE"
+            },
+            {
+              "col": 32,
+              "text": "AED"
+            },
+            {
+              "col": 33,
+              "text": "AED PAID"
+            },
+            {
+              "col": 34,
+              "text": "BALANCE"
+            },
+            {
+              "col": 36,
+              "text": "DATE"
+            },
+            {
+              "col": 37,
+              "text": "ORDER"
+            },
+            {
+              "col": 38,
+              "text": "RATE"
+            },
+            {
+              "col": 39,
+              "text": "AED"
+            },
+            {
+              "col": 40,
+              "text": "AED PAID"
+            }
+          ]
+        },
+        {
+          "row": 3,
+          "cells": [
+            {
+              "col": 1,
+              "text": "PRE BAL"
+            },
+            {
+              "col": 6,
+              "text": "4884.58"
+            },
+            {
+              "col": 8,
+              "text": "PRE BAL"
+            },
+            {
+              "col": 13,
+              "text": "1574.728"
+            },
+            {
+              "col": 15,
+              "text": "PRE BAL"
+            },
+            {
+              "col": 20,
+              "text": "185.14"
+            },
+            {
+              "col": 22,
+              "text": "PRE BAL"
+            },
+            {
+              "col": 27,
+              "text": "10985.18"
+            },
+            {
+              "col": 29,
+              "text": "PRE BAL"
+            },
+            {
+              "col": 34,
+              "text": "26462.52"
+            },
+            {
+              "col": 36,
+              "text": "PRE BAL"
+            }
+          ]
+        },
+        {
+          "row": 4,
+          "cells": [
+            {
+              "col": 1,
+              "text": "Sat Apr 05 2025 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 2,
+              "text": "[object Object]"
+            },
+            {
+              "col": 3,
+              "text": "41.85"
+            },
+            {
+              "col": 4,
+              "text": "[object Object]"
+            },
+            {
+              "col": 5,
+              "text": "4800"
+            },
+            {
+              "col": 6,
+              "text": "[object Object]"
+            },
+            {
+              "col": 8,
+              "text": "Sat Apr 05 2025 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 9,
+              "text": "[object Object]"
+            },
+            {
+              "col": 10,
+              "text": "41.8"
+            },
+            {
+              "col": 11,
+              "text": "[object Object]"
+            },
+            {
+              "col": 13,
+              "text": "[object Object]"
+            },
+            {
+              "col": 15,
+              "text": "Sat Apr 05 2025 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 16,
+              "text": "9400"
+            },
+            {
+              "col": 17,
+              "text": "41.85"
+            },
+            {
+              "col": 18,
+              "text": "[object Object]"
+            },
+            {
+              "col": 19,
+              "text": "[object Object]"
+            },
+            {
+              "col": 20,
+              "text": "[object Object]"
+            },
+            {
+              "col": 22,
+              "text": "Sat Apr 05 2025 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 23,
+              "text": "[object Object]"
+            },
+            {
+              "col": 24,
+              "text": "41.85"
+            },
+            {
+              "col": 25,
+              "text": "[object Object]"
+            },
+            {
+              "col": 26,
+              "text": "9296"
+            },
+            {
+              "col": 27,
+              "text": "[object Object]"
+            },
+            {
+              "col": 29,
+              "text": "Sat Apr 05 2025 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 30,
+              "text": "[object Object]"
+            },
+            {
+              "col": 31,
+              "text": "41.77"
+            },
+            {
+              "col": 32,
+              "text": "[object Object]"
+            },
+            {
+              "col": 33,
+              "text": "17000"
+            },
+            {
+              "col": 34,
+              "text": "[object Object]"
+            },
+            {
+              "col": 36,
+              "text": "Sat Apr 05 2025 05:30:00 GMT+0530 (India Standard Time)"
+            },
+            {
+              "col": 37,
+              "text": "[object Object]"
+            },
+            {
+              "col": 38,
+              "text": "41.85"
+            },
+            {
+              "col": 39,
+              "text": "[object Object]"
+            }
+          ]
+        },
+        {
+          "row": 5,
+          "cells": [
+            {
+              "col": 23,
+              "text": "[object Object]"
+            }
+          ]
+        }
+      ],
+      "dataRanges": []
+    }
+  ]
+}

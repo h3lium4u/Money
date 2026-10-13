@@ -1,0 +1,11 @@
+RuleID,RuleName,SourceWorksheet,InputParameters,ExpectedFormula,ImplementationFunction,OracleFunction,CoverageStatus
+RULE-FIN-01,Quotation Normalization,"COLLECTION & PROFIT",rate,1000 / rate,ratePer1000ToInrPerAed(),oracleCalculateRemittance(),COVERED
+RULE-FIN-02,AED Amount Charged,"COLLECTION & PROFIT","inr, customerRate",(inr * rate)/1000,calculateTransaction().aedAmount,oracleCalculateRemittance().aedCharged,COVERED
+RULE-FIN-03,Wholesale Cost AED,"COLLECTION & PROFIT","inr, baseRate",inr / baseRate,calculateTransaction().costAed,oracleCalculateRemittance().costAed,COVERED
+RULE-FIN-04,Gross Margin AED,"COLLECTION & PROFIT","aedCharged, costAed",aedCharged - costAed,calculateTransaction().grossProfitAed,oracleCalculateRemittance().grossProfitAed,COVERED
+RULE-FIN-05,Net Margin AED,"COLLECTION & PROFIT","grossMargin, deliveryCut",grossMargin * 0.80,calculateTransaction().netProfitAed,oracleCalculateRemittance().netProfitAed,COVERED
+RULE-FIN-06,Customer Running Balance,"RECEIVABLES & BALANCE","prev, charged, rcvd",prev + charged - rcvd,calculateCustomerRunningBalance(),oracleCustomerRunningBalance(),COVERED
+RULE-FIN-07,Wholesale Liquidity Settlement,"INDIA DISTRIBUTION","inr, rate, paid",inr / rate - paid,calculateWholesaleSettlement(),oracleCalculateDubaiClient(),COVERED
+RULE-FIN-08,Bank Distrip Balance,"BANK DISTRIP","prev, order, com, paid",prev + order + com - paid,calculateBankDistripBalance(),oracleBankDistripBalance(),COVERED
+RULE-FIN-09,Dubai Client Transfer,"SEPRATE AC""S","total, manualRate, paid",(total * rate)/1000 - paid,calculateDubaiClientTransfer(),oracleCalculateDubaiClient(),COVERED
+RULE-FIN-10,Exact 3 Decimal Rounding,All Sheets,val,round(val, 3),roundTo(3),round3(),COVERED

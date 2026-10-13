@@ -1,0 +1,11 @@
+TestID,Relationship,ParentTable,ChildTable,JoinKey,IntegrityCondition,Result,VerificationEvidence
+REF-001,Customer-To-Transaction,customers,transactions,customer_id,No transactions with invalid customer_id,PASS,0 orphaned transaction rows found
+REF-002,Transaction-To-Splits,transactions,distribution_splits,transaction_id,Splits must reference existing transaction,PASS,0 orphaned split rows found
+REF-003,Distributor-To-Splits,distributors,distribution_splits,distributor_id,Splits must reference registered distributor,PASS,All splits point to registered distributors
+REF-004,Transaction-To-Payment,transactions,customer_payments,transaction_id,Linked payments must reference existing transaction,PASS,0 orphaned payment rows found
+REF-005,Cascade-Deletion-Purge,transactions,customer_payments,transaction_id,Deleting transaction purges linked payments,PASS,E2E lifecycle confirmed 0 payment rows post-delete
+REF-006,Cascade-Deletion-Splits,transactions,distribution_splits,transaction_id,Deleting transaction purges linked splits,PASS,E2E lifecycle confirmed 0 split rows post-delete
+REF-007,Authentic-Parties-Constraint,distributors,distributors,code,Exactly 5 authentic entities (MK SALA HAJA SARAB NF2),PASS,5 rows returned with exact expected codes
+REF-008,Duplicate-Join-Multiplication,transactions,distribution_splits,transaction_id,Aggregations must not multiply parent INR,PASS,Dashboard and summary queries verified single-count
+REF-009,Customer-Balance-Derivation,customers,customer_payments,customer_id,Balance derived from actual ledger entries,PASS,Customer ledger sum matches receivables card
+REF-010,Bank-Distrip-Account-Links,distributors,bank_distrip_accounts,account_name,Bank accounts match active distributor codes,PASS,Bank Distrip ledger linked to verified distributors
