@@ -440,6 +440,10 @@ export default function NewRemittancePage() {
       const curAmt = parseFloat(splits[lastIdx].inr_amount) || 0;
       const adjustedAmt = Math.round((curAmt + diff + Number.EPSILON) * 1000) / 1000;
       splits[lastIdx].inr_amount = String(adjustedAmt);
+      const auditTag = `[Fractional balance adjustment: ${diff > 0 ? `+${diff.toFixed(3)}` : diff.toFixed(3)} INR]`;
+      if (!splits[lastIdx].notes || !splits[lastIdx].notes.includes("Fractional balance adjustment")) {
+        splits[lastIdx].notes = splits[lastIdx].notes ? `${splits[lastIdx].notes} ${auditTag}` : auditTag;
+      }
     }
 
     setError(null);

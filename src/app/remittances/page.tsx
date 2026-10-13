@@ -1307,9 +1307,19 @@ function CustomerRemittancesContent() {
                                 onClick={() => {
                                   if (editSplits.length > 0) {
                                     const lastIdx = editSplits.length - 1;
-                                    const cur = parseFloat(editSplits[lastIdx].inr_amount) || 0;
-                                    const nextVal = Math.round((cur + diff + Number.EPSILON) * 1000) / 1000;
-                                    handleEditSplitAmountChange(lastIdx, String(nextVal));
+                                    setEditSplits((prev) => {
+                                      const next = [...prev];
+                                      const cur = parseFloat(next[lastIdx].inr_amount) || 0;
+                                      const nextVal = Math.round((cur + diff + Number.EPSILON) * 1000) / 1000;
+                                      const auditTag = `[Fractional adjustment: ${diff > 0 ? `+${diff.toFixed(3)}` : diff.toFixed(3)} INR]`;
+                                      const curNotes = next[lastIdx].notes || "";
+                                      next[lastIdx] = {
+                                        ...next[lastIdx],
+                                        inr_amount: String(nextVal),
+                                        notes: curNotes.includes("Fractional adjustment") ? curNotes : (curNotes ? `${curNotes} ${auditTag}` : auditTag),
+                                      };
+                                      return next;
+                                    });
                                   }
                                 }}
                                 className="px-1.5 py-0.5 bg-teal-200 hover:bg-teal-300 text-teal-900 rounded font-bold text-[10px] cursor-pointer"

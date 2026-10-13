@@ -104,9 +104,9 @@ export function calculateTransaction(inputs: TransactionInputs): TransactionCalc
   const custRate = Number(inputs.customerRate);
   let baseRate = Number(inputs.baseRate);
 
-  if (inr <= 0) throw new Error("INR amount must be greater than zero");
-  if (custRate <= 0) throw new Error("Customer rate must be greater than zero");
-  if (baseRate <= 0) throw new Error("Base rate must be greater than zero");
+  if (isNaN(inr) || inr <= 0) throw new Error("INR amount must be greater than zero");
+  if (isNaN(custRate) || custRate <= 0) throw new Error("Customer rate must be greater than zero");
+  if (isNaN(baseRate) || baseRate <= 0) throw new Error("Base rate must be greater than zero");
 
   // Determine Customer Rate convention & exact AED amount charged
   // Rate >= 30: AED per 1000 INR (e.g. 38.25 AED for 1,000 INR) -> AED = (INR * Rate) / 1000

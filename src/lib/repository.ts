@@ -2498,7 +2498,13 @@ export async function deleteTransaction(id: string): Promise<void> {
   const splits = await query(`SELECT DISTINCT distributor_id FROM distribution_splits WHERE transaction_id = $1`, [id]);
   await execute(`DELETE FROM distribution_splits WHERE transaction_id = $1`, [id]);
   await execute(`DELETE FROM customer_payments WHERE transaction_id = $1`, [id]);
-  await execute(`DELETE FROM audit_logs WHERE entity_id = $1`, [id]);
+  // Preserve forensic audit trail with snapshot of deleted transaction
+  await execute(
+    `INSERT INTO audit_logs (id, entity_name, entity_id, action, old_values, reason)
+     VALUES ($1, 'TRANSACTION', $2, 'PERMANENT_DELETE', $3, 'User permanently deleted transaction and cascaded child allocations')`,
+    [crypto.randomUUID(), id, JSON.stringify(existing)]
+  ).catch((err: any) => console.error("Failed to write audit log on delete:", err));
+
   await execute(`DELETE FROM transactions WHERE id = $1`, [id]);
   invalidateAllCaches();
 
