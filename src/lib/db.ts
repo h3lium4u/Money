@@ -59,19 +59,28 @@ export async function query<T = any>(sql: string, params: any[] = []): Promise<T
   if (isNeonEnabled()) {
     const sqlClient = getNeonHttp();
     if (sqlClient) {
-      try {
-        const rows = await sqlClient.query(sql, params);
-        return rows as T[];
-      } catch (err: any) {
-        // Cold-start retry: If Neon compute was sleeping and the first request timed out or reset,
-        // retry once after a short pause.
-        const msg = String(err?.message || "").toLowerCase();
-        if (msg.includes("fetch failed") || msg.includes("timeout") || msg.includes("connection") || msg.includes("econnreset")) {
-          await new Promise((resolve) => setTimeout(resolve, 800));
+      let attempts = 0;
+      const maxAttempts = 3;
+      while (attempts < maxAttempts) {
+        try {
+          attempts++;
           const rows = await sqlClient.query(sql, params);
           return rows as T[];
+        } catch (err: any) {
+          const msg = String(err?.message || "").toLowerCase();
+          const isRetryable =
+            msg.includes("fetch failed") ||
+            msg.includes("timeout") ||
+            msg.includes("connection") ||
+            msg.includes("econnreset") ||
+            msg.includes("etimedout") ||
+            msg.includes("socket");
+          if (isRetryable && attempts < maxAttempts) {
+            await new Promise((resolve) => setTimeout(resolve, 600 * attempts));
+            continue;
+          }
+          throw err;
         }
-        throw err;
       }
     }
   }
@@ -103,17 +112,28 @@ export async function execute(sql: string, params: any[] = []): Promise<void> {
   if (isNeonEnabled()) {
     const sqlClient = getNeonHttp();
     if (sqlClient) {
-      try {
-        await sqlClient.query(sql, params);
-        return;
-      } catch (err: any) {
-        const msg = String(err?.message || "").toLowerCase();
-        if (msg.includes("fetch failed") || msg.includes("timeout") || msg.includes("connection") || msg.includes("econnreset")) {
-          await new Promise((resolve) => setTimeout(resolve, 800));
+      let attempts = 0;
+      const maxAttempts = 3;
+      while (attempts < maxAttempts) {
+        try {
+          attempts++;
           await sqlClient.query(sql, params);
           return;
+        } catch (err: any) {
+          const msg = String(err?.message || "").toLowerCase();
+          const isRetryable =
+            msg.includes("fetch failed") ||
+            msg.includes("timeout") ||
+            msg.includes("connection") ||
+            msg.includes("econnreset") ||
+            msg.includes("etimedout") ||
+            msg.includes("socket");
+          if (isRetryable && attempts < maxAttempts) {
+            await new Promise((resolve) => setTimeout(resolve, 600 * attempts));
+            continue;
+          }
+          throw err;
         }
-        throw err;
       }
     }
   }

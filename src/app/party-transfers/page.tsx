@@ -185,8 +185,16 @@ function PartyTransfersContent() {
       setLoading(true);
     }
     try {
-      const res = await fetch("/api/party-transfers");
-      if (!res.ok) throw new Error("Failed to load party transfers data");
+      let res = await fetch("/api/party-transfers");
+      if (!res.ok) {
+        // Retry once after brief pause if server had cold-start
+        await new Promise((resolve) => setTimeout(resolve, 600));
+        res = await fetch("/api/party-transfers");
+      }
+      if (!res.ok) {
+        console.warn("Party transfers endpoint temporarily unavailable, keeping current state");
+        return;
+      }
       const data = await res.json();
       const txns = Array.isArray(data.transfers) ? data.transfers : [];
       const partyList = Array.isArray(data.parties) ? data.parties : [];
