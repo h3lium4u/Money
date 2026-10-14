@@ -23,7 +23,9 @@ import {
   Building2,
   X,
   Split,
+  FileSpreadsheet,
 } from "lucide-react";
+import { downloadMasterExcel } from "@/lib/export-utils";
 import { numberToIndianWords } from "@/lib/number-to-words";
 import { generateTransactionReceipt } from "@/lib/pdf-generator";
 import {
@@ -579,6 +581,15 @@ function CustomerRemittancesContent() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => downloadMasterExcel()}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
+              title="Download Master Excel Workbook"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-700" />
+              <span>Download Excel</span>
+            </button>
             <Link
               href="/remittances/new"
               className="inline-flex items-center gap-2 px-4 py-2 bg-teal-700 text-white text-xs font-bold rounded-lg hover:bg-teal-800 shadow-sm transition-colors"
@@ -867,9 +878,16 @@ function CustomerRemittancesContent() {
                           <div className="font-bold text-slate-800 dark:text-slate-200 text-xs">
                             {Number(t.customer_rate).toFixed(3)}
                           </div>
-                          <span className="text-[9px] text-slate-400">
-                            {t.customer_rate_convention === "INR_PER_AED" ? "INR/AED" : "AED/1000"}
-                          </span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-[9px] text-slate-400">
+                              {t.customer_rate_convention === "INR_PER_AED" ? "INR/AED" : "AED/1000"}
+                            </span>
+                            {t.convention_status === "NEEDS_REVIEW" && (
+                              <span className="text-[9px] font-bold text-amber-700 bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 px-1 rounded" title="Historical convention unverified; flagged for operator review">
+                                Review
+                              </span>
+                            )}
+                          </div>
                         </td>
 
                         <td className="px-3.5 py-2.5 font-mono whitespace-nowrap">

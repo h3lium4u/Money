@@ -241,6 +241,40 @@
   color: #059669;
 }
 
+.printNowBtn {
+  padding: 6px 14px;
+  background-color: #0f766e;
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 0.5rem;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.printNowBtn:hover {
+  background-color: #115e59;
+}
+
+.printAgainBtn {
+  padding: 8px 16px;
+  background-color: #ffffff;
+  color: #0f766e;
+  border: 1px solid #0f766e;
+  font-weight: 700;
+  border-radius: 0.5rem;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
 .doneBtn {
   padding: 8px 20px;
   background-color: #059669;

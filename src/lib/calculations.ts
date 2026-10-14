@@ -31,6 +31,8 @@ export interface TransactionCalculationResult {
   deliveryChargeAed: number; // Partner cut / delivery charge
   netProfitAed: number; // Net retained profit in AED
   marginPct: number; // Profit margin percentage on AED collected
+  conventionStatus: "EXPLICIT" | "NEEDS_REVIEW";
+  warning?: string | null;
 }
 
 export interface DubaiClientInputs {
@@ -114,7 +116,14 @@ export function calculateTransaction(inputs: TransactionInputs): TransactionCalc
   if (isNaN(custRate) || custRate <= 0) throw new Error("Customer rate must be greater than zero");
   if (isNaN(baseRate) || baseRate <= 0) throw new Error("Base rate must be greater than zero");
 
-  // Explicit Rate Convention with safe backward-compatible fallback
+  // Explicit Rate Convention tracking with review flag when inferred
+  const isCustInferred = !inputs.customerRateConvention;
+  const isBaseInferred = !inputs.baseRateConvention;
+  const conventionStatus: "EXPLICIT" | "NEEDS_REVIEW" = (isCustInferred || isBaseInferred) ? "NEEDS_REVIEW" : "EXPLICIT";
+  const warning = conventionStatus === "NEEDS_REVIEW"
+    ? "Rate convention missing or ambiguous; flagged for review rather than assumed."
+    : null;
+
   const custConvention: RateConvention =
     inputs.customerRateConvention || (custRate >= 30 ? "AED_PER_1000" : "INR_PER_AED");
   const baseConvention: RateConvention =
@@ -180,6 +189,8 @@ export function calculateTransaction(inputs: TransactionInputs): TransactionCalc
     deliveryChargeAed,
     netProfitAed,
     marginPct,
+    conventionStatus,
+    warning,
   };
 }
 

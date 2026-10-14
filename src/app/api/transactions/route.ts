@@ -9,10 +9,10 @@ const createSchema = z.object({
   inr_amount: z.number().positive("Amount must be greater than 0").optional(),
   manual_rate: z.number().positive("Manual rate must be positive").optional(),
   customer_rate: z.number().positive("Customer rate must be positive").optional(),
-  customer_rate_convention: z.enum(["AED_PER_1000", "INR_PER_AED"]).optional(),
+  customer_rate_convention: z.enum(["AED_PER_1000", "INR_PER_AED"]).default("AED_PER_1000"),
   base_rate: z.number().positive("Base rate must be positive").optional(),
   wholesale_rate: z.number().positive().optional(),
-  base_rate_convention: z.enum(["AED_PER_1000", "INR_PER_AED"]).optional(),
+  base_rate_convention: z.enum(["AED_PER_1000", "INR_PER_AED"]).default("AED_PER_1000"),
   paid_amount: z.number().min(0, "Paid amount cannot be negative").optional(),
   paid_aed: z.number().min(0).optional(),
   delivery_charge_pct: z.number().min(0).optional(),
@@ -59,6 +59,10 @@ export async function POST(request: Request) {
     const created = await createTransaction(validated);
     return NextResponse.json(created, { status: 201 });
   } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      const msg = error.issues.map((i) => `${i.path.join('.') || 'field'}: ${i.message}`).join(', ');
+      return NextResponse.json({ error: msg }, { status: 400 });
+    }
     return NextResponse.json({ error: error.message || "Failed to create transaction" }, { status: 400 });
   }
 }

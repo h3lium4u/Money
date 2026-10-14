@@ -28,7 +28,9 @@ import {
   Sparkles,
   Wallet,
   CheckCircle,
+  FileSpreadsheet,
 } from "lucide-react";
+import { downloadMasterExcel } from "@/lib/export-utils";
 import { generateTransactionReceipt } from "@/lib/pdf-generator";
 import {
   getTodayDateString,
@@ -431,7 +433,9 @@ function PartyTransfersContent() {
           customer_id: newPartyId,
           inr_amount: totalNewInr,
           customer_rate: cRate,
+          customer_rate_convention: "AED_PER_1000",
           base_rate: bRate,
+          base_rate_convention: "AED_PER_1000",
           delivery_charge_pct: 0,
           notes: notesString,
         }),
@@ -561,7 +565,9 @@ function PartyTransfersContent() {
           customer_id: editPartyId,
           inr_amount: inrToSave,
           customer_rate: cr,
+          customer_rate_convention: "AED_PER_1000",
           base_rate: br,
+          base_rate_convention: "AED_PER_1000",
           delivery_charge_pct: 0,
           reason: editReason || "Party transfer rate/amount amendment",
         }),
@@ -771,6 +777,16 @@ function PartyTransfersContent() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => downloadMasterExcel()}
+              className="px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95 border border-white/20"
+              title="Download Master Excel Workbook"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+              <span>Download Excel</span>
+            </button>
+
             <button
               onClick={() => {
                 setShowNewModal(true);

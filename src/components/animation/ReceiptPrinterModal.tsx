@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { Printer } from "lucide-react";
 import { ReceiptPrinter, ReceiptPrinterStage } from "./ReceiptPrinter";
 import styles from "./ReceiptPrinterModal.module.css";
 
@@ -80,6 +81,12 @@ export function ReceiptPrinterModal({
     };
   }, [isOpen]);
 
+  const handleInstantPrint = () => {
+    setStage("complete");
+    printFiredRef.current = true;
+    onCompleteRef.current();
+  };
+
   if (!isOpen) return null;
 
   const todayStr = new Date().toLocaleDateString("en-IN", {
@@ -106,9 +113,20 @@ export function ReceiptPrinterModal({
           <span className={styles.modalTitle}>
             {reportType === "customer-statement" ? "Printing Customer Statement" : "Printing Business Report"}
           </span>
-          <button onClick={onClose} className={styles.closeBtn} title="Close">
-            ✕
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <button
+              type="button"
+              onClick={handleInstantPrint}
+              className={styles.printNowBtn}
+              title="Skip animation and trigger print dialog immediately"
+            >
+              <Printer size={13} />
+              <span>Print Now</span>
+            </button>
+            <button onClick={onClose} className={styles.closeBtn} title="Close">
+              ✕
+            </button>
+          </div>
         </div>
 
         <ReceiptPrinter.Root stage={stage} className={styles.printerRoot}>
@@ -262,7 +280,15 @@ export function ReceiptPrinterModal({
 
         {stage === "complete" && (
           <div className={styles.modalFooter}>
-            <span className={styles.successText}>✓ Print Dialog Ready</span>
+            <button
+              type="button"
+              onClick={handleInstantPrint}
+              className={styles.printAgainBtn}
+              title="Re-open system print dialog"
+            >
+              <Printer size={13} />
+              <span>Print Again</span>
+            </button>
             <button onClick={onClose} className={styles.doneBtn}>
               Done
             </button>

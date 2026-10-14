@@ -18,6 +18,7 @@ import {
   CreditCard,
   CheckCircle2,
   FileText,
+  FileSpreadsheet,
   Users,
   Coins,
   ChevronRight,
@@ -26,6 +27,7 @@ import {
   X,
   Ban,
 } from "lucide-react";
+import { downloadMasterExcel } from "@/lib/export-utils";
 import { numberToIndianWords } from "@/lib/number-to-words";
 import { generateTransactionReceipt } from "@/lib/pdf-generator";
 import {
@@ -82,6 +84,7 @@ function DubaiClientTransactionsContent() {
   const [editCustomerId, setEditCustomerId] = useState("");
   const [editTotal, setEditTotal] = useState("");
   const [editManualRate, setEditManualRate] = useState("");
+  const [editCustRateConvention, setEditCustRateConvention] = useState<"AED_PER_1000" | "INR_PER_AED">("AED_PER_1000");
   const [editPaidAmount, setEditPaidAmount] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editReason, setEditReason] = useState("");
@@ -215,6 +218,7 @@ function DubaiClientTransactionsContent() {
     setEditCustomerId(t.customer_id);
     setEditTotal(String(t.total ?? t.inr_amount));
     setEditManualRate(String(t.manual_rate ?? t.customer_rate));
+    setEditCustRateConvention(t.customer_rate_convention || (Number(t.manual_rate ?? t.customer_rate) >= 30 ? "AED_PER_1000" : "INR_PER_AED"));
     setEditPaidAmount(String(t.paid_amount ?? t.paid_aed ?? "0"));
     setEditNotes(t.notes || "");
     setEditReason("");
@@ -263,6 +267,7 @@ function DubaiClientTransactionsContent() {
           customer_id: editCustomerId,
           total: parseFloat(editTotal),
           manual_rate: parseFloat(editManualRate),
+          customer_rate_convention: editCustRateConvention,
           paid_amount: parseFloat(editPaidAmount || "0"),
           notes: editNotes || undefined,
           reason: editReason || undefined,
@@ -429,13 +434,15 @@ function DubaiClientTransactionsContent() {
               <PlusCircle className="w-4 h-4" />
               <span>+ New Dubai Client Transfer</span>
             </Link>
-            <Link
-              href="/api/reports/export-excel"
-              className="inline-flex items-center gap-2 px-3 py-2 bg-white text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg hover:bg-slate-50 shadow-2xs transition-colors"
+            <button
+              type="button"
+              onClick={() => downloadMasterExcel()}
+              className="inline-flex items-center gap-2 px-3 py-2 bg-white text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
+              title="Download Master Excel Workbook"
             >
-              <FileText className="w-4 h-4 text-emerald-700" />
+              <FileSpreadsheet className="w-4 h-4 text-emerald-700" />
               <span>Download Excel</span>
-            </Link>
+            </button>
           </div>
         </div>
 
@@ -742,7 +749,16 @@ function DubaiClientTransactionsContent() {
                             <div className="font-bold text-slate-800 dark:text-slate-200 text-xs">
                               {Number(manualRateVal).toFixed(3)}
                             </div>
-                            <span className="text-[9px] text-slate-400 dark:text-slate-500">AED/1000</span>
+                            <div className="flex items-center gap-1">
+                              <span className="text-[9px] text-slate-400 dark:text-slate-500">
+                                {t.customer_rate_convention === "INR_PER_AED" ? "INR/AED" : "AED/1000"}
+                              </span>
+                              {t.convention_status === "NEEDS_REVIEW" && (
+                                <span className="text-[9px] font-bold text-amber-700 bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 px-1 rounded" title="Historical convention unverified; flagged for operator review">
+                                  Review
+                                </span>
+                              )}
+                            </div>
                           </td>
 
                           {/* 5. Whole Sale Rate */}
@@ -943,9 +959,31 @@ function DubaiClientTransactionsContent() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                      Client Exchange Rate
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Client Exchange Rate
+                      </label>
+                      <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded text-[10px] font-bold">
+                        <button
+                          type="button"
+                          onClick={() => setEditCustRateConvention("AED_PER_1000")}
+                          className={`px-1.5 py-0.5 rounded cursor-pointer transition-colors ${
+                            editCustRateConvention === "AED_PER_1000" ? "bg-teal-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
+                          }`}
+                        >
+                          AED / 1k
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditCustRateConvention("INR_PER_AED")}
+                          className={`px-1.5 py-0.5 rounded cursor-pointer transition-colors ${
+                            editCustRateConvention === "INR_PER_AED" ? "bg-teal-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
+                          }`}
+                        >
+                          INR / AED
+                        </button>
+                      </div>
+                    </div>
                     <input
                       type="text"
                       inputMode="decimal"
@@ -959,7 +997,6 @@ function DubaiClientTransactionsContent() {
                       }}
                       className="w-full text-xs font-bold font-mono border border-slate-300 rounded-lg p-2 text-slate-900"
                     />
-                    <span className="text-[10px] text-slate-400">AED / 1000 INR</span>
                   </div>
 
                   <div>

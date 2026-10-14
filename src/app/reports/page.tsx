@@ -16,6 +16,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { ReceiptPrinterModal } from "@/components/animation/ReceiptPrinterModal";
+import { downloadMasterExcel } from "@/lib/export-utils";
 import { toast } from "sonner";
 import {
   getTodayDateString,
@@ -249,14 +250,15 @@ export default function ReportsPage() {
             <span>Print Report</span>
           </button>
 
-          <a
-            href={`/api/reports/export-excel${fromDate && toDate ? `?from=${fromDate}&to=${toDate}` : ""}`}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-teal-700 text-white hover:bg-teal-800 shadow-sm transition-all"
+          <button
+            type="button"
+            onClick={() => downloadMasterExcel(fromDate && toDate ? { from: fromDate, to: toDate } : undefined)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-teal-700 text-white hover:bg-teal-800 shadow-sm transition-all cursor-pointer"
             title="Download complete Master Excel Workbook containing all sheets, customer IDs, and financial breakdowns"
           >
             <FileSpreadsheet className="w-4 h-4" />
             <span>Download Master Excel (.xlsx)</span>
-          </a>
+          </button>
         </div>
       </div>
 
@@ -294,14 +296,15 @@ export default function ReportsPage() {
                 <span>{wipeLoading ? "Revoking..." : "Revoke / Cancel Clear"}</span>
               </button>
 
-              <a
-                href="/api/reports/export-excel"
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold bg-white border border-rose-300 text-rose-800 hover:bg-rose-50 shadow-2xs transition-all"
+              <button
+                type="button"
+                onClick={() => downloadMasterExcel()}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold bg-white border border-rose-300 text-rose-800 hover:bg-rose-50 shadow-2xs transition-all cursor-pointer"
                 title="Download another copy of the latest Excel file"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Download Backup</span>
-              </a>
+              </button>
             </div>
           </div>
 

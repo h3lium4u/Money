@@ -55,6 +55,7 @@ export default function NewDubaiClientTransactionPage() {
   // Total entry
   const [inrAmounts, setInrAmounts] = useState<string[]>(["", "", ""]);
   const [manualRate, setManualRate] = useState<string>("");
+  const customerRateConvention = "AED_PER_1000";
   const [paidAmounts, setPaidAmounts] = useState<string[]>([""]);
   const [notes, setNotes] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -299,6 +300,7 @@ export default function NewDubaiClientTransactionPage() {
           customer_id: customerId,
           total,
           manual_rate: mRate,
+          customer_rate_convention: customerRateConvention,
           paid_amount: totalPaidAed,
           notes: notes || undefined,
         }),
@@ -510,10 +512,14 @@ export default function NewDubaiClientTransactionPage() {
           <div className="space-y-4 pt-2 border-t border-slate-100 dark:border-slate-800">
             {/* Client Exchange Rate */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 flex items-center justify-between">
-                <span>Client Exchange Rate (Rate per 1000)</span>
-                <span className="text-[10px] text-teal-700 dark:text-teal-400 font-bold">AED / 1000 INR</span>
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Client Exchange Rate
+                </label>
+                <span className="text-[10px] text-teal-700 dark:text-teal-400 font-bold bg-teal-50 dark:bg-teal-950/60 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800">
+                  AED / 1k
+                </span>
+              </div>
               <input
                 type="text"
                 inputMode="decimal"

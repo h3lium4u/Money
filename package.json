@@ -9,7 +9,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "tsc --noEmit",
     "test": "node --env-file=.env --test src/**/*.test.ts",
     "db:init-neon": "node scripts/init_neon.mjs"
   },
@@ -42,6 +42,7 @@
   },
   "devDependencies": {
     "@netlify/plugin-nextjs": "^5.16.0",
+    "@playwright/test": "^1.64.0",
     "@types/ws": "^8.18.1"
   }
 }

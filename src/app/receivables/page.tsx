@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { getTodayDateString } from "@/lib/date-utils";
 import { ReceiptPrinterModal } from "@/components/animation/ReceiptPrinterModal";
+import { downloadMasterExcel } from "@/lib/export-utils";
 import { toast } from "sonner";
 
 interface CustomerRecord {
@@ -433,7 +434,9 @@ export default function ReceivablesPage() {
     setPrintCustomerData({
       name: cust.name,
       code: cust.code,
+      phone: cust.phone,
       totalInr: cust.total_inr,
+      totalAed: cust.total_aed,
       totalPaid: cust.total_paid,
       outstanding: cust.outstanding_balance,
       entriesCount: entries.length,
@@ -441,6 +444,10 @@ export default function ReceivablesPage() {
         date: e.date,
         type: e.type,
         reference: e.reference,
+        description: e.description,
+        debit_aed: e.debit_aed,
+        credit_aed: e.credit_aed,
+        running_balance_aed: e.running_balance_aed,
         amount: e.type === "TRANSACTION" ? e.debit_aed : e.credit_aed,
         currency: "AED",
       })),
@@ -486,49 +493,144 @@ export default function ReceivablesPage() {
   });
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-16">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Wallet className="w-6 h-6 text-teal-700" />
-            <span>Receivables & Customer Dues</span>
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Complete retail customer directory, dues settlement, statement ledger, and live payment history.
-          </p>
+    <>
+      {/* ── Print-Only Official Thermal Receipt (80mm / Receipt Printer) ── */}
+      {printCustomerData && (
+        <div className="hidden print-only thermal-receipt max-w-[80mm] mx-auto p-2 font-mono text-black text-xs">
+          <div className="text-center pb-2 mb-2 border-b border-dashed border-black">
+            <h1 className="text-base font-extrabold uppercase tracking-wider">PETTI REMITTANCE</h1>
+            <p className="text-[10px] tracking-tight">DUBAI ⇄ INDIA FINANCIAL SERVICES</p>
+            <p className="text-[11px] font-bold mt-1 uppercase">CUSTOMER STATEMENT RECEIPT</p>
+            <p className="text-[9px] mt-0.5">DATE: {new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
+          </div>
+
+          <div className="py-2 border-b border-dashed border-black space-y-1 text-[11px]">
+            <div className="flex justify-between">
+              <span className="font-bold">CUSTOMER:</span>
+              <span className="font-extrabold">{printCustomerData.name}</span>
+            </div>
+            {printCustomerData.code && (
+              <div className="flex justify-between">
+                <span>CODE:</span>
+                <span className="font-bold">{printCustomerData.code}</span>
+              </div>
+            )}
+            {printCustomerData.phone && (
+              <div className="flex justify-between">
+                <span>PHONE:</span>
+                <span>{printCustomerData.phone}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="py-2 border-b border-dashed border-black space-y-1 text-[11px]">
+            <div className="flex justify-between">
+              <span>TOTAL INR REMITTED:</span>
+              <span className="font-bold">₹{(printCustomerData.totalInr || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>TOTAL BILLED AED:</span>
+              <span>{(printCustomerData.totalAed || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED</span>
+            </div>
+            <div className="flex justify-between">
+              <span>TOTAL PAID AED:</span>
+              <span className="font-bold">{(printCustomerData.totalPaid || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED</span>
+            </div>
+            <div className="flex justify-between pt-1.5 font-bold text-[12px] border-t border-dotted border-black">
+              <span>OUTSTANDING DUE:</span>
+              <span>{(printCustomerData.outstanding || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED</span>
+            </div>
+          </div>
+
+          {printCustomerData.entries && printCustomerData.entries.length > 0 && (
+            <div className="py-2 border-b border-dashed border-black">
+              <p className="font-bold text-[10px] mb-1 uppercase tracking-wider text-center">STATEMENT BREAKDOWN</p>
+              <table className="w-full text-[9px] border-collapse">
+                <thead>
+                  <tr className="border-b border-black text-left">
+                    <th className="py-1">DATE</th>
+                    <th className="py-1">REF</th>
+                    <th className="py-1 text-right">DEBIT</th>
+                    <th className="py-1 text-right">CREDIT</th>
+                    <th className="py-1 text-right">BAL</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {printCustomerData.entries.map((e: any, idx: number) => (
+                    <tr key={idx} className="border-b border-dotted border-gray-300">
+                      <td className="py-1 whitespace-nowrap">{e.date?.slice(5) || "—"}</td>
+                      <td className="py-1 truncate max-w-[22mm]">{e.reference || e.type}</td>
+                      <td className="py-1 text-right">{e.debit_aed ? e.debit_aed.toFixed(2) : "—"}</td>
+                      <td className="py-1 text-right">{e.credit_aed ? e.credit_aed.toFixed(2) : "—"}</td>
+                      <td className="py-1 text-right font-bold">{e.running_balance_aed !== undefined ? e.running_balance_aed.toFixed(2) : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <div className="text-center pt-3 text-[9px] space-y-0.5">
+            <p className="font-bold">OFFICIAL COMPUTER GENERATED STATEMENT</p>
+            <p>NO SIGNATURE REQUIRED · THANK YOU FOR YOUR BUSINESS</p>
+          </div>
         </div>
+      )}
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold bg-white text-teal-800 border border-teal-300 hover:bg-teal-50 shadow-2xs transition cursor-pointer"
-          >
-            <UserPlus className="w-4 h-4 text-teal-700" />
-            <span>+ Add Customer</span>
-          </button>
+      {/* Main interactive UI - hidden when printing */}
+      <div className="space-y-6 max-w-7xl mx-auto pb-16 no-print">
+        {/* Top Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <Wallet className="w-6 h-6 text-teal-700" />
+              <span>Receivables & Customer Dues</span>
+            </h1>
+            <p className="text-xs text-slate-500 mt-1">
+              Complete retail customer directory, dues settlement, statement ledger, and live payment history.
+            </p>
+          </div>
 
-          <button
-            onClick={() => {
-              setPayDate(getTodayDateString());
-              setShowPayModal(true);
-            }}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold bg-teal-700 text-white hover:bg-teal-800 shadow-sm transition cursor-pointer"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>Record Payment</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => downloadMasterExcel()}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 shadow-2xs transition cursor-pointer"
+              title="Download complete Master Excel Workbook containing all sheets, customer balances, and ledger history"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-700" />
+              <span>Download Master Excel</span>
+            </button>
 
-          <button
-            onClick={() => loadAllData()}
-            disabled={loading}
-            className="p-2 border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg text-xs font-semibold flex items-center justify-center transition cursor-pointer"
-            title="Refresh All Customer Data"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-teal-700" : ""}`} />
-          </button>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold bg-white text-teal-800 border border-teal-300 hover:bg-teal-50 shadow-2xs transition cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4 text-teal-700" />
+              <span>+ Add Customer</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setPayDate(getTodayDateString());
+                setShowPayModal(true);
+              }}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold bg-teal-700 text-white hover:bg-teal-800 shadow-sm transition cursor-pointer"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Record Payment</span>
+            </button>
+
+            <button
+              onClick={() => loadAllData()}
+              disabled={loading}
+              className="p-2 border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg text-xs font-semibold flex items-center justify-center transition cursor-pointer"
+              title="Refresh All Customer Data"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-teal-700" : ""}`} />
+            </button>
+          </div>
         </div>
-      </div>
 
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1457,18 +1559,18 @@ export default function ReceivablesPage() {
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* MODAL 6: THERMAL STATEMENT RECEIPT PRINTER */}
-      {/* ========================================================================= */}
       {showPrinterModal && printCustomerData && (
         <ReceiptPrinterModal
           isOpen={showPrinterModal}
           reportType="customer-statement"
           customerData={printCustomerData}
-          onCompletePrint={() => setShowPrinterModal(false)}
+          onCompletePrint={() => {
+            window.print();
+          }}
           onClose={() => setShowPrinterModal(false)}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 }

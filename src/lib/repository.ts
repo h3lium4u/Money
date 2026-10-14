@@ -66,6 +66,7 @@ export interface TransactionRecord {
   in_dhirams?: number;
   base_rate: number;
   base_rate_convention?: "AED_PER_1000" | "INR_PER_AED";
+  convention_status?: "EXPLICIT" | "NEEDS_REVIEW";
   wholesale_rate?: number;
   cost_aed: number;
   gross_profit_aed: number;
@@ -213,6 +214,11 @@ function mapTransactionRecord(r: any): TransactionRecord {
   const pendingAed = roundTo(Math.max(0, aedAmount - paidAed), 3);
   const customerRate = roundTo(Number(r.customer_rate), 3);
   const baseRate = roundTo(Number(r.base_rate), 3);
+
+  const hasCustConvention = r.customer_rate_convention === "AED_PER_1000" || r.customer_rate_convention === "INR_PER_AED";
+  const hasBaseConvention = r.base_rate_convention === "AED_PER_1000" || r.base_rate_convention === "INR_PER_AED";
+  const conventionStatus: "EXPLICIT" | "NEEDS_REVIEW" = (hasCustConvention && hasBaseConvention) ? "EXPLICIT" : "NEEDS_REVIEW";
+
   const customerRateConvention = (r.customer_rate_convention as "AED_PER_1000" | "INR_PER_AED") || (customerRate >= 30 ? "AED_PER_1000" : "INR_PER_AED");
   const baseRateConvention = (r.base_rate_convention as "AED_PER_1000" | "INR_PER_AED") || (baseRate >= 30 ? "AED_PER_1000" : "INR_PER_AED");
 
@@ -234,6 +240,7 @@ function mapTransactionRecord(r: any): TransactionRecord {
     in_dhirams: aedAmount,
     base_rate: baseRate,
     base_rate_convention: baseRateConvention,
+    convention_status: conventionStatus,
     wholesale_rate: baseRate,
     cost_aed: roundTo(Number(r.cost_aed), 3),
     gross_profit_aed: roundTo(Number(r.gross_profit_aed), 3),
