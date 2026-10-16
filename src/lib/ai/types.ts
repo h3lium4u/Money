@@ -39,6 +39,7 @@ export type QueryIntentType =
   | "BANK_DISTRIBUTION"
   | "DATABASE_OVERVIEW"
   | "COMPARE_PERIODS"
+  | "EXCEL_QUERY"
   | "MODIFY_ATTEMPT"
   | "GENERAL_BUSINESS_HELP"
   | "UNKNOWN";
@@ -60,6 +61,8 @@ export interface ExtractedEntities {
   dateRange?: ParsedDateRange;
   currency?: "INR" | "AED";
   compareWithPrevious?: boolean;
+  isExcel?: boolean;
+  isAllTime?: boolean;
 }
 
 export interface IntentAnalysisResult {

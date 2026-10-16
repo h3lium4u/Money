@@ -4,42 +4,43 @@ import { parseDateRange } from "./date-parser.ts";
 // ─── Distributor Groups ────────────────────────────────────────────────────────
 // IND = India-side parties (used in India Distribution / distribution splits)
 export const KNOWN_IND_DISTRIBUTORS = [
-  "AWAFI", "NF2", "HAJA", "SARABU", "BASID",
+  "BLACK GRP", "BLACK GRP (BLK)", "ISMAIL", "MK", "NNG", "SALA", "SHEIK", "USAIN", "USAIN (ASKER)"
 ];
 
 // AED = AED-side parties (used in AED Distribution)
 export const KNOWN_AED_DISTRIBUTORS = [
-  "SALA", "SARABU", "MK", "ISMAIL", "NNG",
+  "AADHIL", "AADHIL (AWAFI)", "ANWAR", "BASID", "HAJA", "NF2", "SARAB", "SARABU"
 ];
 
 // Combined list for backward compatibility
 export const KNOWN_INDIA_DISTRIBUTORS = [
   ...KNOWN_IND_DISTRIBUTORS,
-  "MK", "ISMAIL", "SALA", "NNG", "USAIN", "BLACK GRP",
+  ...KNOWN_AED_DISTRIBUTORS,
+  "AWAFI",
 ];
 
-// Names that exist in BOTH groups — require clarification from user
-const AMBIGUOUS_DISTRIBUTOR_NAMES = new Set(["SARABU"]);
+// Names that exist in BOTH groups or require explicit disambiguation
+const AMBIGUOUS_DISTRIBUTOR_NAMES = new Set(["SARABU", "SARAB"]);
 
-// List of common Dubai Customers
+// List of all 42 registered customers, wholesale parties, and aliases
 export const KNOWN_DUBAI_CUSTOMERS = [
-  "SAMI", "DIVAN", "FAIZ BU", "RAKSAN", "SATHIK", "AJIFER", "ABBAS", "ARAFATH",
-  "AKBAR DRY", "SMS", "BUHARI", "MALIK", "KADHAR", "JAHIR", "FAYAS", "AJMAL",
-  "SALEEM", "IBRM APS", "RIYAS", "YUVRAJ", "FAIZAL", "SHAHUL", "ASF AKBAR",
-  "GANI", "BEER", "ASF SHAJHN", "NAISAR", "ADIL RAS", "THARIK"
+  "AADHIL", "AADHIL (AWAFI)", "ABBAS", "ADIL RAS", "ADIL", "AJIFER", "AJMAL",
+  "AKBAR DRY", "AKBAR", "ANWAR", "ARAFATH", "ASF AKBAR", "ASF SHAJHN", "ASLAM", "AHMAD",
+  "BASID", "BEER", "BLACK GRP", "BUHARI", "DIVAN", "FAIZ BU", "FAIZAL", "FAYAS",
+  "GANI", "HAJA", "IBRM APS", "ISMAIL", "JAHIR", "KADHAR", "MALIK", "MK", "NAISAR",
+  "NF2", "NNG", "RAKSAN", "RIYAS", "SALA", "SALEEM", "SAMI", "SARAB", "SARABU",
+  "SATHIK", "SHAHUL", "SHEIK", "SMS", "THARIK", "USAIN", "YUVRAJ"
 ];
 
 /** Detect if query explicitly mentions a group: "under IND", "IND distribution", "AED side", etc. */
 function detectExplicitGroup(lower: string): "IND" | "AED" | null {
   if (/\b(ind distribution|india distribution|ind side|india side|india group|under ind|ind group)\b/i.test(lower)) return "IND";
   if (/\b(aed distribution|aed side|aed group|under aed)\b/i.test(lower)) return "AED";
-  if (/\b(wholesale|split|distribut)\b/i.test(lower) && !/\baed\b/i.test(lower)) return "IND";
-  if (/\baed\b/i.test(lower) && /\b(distribut|payout|account)\b/i.test(lower)) return "AED";
   return null;
 }
 
 /**
- * Analyzes natural language query for safety, intent, dates, and business entities.
+ * Analyzes natural language query for safety, intent, dates, business entities, and Excel context.
  */
 export function analyzeIntent(queryText: string): IntentAnalysisResult {
   const text = queryText.trim();
@@ -47,8 +48,7 @@ export function analyzeIntent(queryText: string): IntentAnalysisResult {
 
   // 1. Safety check: AI must be strictly read-only
   const modificationRegex = /\b(delete|remove|drop|truncate|alter|insert|update|create|modify|edit|set\s+rate|change\s+rate|clear\s+balance|pay\s+off|cancel)\b/i;
-  // Make sure words like "how much was paid" or "cleared" don't trigger false positives
-  const isQuestionAboutPayment = /\b(how much|what was|show|list|total|any|which|did)\b/i.test(text);
+  const isQuestionAboutPayment = /\b(how much|what was|show|list|total|any|which|did|is there)\b/i.test(text);
   
   if (modificationRegex.test(lower) && !isQuestionAboutPayment) {
     return {
@@ -67,6 +67,16 @@ export function analyzeIntent(queryText: string): IntentAnalysisResult {
   const entities: ExtractedEntities = {
     dateRange,
   };
+
+  // Detect Excel reference ("from xl", "in excel", "excel sheet", etc.)
+  if (/\b(excel|xl|xlsx|sheet|spreadsheet|workbook|ayyan jan|master file|master excel|master sheet)\b/i.test(lower)) {
+    entities.isExcel = true;
+  }
+
+  // Detect All-Time reference ("total profit across all data", "all time", "since inception")
+  if (/\b(all time|all-time|across all data|total across|overall|since inception|everything|from start|whole data|in total|all data|all transactions)\b/i.test(lower)) {
+    entities.isAllTime = true;
+  }
 
   // Transaction number regex (e.g. TXN-2026-0005, TXN-0001, etc.)
   const txnMatch = text.match(/\bTXN[-\w\d]+\b/i);
@@ -88,30 +98,35 @@ export function analyzeIntent(queryText: string): IntentAnalysisResult {
   // India distributor detection — check all known names across both groups
   const allKnownDistributors = [...new Set([...KNOWN_IND_DISTRIBUTORS, ...KNOWN_AED_DISTRIBUTORS])];
   for (const dist of allKnownDistributors) {
-    const distRegex = new RegExp(`\\b${dist}\\b`, "i");
+    const escaped = dist.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+    const distRegex = new RegExp(`\\b${escaped}\\b`, "i");
     if (distRegex.test(text)) {
       entities.distributorName = dist.toUpperCase();
 
-      // If name is ambiguous (exists in both groups) and no explicit group detected
       if (AMBIGUOUS_DISTRIBUTOR_NAMES.has(dist.toUpperCase()) && !entities.distributorGroup) {
         entities.requiresGroupClarification = true;
-      } else if (!entities.distributorGroup) {
-        // Auto-assign group based on which list the name is in
-        if (KNOWN_IND_DISTRIBUTORS.includes(dist.toUpperCase()) && !KNOWN_AED_DISTRIBUTORS.includes(dist.toUpperCase())) {
-          entities.distributorGroup = "IND";
-        } else if (KNOWN_AED_DISTRIBUTORS.includes(dist.toUpperCase()) && !KNOWN_IND_DISTRIBUTORS.includes(dist.toUpperCase())) {
-          entities.distributorGroup = "AED";
-        }
       }
       break;
     }
   }
 
-  // Dubai customer detection (only if distributor not already detected with distribution keywords)
-  const isDistributionContext = /\b(distribut|split|payout|wholesale|distrip)\b/i.test(lower);
-  if (!entities.distributorName || !isDistributionContext) {
+  // Dynamic / Pattern-based Customer Detection
+  // e.g. "balance of Aslam from xl", "tell me about customer Aslam", "customer SATHIK", "details for SAMI"
+  const custPattern = /(?:balance of|about customer|about client|customer|client|statement for|details for|record for)\s+([a-zA-Z0-9_\-\(\) ]+?)(?:\s+(?:from|in|for|at|with|balance|statement|xl|excel)|\?|$)/i;
+  const custMatch = text.match(custPattern);
+  if (custMatch && custMatch[1]) {
+    const candidate = custMatch[1].trim();
+    const ignorableWords = ["the", "all", "today", "yesterday", "excel", "xl", "database", "neon", "this", "our"];
+    if (candidate.length >= 2 && !ignorableWords.includes(candidate.toLowerCase())) {
+      entities.customerName = candidate;
+    }
+  }
+
+  // Explicit known list check if not already identified
+  if (!entities.customerName && (!entities.distributorName || !/\b(distribut|split|payout|wholesale|distrip)\b/i.test(lower))) {
     for (const cust of KNOWN_DUBAI_CUSTOMERS) {
-      const custRegex = new RegExp(`\\b${cust}\\b`, "i");
+      const escaped = cust.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+      const custRegex = new RegExp(`\\b${escaped}\\b`, "i");
       if (custRegex.test(text)) {
         entities.customerName = cust;
         break;
@@ -128,6 +143,16 @@ export function analyzeIntent(queryText: string): IntentAnalysisResult {
   ) {
     return {
       intent: "DATABASE_OVERVIEW",
+      confidence: 0.95,
+      entities,
+      isModificationAttempt: false,
+    };
+  }
+
+  // Excel / Workbook Inquiry (e.g. "What are the details in the excel sheet?", "how many rows in excel", "show data from excel")
+  if (entities.isExcel && !entities.customerName && !entities.distributorName && !entities.transactionNumber) {
+    return {
+      intent: "EXCEL_QUERY",
       confidence: 0.95,
       entities,
       isModificationAttempt: false,

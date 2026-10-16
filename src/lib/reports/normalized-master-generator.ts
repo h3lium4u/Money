@@ -96,11 +96,11 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   }
 
   function styleDataRow(row: ExcelJS.Row, isEven = false) {
-    row.height = 20;
+    row.height = 21;
     row.font = dataFont;
     row.eachCell((cell) => {
       cell.border = borderThin;
-      cell.alignment = { vertical: "middle", wrapText: false };
+      cell.alignment = { ...(cell.alignment || {}), vertical: "middle" };
       if (isEven) {
         cell.fill = {
           type: "pattern",
@@ -112,11 +112,11 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   }
 
   function styleTotalRow(row: ExcelJS.Row, fillHex = "FFF1F5F9") {
-    row.height = 24;
+    row.height = 25;
     row.font = totalRowFont;
     row.eachCell((cell) => {
       cell.border = borderTotal;
-      cell.alignment = { vertical: "middle" };
+      cell.alignment = { ...(cell.alignment || {}), vertical: "middle" };
       cell.fill = {
         type: "pattern",
         pattern: "solid",
@@ -142,6 +142,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     { header: "Registration Date", key: "created_date", width: 18 },
   ];
   styleHeader(wsCust.getRow(1), "FF047857"); // Emerald
+  wsCust.autoFilter = "A1:J1";
 
   if (customers.length === 0) {
     const emptyRow = wsCust.addRow({
@@ -234,6 +235,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     { header: "Registration Date", key: "created_date", width: 18 },
   ];
   styleHeader(wsParty.getRow(1), "FF0F766E"); // Teal
+  wsParty.autoFilter = "A1:I1";
 
   parties.forEach((p, idx) => {
     const isIndia = p.party_type === "INDIA" || p.name === "MK" || p.name === "SALA";
@@ -306,6 +308,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     { header: "Notes / Beneficiary", key: "notes", width: 32 },          // Col M
   ];
   styleHeader(wsTxn.getRow(1), "FF065F46"); // Dark Emerald
+  wsTxn.autoFilter = "A1:M1";
 
   if (customerTransactions.length === 0) {
     const emptyRow = wsTxn.addRow({
@@ -426,6 +429,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     { header: "Notes", key: "notes", width: 30 },                     // Col N
   ];
   styleHeader(wsPt.getRow(1), "FF0E7490"); // Cyan / Teal
+  wsPt.autoFilter = "A1:N1";
 
   if (partyTransfers.length === 0) {
     const emptyRow = wsPt.addRow({
@@ -544,6 +548,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     { header: "Notes / Remarks", key: "notes", width: 32 },          // Col K
   ];
   styleHeader(wsPay.getRow(1), "FF15803D"); // Green
+  wsPay.autoFilter = "A1:K1";
 
   if (payments.length === 0) {
     const emptyRow = wsPay.addRow({
@@ -636,6 +641,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     { header: "Notes / Split Details", key: "notes", width: 32 },    // Col L
   ];
   styleHeader(wsSplits.getRow(1), "FF1E40AF"); // Navy Blue
+  wsSplits.autoFilter = "A1:L1";
 
   if (splits.length === 0) {
     const emptyRow = wsSplits.addRow({
@@ -735,6 +741,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     { header: "Outstanding Balance (INR)", key: "bal_inr", width: 24 },     // Col H
   ];
   styleHeader(wsDist.getRow(1), "FF1E3A8A"); // Indigo
+  wsDist.autoFilter = "A1:H1";
 
   distributors.forEach((d, idx) => {
     const isInd = d.group_type === "IND" || d.name === "MK" || d.name === "SALA";
@@ -779,7 +786,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   // ═══════════════════════════════════════════════════════════════════════════
   // 08. BANK DISTRIBUTION SETTLEMENT (BANK DISTRIP - AUTHORITATIVE LEDGER)
   // ═══════════════════════════════════════════════════════════════════════════
-  const wsBank = wb.addWorksheet("08_Bank_Distribution", { views: [{ showGridLines: true }] });
+  const wsBank = wb.addWorksheet("08_Bank_Distribution", { views: [{ state: "frozen", ySplit: 2, showGridLines: true }] });
 
   // Banner
   wsBank.mergeCells("A1:G1");
@@ -1010,6 +1017,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     { header: "Balance to be Paid (AED)", key: "balance_to_paid", width: 24 },
   ];
   styleHeader(wsDaily.getRow(1), "FF0E7490"); // Cyan / Teal
+  wsDaily.autoFilter = "A1:G1";
 
   // Aggregate daily records
   const dateSet = new Set<string>();

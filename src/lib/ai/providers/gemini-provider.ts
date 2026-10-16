@@ -53,9 +53,9 @@ export class GeminiProvider implements AIProvider {
     try {
       let response = await callModel(model);
 
-      // If model is retired or not found, fallback to active flash variants
-      if (response.status === 404) {
-        const fallbacks = ["gemini-flash-lite-latest", "gemini-3.5-flash-lite", "gemini-flash-latest"];
+      // If model is retired, not found, or experiencing high demand, fallback to active working models
+      if (response.status === 404 || response.status === 503) {
+        const fallbacks = ["gemini-3.5-flash", "gemini-3.8-flash", "gemini-flash-latest"];
         for (const fb of fallbacks) {
           if (fb !== model) {
             response = await callModel(fb);

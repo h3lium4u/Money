@@ -105,6 +105,43 @@ export class LocalVerifiedProvider implements AIProvider {
         response += `* **Bank Accounts Pending Balance**: ₹${Number(metrics.totalPendingBankBalanceInr).toLocaleString('en-IN')}\n`;
       }
 
+      if (metrics.allTimeNetProfitAed !== undefined) {
+        response += `* **All-Time Net Profit**: AED ${Number(metrics.allTimeNetProfitAed).toLocaleString('en-US', { minimumFractionDigits: 2 })}\n`;
+      }
+      if (metrics.allTimeGrossProfitAed !== undefined) {
+        response += `* **All-Time Gross Profit**: AED ${Number(metrics.allTimeGrossProfitAed).toLocaleString('en-US', { minimumFractionDigits: 2 })}\n`;
+      }
+      if (metrics.allTimeTransactionsCount !== undefined) {
+        response += `* **All-Time Confirmed Transfers**: ${metrics.allTimeTransactionsCount}\n`;
+      }
+      if (metrics.excelFileName !== undefined) {
+        response += `* **Master Excel File**: \`${metrics.excelFileName}\`\n`;
+      }
+      if (metrics.totalWorksheetsCount !== undefined) {
+        response += `* **Total Worksheets**: ${metrics.totalWorksheetsCount}\n`;
+      }
+      if (metrics.totalRowsAcrossWorkbook !== undefined) {
+        response += `* **Total Data Rows in Excel**: ${Number(metrics.totalRowsAcrossWorkbook).toLocaleString()}\n`;
+      }
+      if (metrics.totalDubaiTransfersInExcel !== undefined) {
+        response += `* **Dubai Transfers in Excel**: ${Number(metrics.totalDubaiTransfersInExcel).toLocaleString()}\n`;
+      }
+      if (metrics.totalInrVolumeInExcel !== undefined) {
+        response += `* **Total INR in Excel**: ₹${Number(metrics.totalInrVolumeInExcel).toLocaleString('en-IN')}\n`;
+      }
+      if (metrics.totalAedBilledInExcel !== undefined) {
+        response += `* **Total AED Billed in Excel**: AED ${Number(metrics.totalAedBilledInExcel).toLocaleString('en-US', { minimumFractionDigits: 2 })}\n`;
+      }
+      if (metrics.outstandingBalanceAedInExcel !== undefined) {
+        response += `* **Outstanding Balance in Excel**: AED ${Number(metrics.outstandingBalanceAedInExcel).toLocaleString('en-US', { minimumFractionDigits: 2 })}\n`;
+      }
+      if (metrics.bankClosingBalanceInr !== undefined && metrics.bankClosingBalanceInr > 0) {
+        response += `* **Bank Settlement Closing Balance**: ₹${Number(metrics.bankClosingBalanceInr).toLocaleString('en-IN')}\n`;
+      }
+      if (metrics.partyTransfersVolumeInr !== undefined && metrics.partyTransfersVolumeInr > 0) {
+        response += `* **Wholesale Party Volume**: ₹${Number(metrics.partyTransfersVolumeInr).toLocaleString('en-IN')}\n`;
+      }
+
       // Comparison metrics
       if (metrics.currentPeriod && metrics.previousPeriod) {
         response += `\n| Metric | ${metrics.currentPeriod.label} | ${metrics.previousPeriod.label} | Difference |\n`;
@@ -119,7 +156,14 @@ export class LocalVerifiedProvider implements AIProvider {
     if (records.length > 0) {
       response += `\n#### Details\n\n`;
 
-      if (records[0].transactionNumber && records[0].customer) {
+      if (records[0].sheetName && records[0].dataRowsCount !== undefined) {
+        // Excel worksheets list
+        response += `| Sheet Name | Data Rows | Columns |\n`;
+        response += `| :--- | ---: | ---: |\n`;
+        for (const r of records) {
+          response += `| **${r.sheetName}** | ${Number(r.dataRowsCount).toLocaleString()} | ${r.columnsCount} |\n`;
+        }
+      } else if (records[0].transactionNumber && records[0].customer) {
         response += `| Transaction | Date | Customer | INR | Rate | AED | Status |\n`;
         response += `| :--- | :--- | :--- | ---: | ---: | ---: | :--- |\n`;
         for (const r of records.slice(0, 10)) {
@@ -167,6 +211,10 @@ export class LocalVerifiedProvider implements AIProvider {
           response += `| **${r.accountName}** (\`${r.accountCode}\`) | ${r.bankName} | **₹${Number(r.currentBalanceInr).toLocaleString('en-IN')}** | ${r.asOfDate} |\n`;
         }
       }
+    }
+
+    if (notes.length > 0) {
+      response += `\n\n*${notes.join("\n* ")}*`;
     }
 
     return {

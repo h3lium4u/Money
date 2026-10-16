@@ -43,6 +43,11 @@ export class GroqProvider implements AIProvider {
 
       if (!response.ok) {
         const errorText = await response.text();
+        // If 429 rate limited on 120b, retry once with fast 20b model
+        if (response.status === 429 && model !== "openai/gpt-oss-20b") {
+          console.warn(`[Groq] Rate limit on ${model}. Retrying with openai/gpt-oss-20b...`);
+          return await this.generateText(messages, { ...options, model: "openai/gpt-oss-20b" });
+        }
         let message = `Groq API error HTTP ${response.status}`;
         try {
           const parsed = JSON.parse(errorText);
