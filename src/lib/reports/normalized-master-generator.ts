@@ -18,7 +18,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   to?: string;
 }): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "Petti Remittance Management System";
+  wb.creator = "Accounts Management System";
   wb.created = new Date();
 
   const baseUrl =
@@ -126,238 +126,9 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 01. EXECUTIVE SUMMARY & DASHBOARD
+  // 01. DUBAI CUSTOMERS
   // ═══════════════════════════════════════════════════════════════════════════
-  const wsSumm = wb.addWorksheet("01_Executive_Summary", { views: [{ showGridLines: true }] });
-  wsSumm.mergeCells("A1:G1");
-  const titleCell = wsSumm.getCell("A1");
-  titleCell.value = "PETTI REMITTANCE (DUBAI ⇄ INDIA) - MASTER OPERATIONS & AUDIT WORKBOOK";
-  titleCell.font = { bold: true, size: 13, color: { argb: "FFFFFFFF" }, name: "Calibri" };
-  titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F172A" } };
-  titleCell.alignment = { vertical: "middle", horizontal: "center" };
-  wsSumm.getRow(1).height = 36;
-
-  // Metadata Bar
-  wsSumm.getCell("A3").value = "Export Period:";
-  wsSumm.getCell("A3").font = { bold: true, size: 10, color: { argb: "FF475569" } };
-  wsSumm.getCell("B3").value = filters?.from && filters?.to ? `${filters.from} to ${filters.to}` : "All Recorded Time";
-  wsSumm.getCell("B3").font = { bold: true, size: 10, color: { argb: "FF0F766E" } };
-
-  wsSumm.getCell("D3").value = "Generated On:";
-  wsSumm.getCell("D3").font = { bold: true, size: 10, color: { argb: "FF475569" } };
-  wsSumm.getCell("E3").value = new Date().toLocaleString();
-  wsSumm.getCell("E3").font = { bold: true, size: 10 };
-
-  // KPI Section 1: Dubai Client Transfers
-  wsSumm.mergeCells("A5:B5");
-  wsSumm.getCell("A5").value = "1. DUBAI CLIENT REMITTANCES";
-  wsSumm.getCell("A5").font = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
-  wsSumm.getCell("A5").fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF065F46" } };
-  wsSumm.getRow(5).height = 22;
-
-  const totalDubaiInr = customerTransactions.filter(t => t.status === "CONFIRMED").reduce((s, t) => s + (t.total ?? t.inr_amount ?? 0), 0);
-  const totalInDhirams = customerTransactions.filter(t => t.status === "CONFIRMED").reduce((s, t) => s + (t.in_dhirams ?? t.aed_amount ?? 0), 0);
-  const totalPaidAmount = customerTransactions.filter(t => t.status === "CONFIRMED").reduce((s, t) => s + (t.paid_amount ?? t.paid_aed ?? 0), 0);
-  const totalBalanceToPaid = customerTransactions.filter(t => t.status === "CONFIRMED").reduce((s, t) => s + (t.balance_to_paid ?? t.pending_aed ?? 0), 0);
-
-  const dubaiKpis = [
-    { label: "Total Volume (INR)", value: totalDubaiInr, fmt: "#,##0.000" },
-    { label: "Total in Dirhams (AED)", value: totalInDhirams, fmt: "#,##0.000" },
-    { label: "Total Collected / Paid (AED)", value: totalPaidAmount, fmt: "#,##0.000" },
-    { label: "Outstanding Balance (AED)", value: totalBalanceToPaid, fmt: "#,##0.000" },
-    { label: "Total Orders Count", value: customerTransactions.length, fmt: "#,##0" },
-  ];
-
-  dubaiKpis.forEach((k, idx) => {
-    const r = 6 + idx;
-    wsSumm.getCell(`A${r}`).value = k.label;
-    wsSumm.getCell(`A${r}`).font = { bold: true, color: { argb: "FF334155" }, size: 9 };
-    wsSumm.getCell(`A${r}`).border = borderThin;
-    wsSumm.getCell(`B${r}`).value = k.value;
-    wsSumm.getCell(`B${r}`).font = { bold: true, size: 10, color: { argb: "FF065F46" } };
-    wsSumm.getCell(`B${r}`).numFmt = k.fmt;
-    wsSumm.getCell(`B${r}`).alignment = { horizontal: "right" };
-    wsSumm.getCell(`B${r}`).border = borderThin;
-    wsSumm.getRow(r).height = 20;
-  });
-
-  // KPI Section 2: Party Transfers
-  wsSumm.mergeCells("D5:E5");
-  wsSumm.getCell("D5").value = "2. PARTY TRANSFERS (AED & INR)";
-  wsSumm.getCell("D5").font = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
-  wsSumm.getCell("D5").fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F766E" } };
-
-  const totalPartyInr = partyTransfers.filter(t => t.status === "CONFIRMED").reduce((s, t) => s + (t.inr_amount || 0), 0);
-  const totalPartyCostInr = partyTransfers.filter(t => t.status === "CONFIRMED").reduce((s, t) => {
-    const inr = t.inr_amount || 0;
-    const cr = t.customer_rate || 0;
-    const br = t.base_rate || 0;
-    return s + (cr > 0 ? inr * (br / cr) : 0);
-  }, 0);
-  const totalPartyProfitInr = totalPartyInr - totalPartyCostInr;
-
-  const partyKpis = [
-    { label: "Total Party Transfers Volume", value: totalPartyInr, fmt: "#,##0.000" },
-    { label: "Total Party Payout Cost", value: totalPartyCostInr, fmt: "#,##0.000" },
-    { label: "Net Profit on Party Transfers", value: totalPartyProfitInr, fmt: "#,##0.000" },
-    { label: "Registered Master Parties", value: parties.length, fmt: "#,##0" },
-    { label: "Total Party Transfers Count", value: partyTransfers.length, fmt: "#,##0" },
-  ];
-
-  partyKpis.forEach((k, idx) => {
-    const r = 6 + idx;
-    wsSumm.getCell(`D${r}`).value = k.label;
-    wsSumm.getCell(`D${r}`).font = { bold: true, color: { argb: "FF334155" }, size: 9 };
-    wsSumm.getCell(`D${r}`).border = borderThin;
-    wsSumm.getCell(`E${r}`).value = k.value;
-    wsSumm.getCell(`E${r}`).font = { bold: true, size: 10, color: { argb: "FF0F766E" } };
-    wsSumm.getCell(`E${r}`).numFmt = k.fmt;
-    wsSumm.getCell(`E${r}`).alignment = { horizontal: "right" };
-    wsSumm.getCell(`E${r}`).border = borderThin;
-  });
-
-  // KPI Section 3: Bank Distribution Settlement (BANK DISTRIP)
-  const bankStartRow = 13;
-  wsSumm.mergeCells(`A${bankStartRow}:E${bankStartRow}`);
-  wsSumm.getCell(`A${bankStartRow}`).value = "3. BANK DISTRIBUTION SETTLEMENT (BANK DISTRIP - INDIA PAYOUTS)";
-  wsSumm.getCell(`A${bankStartRow}`).font = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
-  wsSumm.getCell(`A${bankStartRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF3730A3" } };
-  wsSumm.getRow(bankStartRow).height = 22;
-
-  const grandTotals = bankSettlementState?.grandTotals || {
-    grand_order: 0,
-    grand_commission: 0,
-    grand_paid: 0,
-    grand_balance: 0,
-    distributor_summaries: [],
-  };
-
-  const bankKpis = [
-    { label: "Grand Total Orders Assigned (INR)", value: grandTotals.grand_order, fmt: "#,##0.000" },
-    { label: "Grand Total Commission Recorded (INR)", value: grandTotals.grand_commission, fmt: "#,##0.000" },
-    { label: "Grand Total Paid / Disbursed (INR)", value: grandTotals.grand_paid, fmt: "#,##0.000" },
-    { label: "Net Grand Closing Balance Across Distributors (INR)", value: grandTotals.grand_balance, fmt: "#,##0.000" },
-  ];
-
-  bankKpis.forEach((k, idx) => {
-    const r = bankStartRow + 1 + idx;
-    wsSumm.mergeCells(`A${r}:C${r}`);
-    wsSumm.getCell(`A${r}`).value = k.label;
-    wsSumm.getCell(`A${r}`).font = { bold: true, color: { argb: "FF334155" }, size: 9 };
-    wsSumm.getCell(`A${r}`).border = borderThin;
-    wsSumm.mergeCells(`D${r}:E${r}`);
-    wsSumm.getCell(`D${r}`).value = k.value;
-    wsSumm.getCell(`D${r}`).font = { bold: true, size: 10, color: { argb: "FF3730A3" } };
-    wsSumm.getCell(`D${r}`).numFmt = k.fmt;
-    wsSumm.getCell(`D${r}`).alignment = { horizontal: "right" };
-    wsSumm.getCell(`D${r}`).border = borderThin;
-    wsSumm.getRow(r).height = 20;
-  });
-
-  // KPI Section 4: 24-Hour Delayed Ledger Clear & Backup Controls
-  const resetSectionRow = bankStartRow + 5;
-  wsSumm.mergeCells(`A${resetSectionRow}:E${resetSectionRow}`);
-  wsSumm.getCell(`A${resetSectionRow}`).value = "4. LEDGER RESET & 24-HOUR DELAYED CLEAR (WITH SAFETY REVOKE & BACKUP)";
-  wsSumm.getCell(`A${resetSectionRow}`).font = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
-  wsSumm.getCell(`A${resetSectionRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF991B1B" } };
-  wsSumm.getRow(resetSectionRow).height = 22;
-
-  const btnRow = resetSectionRow + 1;
-  wsSumm.mergeCells(`A${btnRow}:B${btnRow}`);
-  const scheduleCell = wsSumm.getCell(`A${btnRow}`);
-  scheduleCell.value = {
-    text: "⚠️ SCHEDULE 24-HR CLEAR (DOWNLOAD BACKUP)",
-    hyperlink: `${baseUrl}/reports?trigger=schedule-wipe`,
-    tooltip: "Click to download backup now and schedule 24-hour delayed clear",
-  };
-  scheduleCell.font = { bold: true, size: 9, color: { argb: "FFFFFFFF" }, underline: true };
-  scheduleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFDC2626" } };
-  scheduleCell.alignment = { vertical: "middle", horizontal: "center" };
-  scheduleCell.border = borderThin;
-
-  const revokeCell = wsSumm.getCell(`C${btnRow}`);
-  revokeCell.value = {
-    text: "🛡️ REVOKE CLEAR",
-    hyperlink: `${baseUrl}/reports?trigger=revoke-wipe`,
-    tooltip: "Click to cancel and abort scheduled wipe",
-  };
-  revokeCell.font = { bold: true, size: 9, color: { argb: "FFFFFFFF" }, underline: true };
-  revokeCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF059669" } };
-  revokeCell.alignment = { vertical: "middle", horizontal: "center" };
-  revokeCell.border = borderThin;
-
-  wsSumm.mergeCells(`D${btnRow}:E${btnRow}`);
-  const backupCell = wsSumm.getCell(`D${btnRow}`);
-  backupCell.value = {
-    text: "📥 DOWNLOAD LATEST BACKUP (.XLSX)",
-    hyperlink: `${baseUrl}/api/reports/export-excel`,
-    tooltip: "Download current latest Excel workbook backup",
-  };
-  backupCell.font = { bold: true, size: 9, color: { argb: "FFFFFFFF" }, underline: true };
-  backupCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
-  backupCell.alignment = { vertical: "middle", horizontal: "center" };
-  backupCell.border = borderThin;
-  wsSumm.getRow(btnRow).height = 24;
-
-  const noteRow = btnRow + 1;
-  wsSumm.mergeCells(`A${noteRow}:E${noteRow}`);
-  const noteCell = wsSumm.getCell(`A${noteRow}`);
-  noteCell.value = "SAFETY BUFFER: Clicking 'Schedule 24-Hr Clear' immediately downloads the latest Excel backup and arms a strict 24-hour delayed countdown. The clear executes ONLY after 1 full day (24 hours). You can click 'REVOKE CLEAR' anytime to cancel. Master parties (HAJA, MK, NF2, SALA, SARAB) are permanently preserved.";
-  noteCell.font = { italic: true, size: 8.5, color: { argb: "FF475569" } };
-  noteCell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-  noteCell.border = borderThin;
-  wsSumm.getRow(noteRow).height = 42;
-
-  // Table of Contents / Sheet Guide
-  const navHeaderRow = noteRow + 2;
-  wsSumm.mergeCells(`A${navHeaderRow}:E${navHeaderRow}`);
-  wsSumm.getCell(`A${navHeaderRow}`).value = "WORKBOOK SHEET GUIDE & AUDIT TRAIL";
-  wsSumm.getCell(`A${navHeaderRow}`).font = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
-  wsSumm.getCell(`A${navHeaderRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E293B" } };
-  wsSumm.getRow(navHeaderRow).height = 22;
-
-  const sheetGuide = [
-    { code: "Sheet 02", name: "Customers", desc: "Dubai remittance clients, contact info, and outstanding balances in AED." },
-    { code: "Sheet 03", name: "Parties_Master", desc: "Core trading parties (HAJA, MK, NF2, SALA, SARAB) with native currencies and rates." },
-    { code: "Sheet 04", name: "Dubai_Client_Transfers", desc: "Order remittances with Date, Client Exchange Rate, Wholesale Rate, AED in Dirhams, and Balance." },
-    { code: "Sheet 05", name: "Party_Transfers", desc: "Party transfers in AED & INR with Date, Party Rate, Cost, and Net Profit." },
-    { code: "Sheet 06", name: "Customer_Payments", desc: "Date-wise payment receipts in AED, payment methods, and bank slip reference numbers." },
-    { code: "Sheet 07", name: "Distribution_Splits", desc: "Order allocations split to India payout distributors (MK · SALA) with Date and AED equivalent." },
-    { code: "Sheet 08", name: "Distributors", desc: "Master list of payout distributor accounts with allocated totals and balances." },
-    { code: "Sheet 09", name: "Bank_Distribution", desc: "Authoritative Excel BANK DISTRIP daily settlement ledger with running balances (ORDER+COM-PAID)." },
-    { code: "Sheet 10", name: "Daily_Summary", desc: "Date-by-date daily turnover, order count, and collections performance." },
-    { code: "Sheet 11", name: "Ledger_Reset", desc: "Dedicated console to trigger 24-hour delayed clear, download backup, or revoke clear." },
-  ];
-
-  sheetGuide.forEach((g, idx) => {
-    const r = navHeaderRow + 1 + idx;
-    wsSumm.getCell(`A${r}`).value = g.code;
-    wsSumm.getCell(`A${r}`).font = { bold: true, color: { argb: "FF0F766E" }, size: 9 };
-    wsSumm.getCell(`A${r}`).border = borderThin;
-    wsSumm.getCell(`B${r}`).value = g.name;
-    wsSumm.getCell(`B${r}`).font = { bold: true, color: { argb: "FF0F172A" }, size: 9 };
-    wsSumm.getCell(`B${r}`).border = borderThin;
-    wsSumm.mergeCells(`C${r}:E${r}`);
-    wsSumm.getCell(`C${r}`).value = g.desc;
-    wsSumm.getCell(`C${r}`).font = { size: 9, color: { argb: "FF475569" } };
-    wsSumm.getCell(`C${r}`).border = borderThin;
-    wsSumm.getRow(r).height = 19;
-  });
-
-  wsSumm.columns = [
-    { width: 28 }, // A
-    { width: 26 }, // B
-    { width: 14 }, // C
-    { width: 26 }, // D
-    { width: 26 }, // E
-    { width: 12 }, // F
-    { width: 12 }, // G
-  ];
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // 02. DUBAI CUSTOMERS
-  // ═══════════════════════════════════════════════════════════════════════════
-  const wsCust = wb.addWorksheet("02_Customers", { views: [{ state: "frozen", ySplit: 1, showGridLines: true }] });
+  const wsCust = wb.addWorksheet("01_Customers", { views: [{ state: "frozen", ySplit: 1, showGridLines: true }] });
   wsCust.columns = [
     { header: "Customer ID", key: "id", width: 18 },
     { header: "Customer Name", key: "name", width: 26 },
@@ -448,9 +219,9 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 03. PARTIES MASTER (HAJA, MK, NF2, SALA, SARAB)
+  // 02. PARTIES MASTER (HAJA, MK, NF2, SALA, SARAB)
   // ═══════════════════════════════════════════════════════════════════════════
-  const wsParty = wb.addWorksheet("03_Parties_Master", { views: [{ state: "frozen", ySplit: 1, showGridLines: true }] });
+  const wsParty = wb.addWorksheet("02_Parties_Master", { views: [{ state: "frozen", ySplit: 1, showGridLines: true }] });
   wsParty.columns = [
     { header: "Party Code", key: "code", width: 16 },
     { header: "Party Name", key: "name", width: 24 },
@@ -516,9 +287,9 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   styleTotalRow(partyTotalRow);
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 04. DUBAI CLIENT TRANSFERS (CUSTOMER REMITTANCES)
+  // 03. DUBAI CLIENT TRANSFERS (CUSTOMER REMITTANCES)
   // ═══════════════════════════════════════════════════════════════════════════
-  const wsTxn = wb.addWorksheet("04_Dubai_Client_Transfers", { views: [{ state: "frozen", ySplit: 1, showGridLines: true }] });
+  const wsTxn = wb.addWorksheet("03_Dubai_Client_Transfers", { views: [{ state: "frozen", ySplit: 1, showGridLines: true }] });
   wsTxn.columns = [
     { header: "Transfer ID", key: "txn_id", width: 18 },                 // Col A
     { header: "Date", key: "date", width: 15 },                          // Col B
@@ -635,9 +406,9 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 05. PARTY TRANSFERS (AED & INR)
+  // 04. PARTY TRANSFERS (AED & INR)
   // ═══════════════════════════════════════════════════════════════════════════
-  const wsPt = wb.addWorksheet("05_Party_Transfers", { views: [{ state: "frozen", ySplit: 1, showGridLines: true }] });
+  const wsPt = wb.addWorksheet("04_Party_Transfers", { views: [{ state: "frozen", ySplit: 1, showGridLines: true }] });
   wsPt.columns = [
     { header: "Transfer ID", key: "txn_id", width: 18 },              // Col A
     { header: "Date", key: "date", width: 15 },                       // Col B
@@ -756,9 +527,9 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 06. CUSTOMER PAYMENTS (COLLECTIONS IN AED)
+  // 05. CUSTOMER PAYMENTS (COLLECTIONS IN AED)
   // ═══════════════════════════════════════════════════════════════════════════
-  const wsPay = wb.addWorksheet("06_Customer_Payments", { views: [{ state: "frozen", ySplit: 1, showGridLines: true }] });
+  const wsPay = wb.addWorksheet("05_Customer_Payments", { views: [{ state: "frozen", ySplit: 1, showGridLines: true }] });
   wsPay.columns = [
     { header: "Payment ID", key: "pay_id", width: 18 },             // Col A
     { header: "Payment Date", key: "date", width: 15 },              // Col B
@@ -847,9 +618,9 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 07. DISTRIBUTION SPLITS (INDIA ALLOCATIONS)
+  // 06. DISTRIBUTION SPLITS (INDIA ALLOCATIONS)
   // ═══════════════════════════════════════════════════════════════════════════
-  const wsSplits = wb.addWorksheet("07_Distribution_Splits", { views: [{ state: "frozen", ySplit: 1, showGridLines: true }] });
+  const wsSplits = wb.addWorksheet("06_Distribution_Splits", { views: [{ state: "frozen", ySplit: 1, showGridLines: true }] });
   wsSplits.columns = [
     { header: "Split ID", key: "split_id", width: 18 },              // Col A
     { header: "Split Date", key: "date", width: 15 },                // Col B
@@ -950,9 +721,9 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 08. DISTRIBUTORS MASTER LIST
+  // 07. DISTRIBUTORS MASTER LIST
   // ═══════════════════════════════════════════════════════════════════════════
-  const wsDist = wb.addWorksheet("08_Distributors", { views: [{ state: "frozen", ySplit: 1, showGridLines: true }] });
+  const wsDist = wb.addWorksheet("07_Distributors", { views: [{ state: "frozen", ySplit: 1, showGridLines: true }] });
   wsDist.columns = [
     { header: "Distributor Code", key: "code", width: 18 },          // Col A
     { header: "Distributor Name", key: "name", width: 24 },          // Col B
@@ -1006,9 +777,9 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   styleTotalRow(distTotalRow);
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 09. BANK DISTRIBUTION SETTLEMENT (BANK DISTRIP - AUTHORITATIVE LEDGER)
+  // 08. BANK DISTRIBUTION SETTLEMENT (BANK DISTRIP - AUTHORITATIVE LEDGER)
   // ═══════════════════════════════════════════════════════════════════════════
-  const wsBank = wb.addWorksheet("09_Bank_Distribution", { views: [{ showGridLines: true }] });
+  const wsBank = wb.addWorksheet("08_Bank_Distribution", { views: [{ showGridLines: true }] });
 
   // Banner
   wsBank.mergeCells("A1:G1");
@@ -1046,10 +817,18 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   });
   styleHeader(summaryHeaderRow, "FF4338CA");
 
+  const grandTotals = bankSettlementState?.grandTotals || {
+    grand_order: 0,
+    grand_commission: 0,
+    grand_paid: 0,
+    grand_balance: 0,
+    distributor_summaries: [],
+  };
+
   const accountsSummary = grandTotals.distributor_summaries || [];
   let summaryRowIdx = 5;
 
-  accountsSummary.forEach((acc) => {
+  accountsSummary.forEach((acc: any) => {
     summaryRowIdx++;
     const row = wsBank.getRow(summaryRowIdx);
     row.getCell(1).value = acc.account_code;
@@ -1218,9 +997,9 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   ];
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 10. DAILY PERFORMANCE SUMMARY
+  // 09. DAILY PERFORMANCE SUMMARY
   // ═══════════════════════════════════════════════════════════════════════════
-  const wsDaily = wb.addWorksheet("10_Daily_Summary", { views: [{ state: "frozen", ySplit: 1, showGridLines: true }] });
+  const wsDaily = wb.addWorksheet("09_Daily_Summary", { views: [{ state: "frozen", ySplit: 1, showGridLines: true }] });
   wsDaily.columns = [
     { header: "Date", key: "date", width: 15 },
     { header: "Day", key: "day", width: 12 },
@@ -1272,11 +1051,11 @@ export async function generateNormalizedMasterWorkbook(filters?: {
       const row = wsDaily.addRow({
         date: d,
         day: getDayOfWeek(d),
-        count: { formula: `=COUNTIFS('04_Dubai_Client_Transfers'!$B:$B, A${rowNum})` },
-        inr: { formula: `=SUMIFS('04_Dubai_Client_Transfers'!$F:$F, '04_Dubai_Client_Transfers'!$B:$B, A${rowNum})` },
-        aed_daily: { formula: `=SUMIFS('04_Dubai_Client_Transfers'!$I:$I, '04_Dubai_Client_Transfers'!$B:$B, A${rowNum})` },
-        paid_amount: { formula: `=SUMIFS('04_Dubai_Client_Transfers'!$J:$J, '04_Dubai_Client_Transfers'!$B:$B, A${rowNum})` },
-        balance_to_paid: { formula: `=SUMIFS('04_Dubai_Client_Transfers'!$K:$K, '04_Dubai_Client_Transfers'!$B:$B, A${rowNum})` },
+        count: { formula: `=COUNTIFS('03_Dubai_Client_Transfers'!$B:$B, A${rowNum})` },
+        inr: { formula: `=SUMIFS('03_Dubai_Client_Transfers'!$F:$F, '03_Dubai_Client_Transfers'!$B:$B, A${rowNum})` },
+        aed_daily: { formula: `=SUMIFS('03_Dubai_Client_Transfers'!$I:$I, '03_Dubai_Client_Transfers'!$B:$B, A${rowNum})` },
+        paid_amount: { formula: `=SUMIFS('03_Dubai_Client_Transfers'!$J:$J, '03_Dubai_Client_Transfers'!$B:$B, A${rowNum})` },
+        balance_to_paid: { formula: `=SUMIFS('03_Dubai_Client_Transfers'!$K:$K, '03_Dubai_Client_Transfers'!$B:$B, A${rowNum})` },
       });
 
       row.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
@@ -1305,109 +1084,6 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     styleTotalRow(dailyTotalRow);
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // 11. LEDGER RESET & 24-HOUR DELAYED CLEAR CONSOLE
-  // ═══════════════════════════════════════════════════════════════════════════
-  const wsReset = wb.addWorksheet("11_Ledger_Reset", {
-    views: [{ showGridLines: true }],
-  });
-
-  // Title Banner
-  wsReset.mergeCells("A1:F1");
-  const rTitle = wsReset.getCell("A1");
-  rTitle.value = "PETTI REMITTANCE — LEDGER RESET & 24-HOUR DELAYED CLEAR CONSOLE";
-  rTitle.font = { bold: true, size: 12, color: { argb: "FFFFFFFF" }, name: "Calibri" };
-  rTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F172A" } };
-  rTitle.alignment = { vertical: "middle", horizontal: "center" };
-  wsReset.getRow(1).height = 36;
-
-  // Subtitle
-  wsReset.mergeCells("A3:F3");
-  const rSub = wsReset.getCell("A3");
-  rSub.value = "SAFETY CONTROLS: Click the buttons below to interact directly with the Petti server.";
-  rSub.font = { bold: true, size: 10, color: { argb: "FF334155" } };
-  rSub.alignment = { vertical: "middle" };
-
-  // Button 1: Schedule 24h
-  wsReset.mergeCells("B5:E5");
-  const b1 = wsReset.getCell("B5");
-  b1.value = {
-    text: "⚠️ SCHEDULE 24-HOUR CLEAR & DOWNLOAD LATEST BACKUP",
-    hyperlink: `${baseUrl}/reports?trigger=schedule-wipe`,
-    tooltip: "Downloads offline backup immediately and starts 24-hour delayed countdown",
-  };
-  b1.font = { bold: true, size: 11, color: { argb: "FFFFFFFF" }, underline: true };
-  b1.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFDC2626" } };
-  b1.alignment = { vertical: "middle", horizontal: "center" };
-  b1.border = borderThin;
-  wsReset.getRow(5).height = 32;
-
-  // Button 2: Revoke Clear
-  wsReset.mergeCells("B7:E7");
-  const b2 = wsReset.getCell("B7");
-  b2.value = {
-    text: "🛡️ REVOKE / CANCEL SCHEDULED CLEAR IMMEDIATELY",
-    hyperlink: `${baseUrl}/reports?trigger=revoke-wipe`,
-    tooltip: "Aborts pending wipe immediately; all records remain safe",
-  };
-  b2.font = { bold: true, size: 11, color: { argb: "FFFFFFFF" }, underline: true };
-  b2.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF059669" } };
-  b2.alignment = { vertical: "middle", horizontal: "center" };
-  b2.border = borderThin;
-  wsReset.getRow(7).height = 32;
-
-  // Button 3: Download Backup
-  wsReset.mergeCells("B9:E9");
-  const b3 = wsReset.getCell("B9");
-  b3.value = {
-    text: "📥 DOWNLOAD CURRENT LATEST WORKBOOK BACKUP (.XLSX)",
-    hyperlink: `${baseUrl}/api/reports/export-excel`,
-    tooltip: "Click to download snapshot backup of this workbook",
-  };
-  b3.font = { bold: true, size: 11, color: { argb: "FFFFFFFF" }, underline: true };
-  b3.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
-  b3.alignment = { vertical: "middle", horizontal: "center" };
-  b3.border = borderThin;
-  wsReset.getRow(9).height = 32;
-
-  // Operational Rules Table
-  wsReset.mergeCells("A11:F11");
-  const rRulesHeader = wsReset.getCell("A11");
-  rRulesHeader.value = "HOW THE 24-HOUR SAFETY DELAY & REVOCATION WORKS";
-  rRulesHeader.font = { bold: true, size: 10, color: { argb: "FFFFFFFF" } };
-  rRulesHeader.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E293B" } };
-  wsReset.getRow(11).height = 22;
-
-  const rules = [
-    { step: "1. Pre-Wipe Backup", text: "When you click 'Schedule 24-Hour Clear', your default browser immediately downloads the latest complete Excel workbook as an offline backup." },
-    { step: "2. Strict 24-Hour Delay", text: "A 24-hour server timer begins. Absolutely NO records or files are cleared at this moment. All data remains active and accessible." },
-    { step: "3. Revocation Anytime", text: "If you clicked by mistake or decide not to clear, click 'Revoke Clear' anytime during the 24 hours. The schedule will be cancelled instantly." },
-    { step: "4. Execution After 24 Hours", text: "ONLY when the 24 hours have completely passed without revocation, all transactions, splits, payments, and bank distrip records are wiped." },
-    { step: "5. Master Parties Preserved", text: "The 5 core trading parties (HAJA · MK · NF2 · SALA · SARAB) and master distributor accounts are PERMANENTLY preserved." },
-  ];
-
-  rules.forEach((rule, idx) => {
-    const rowNum = 12 + idx;
-    wsReset.getCell(`A${rowNum}`).value = rule.step;
-    wsReset.getCell(`A${rowNum}`).font = { bold: true, size: 9.5, color: { argb: "FF0F766E" } };
-    wsReset.getCell(`A${rowNum}`).border = borderThin;
-    wsReset.mergeCells(`B${rowNum}:F${rowNum}`);
-    const cellDesc = wsReset.getCell(`B${rowNum}`);
-    cellDesc.value = rule.text;
-    cellDesc.font = { size: 9.5, color: { argb: "FF334155" } };
-    cellDesc.border = borderThin;
-    wsReset.getRow(rowNum).height = 20;
-  });
-
-  wsReset.columns = [
-    { width: 24 }, // A
-    { width: 22 }, // B
-    { width: 22 }, // C
-    { width: 22 }, // D
-    { width: 22 }, // E
-    { width: 24 }, // F
-  ];
-
   const buffer = await wb.xlsx.writeBuffer();
   return Buffer.from(buffer);
 }
@@ -1415,7 +1091,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
 // ═══════════════════════════════════════════════════════════════════════════
 // AUTOMATIC DISK WORKBOOK SYNCHRONIZATION
 // Whenever parties, customers, transactions, payments, or splits change,
-// this debounced sync updates Remittance_Business_Normalized_Master.xlsx
+// this debounced sync updates Accounts_Business_Normalized_Master.xlsx
 // ═══════════════════════════════════════════════════════════════════════════
 let syncTimeout: NodeJS.Timeout | null = null;
 let isSyncing = false;
@@ -1427,11 +1103,11 @@ export function triggerMasterWorkbookSync(): void {
     try {
       isSyncing = true;
       const buffer = await generateNormalizedMasterWorkbook();
-      const filePath = path.resolve(process.cwd(), "Remittance_Business_Normalized_Master.xlsx");
+      const filePath = path.resolve(process.cwd(), "Accounts_Business_Normalized_Master.xlsx");
       await fs.writeFile(filePath, buffer);
-      console.log(`[Excel Sync] Remittance_Business_Normalized_Master.xlsx auto-updated (${buffer.length} bytes)`);
+      console.log(`[Excel Sync] Accounts_Business_Normalized_Master.xlsx auto-updated (${buffer.length} bytes)`);
     } catch (err) {
-      console.error("[Excel Sync] Failed to auto-update Remittance_Business_Normalized_Master.xlsx:", err);
+      console.error("[Excel Sync] Failed to auto-update Accounts_Business_Normalized_Master.xlsx:", err);
     } finally {
       isSyncing = false;
     }

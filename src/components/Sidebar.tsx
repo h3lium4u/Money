@@ -44,7 +44,7 @@ const navigationGroups: NavGroup[] = [
   {
     label: "TRANSFERS",
     items: [
-      { name: "Customer Remittances", href: "/remittances", icon: Receipt },
+      { name: "Customer Transfers", href: "/remittances", icon: Receipt },
       { name: "Dubai Client (AED)", href: "/transactions", icon: Building2 },
       { name: "Party Transfers", href: "/party-transfers", icon: ArrowRightLeft },
     ],
@@ -125,7 +125,7 @@ export default function Sidebar() {
                 lineHeight: 1,
               }}
             >
-              R
+              A
             </span>
           </div>
 
@@ -141,7 +141,7 @@ export default function Sidebar() {
                 lineHeight: 1,
               }}
             >
-              REMIT
+              ACCOUNTS
             </div>
             <div
               style={{

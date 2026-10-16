@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { getDayMonthYearString } from "./date-utils";
 
 export interface DownloadExcelOptions {
   from?: string;
@@ -60,8 +61,8 @@ export async function downloadMasterExcel(options?: DownloadExcelOptions): Promi
       }
     }
     if (!downloadName) {
-      const dateStr = new Date().toISOString().slice(0, 10);
-      downloadName = `Petti_Remittance_Master_${dateStr}.xlsx`;
+      const dateStr = getDayMonthYearString();
+      downloadName = `Accounts_${dateStr}.xlsx`;
     }
 
     a.download = downloadName;

@@ -12,7 +12,7 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: "Remit - Dubai to India Money Transfer Management",
+  title: "Accounts - Dubai to India Transfer Management",
   description: "Cross-border financial tracking, calculations, receivables, and reconciliation system.",
 };
 

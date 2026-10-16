@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { generateNormalizedMasterWorkbook } from "@/lib/reports/normalized-master-generator";
 import { scheduleWipe, WipeScope } from "@/lib/scheduled-wipe";
 import { verifyMasterPassword } from "@/lib/auth";
+import { getDayMonthYearString } from "@/lib/date-utils";
 
 export async function GET(request: Request) {
   try {
@@ -23,8 +24,8 @@ export async function GET(request: Request) {
     }
 
     const buffer = await generateNormalizedMasterWorkbook();
-    const dateStr = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-    const filename = `Remittance_PreWipe_Backup_${scope}_${dateStr}.xlsx`;
+    const dateStr = getDayMonthYearString();
+    const filename = `Accounts_Backup_${scope}_${dateStr}.xlsx`;
 
     return new Response(new Uint8Array(buffer), {
       status: 200,

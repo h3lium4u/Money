@@ -23,6 +23,7 @@ import {
   getYesterdayDateString,
   getDaysAgoDateString,
   getStartOfMonthDateString,
+  getDayMonthYearString,
 } from "@/lib/date-utils";
 
 export default function ReportsPage() {
@@ -131,7 +132,7 @@ export default function ReportsPage() {
       // 1. Trigger instantaneous pre-wipe backup download cleanly via blob with password authentication
       await downloadMasterExcel({
         url: `/api/system/scheduled-wipe/download-backup?schedule=true&minutes=10&scope=${wipeScope}&password=${encodeURIComponent(wipePassword.trim())}`,
-        filename: `Remittance_PreWipe_Backup_${wipeScope}_${new Date().toISOString().slice(0, 10)}.xlsx`,
+        filename: `Accounts_Backup_${wipeScope}_${getDayMonthYearString()}.xlsx`,
       });
 
       // 2. Fetch updated scheduled status
@@ -227,7 +228,7 @@ export default function ReportsPage() {
       <div className="hidden print-only border-b border-slate-300 pb-3 mb-4">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-lg font-bold text-slate-900 tracking-tight">REMITTANCE SERVICES (DUBAI ⇄ INDIA)</h1>
+            <h1 className="text-lg font-bold text-slate-900 tracking-tight">ACCOUNTS & FINANCIAL OPERATIONS (DUBAI ⇄ INDIA)</h1>
             <p className="text-xs text-slate-600">Financial Operations & Period Report</p>
           </div>
           <div className="text-right text-xs text-slate-700">

@@ -4,7 +4,7 @@ import { changeMasterPassword } from "@/lib/auth";
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
-    const { current_password, new_password, confirm_password, confirm_password_2 } = body;
+    const { current_password, new_password, confirm_password } = body;
 
     if (!current_password) {
       return NextResponse.json(
@@ -29,14 +29,7 @@ export async function POST(request: Request) {
 
     if (new_password !== confirm_password) {
       return NextResponse.json(
-        { success: false, error: "New password and first confirmation do not match" },
-        { status: 400 }
-      );
-    }
-
-    if (confirm_password_2 !== undefined && new_password !== confirm_password_2) {
-      return NextResponse.json(
-        { success: false, error: "New password and second confirmation do not match" },
+        { success: false, error: "New password and confirm password do not match" },
         { status: 400 }
       );
     }

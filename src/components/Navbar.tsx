@@ -15,8 +15,8 @@ export default function Navbar() {
   const isDark = theme === "dark";
 
   let title = "Dashboard";
-  if (pathname.startsWith("/remittances/new")) title = "New Customer Remittance";
-  else if (pathname.startsWith("/remittances")) title = "Customer Remittances";
+  if (pathname.startsWith("/remittances/new")) title = "New Customer Transfer";
+  else if (pathname.startsWith("/remittances")) title = "Customer Transfers";
   else if (pathname.startsWith("/transactions/new")) title = "New Dubai Client Transfer";
   else if (pathname.startsWith("/transactions")) title = "Dubai Client Transfers";
   else if (pathname.startsWith("/customers")) title = "Customers & Balances";

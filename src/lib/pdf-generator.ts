@@ -1,8 +1,9 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { numberToIndianWords } from "./number-to-words";
+import { getDayMonthYearString } from "./date-utils";
 
-export function generateTransactionReceipt(txn: any, businessName = "REMITTANCE BUSINESS LLC") {
+export function generateTransactionReceipt(txn: any, businessName = "ACCOUNTS MANAGEMENT LLC") {
   const doc = new jsPDF();
 
   // Header
@@ -121,6 +122,8 @@ export function generateTransactionReceipt(txn: any, businessName = "REMITTANCE 
   doc.text("Thank you for your business.", 105, 280, { align: "center" });
   doc.text(`Generated on ${new Date().toLocaleString()}`, 105, 285, { align: "center" });
 
-  // Save the PDF
-  doc.save(`Receipt_${txn.transaction_number}.pdf`);
+  // Save the PDF with standardized filename: Receipt_[TxnNo]_[Day-Month-Year].pdf
+  const dateStr = getDayMonthYearString();
+  const safeNumber = String(txn.transaction_number || txn.id || "TXN").replace(/[^a-zA-Z0-9_-]/g, "_");
+  doc.save(`Receipt_${safeNumber}_${dateStr}.pdf`);
 }

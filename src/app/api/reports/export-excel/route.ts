@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateNormalizedMasterWorkbook } from "@/lib/reports/normalized-master-generator";
+import { getDayMonthYearString } from "@/lib/date-utils";
 
 export async function GET(request: Request) {
   try {
@@ -8,8 +9,8 @@ export async function GET(request: Request) {
     const to = searchParams.get("to") || undefined;
 
     const buffer = await generateNormalizedMasterWorkbook({ from, to });
-    const dateStr = new Date().toISOString().slice(0, 10);
-    const filename = `Petti_Remittance_Master_${dateStr}.xlsx`;
+    const dateStr = getDayMonthYearString();
+    const filename = `Accounts_${dateStr}.xlsx`;
 
     return new Response(new Uint8Array(buffer), {
       status: 200,

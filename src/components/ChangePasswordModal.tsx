@@ -11,12 +11,10 @@ export default function ChangePasswordModal() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword1, setConfirmPassword1] = useState("");
-  const [confirmPassword2, setConfirmPassword2] = useState("");
 
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm1, setShowConfirm1] = useState(false);
-  const [showConfirm2, setShowConfirm2] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -27,7 +25,6 @@ export default function ChangePasswordModal() {
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword1("");
-    setConfirmPassword2("");
     setErrorMsg("");
   };
 
@@ -56,12 +53,7 @@ export default function ChangePasswordModal() {
     }
 
     if (newPassword !== confirmPassword1) {
-      setErrorMsg("New password and 1st confirmation do not match.");
-      return;
-    }
-
-    if (newPassword !== confirmPassword2) {
-      setErrorMsg("New password and 2nd confirmation do not match.");
+      setErrorMsg("New password and confirm password do not match.");
       return;
     }
 
@@ -74,7 +66,6 @@ export default function ChangePasswordModal() {
           current_password: currentPassword.trim(),
           new_password: newPassword.trim(),
           confirm_password: confirmPassword1.trim(),
-          confirm_password_2: confirmPassword2.trim(),
         }),
       });
 
@@ -124,7 +115,7 @@ export default function ChangePasswordModal() {
               Change Master Password
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Enter your current password and confirm new password twice
+              Enter your current password and confirm your new password
             </p>
           </div>
         </div>
@@ -188,10 +179,10 @@ export default function ChangePasswordModal() {
             </div>
           </div>
 
-          {/* 3. Confirm New Password (1st Confirmation) */}
+          {/* 3. Confirm New Password */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Confirm New Password (1st Time) <span className="text-rose-500">*</span>
+              Confirm New Password <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
               <input
@@ -209,31 +200,6 @@ export default function ChangePasswordModal() {
                 tabIndex={-1}
               >
                 {showConfirm1 ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-
-          {/* 4. Confirm New Password (2nd Confirmation) */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Verify New Password Again (2nd Confirmation) <span className="text-rose-500">*</span>
-            </label>
-            <div className="relative">
-              <input
-                type={showConfirm2 ? "text" : "password"}
-                value={confirmPassword2}
-                onChange={(e) => setConfirmPassword2(e.target.value)}
-                placeholder="Confirm new password once more"
-                className="w-full px-3.5 py-2.5 pr-10 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-600 dark:focus:ring-teal-500 transition-all font-mono"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirm2(!showConfirm2)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                tabIndex={-1}
-              >
-                {showConfirm2 ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>

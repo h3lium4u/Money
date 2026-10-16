@@ -59,7 +59,7 @@ export default function LockScreen() {
             <Lock className="w-7 h-7" />
           </div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Remittance Ledger
+            Accounts Ledger
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-[260px]">
             Dubai ⇄ India Financial Management. Please enter your password to unlock.

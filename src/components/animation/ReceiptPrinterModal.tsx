@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Printer } from "lucide-react";
 import { ReceiptPrinter, ReceiptPrinterStage } from "./ReceiptPrinter";
 import styles from "./ReceiptPrinterModal.module.css";
+import { getDayMonthYearString } from "@/lib/date-utils";
 
 export interface ReceiptPrinterModalProps {
   isOpen: boolean;
@@ -72,7 +73,20 @@ export function ReceiptPrinterModal({
       if (!printFiredRef.current) {
         printFiredRef.current = true;
         try {
+          const prevTitle = typeof document !== "undefined" ? document.title : "";
+          const dateStr = getDayMonthYearString();
+          if (typeof document !== "undefined") {
+            if (reportType === "customer-statement" && customerData?.name) {
+              const safeName = customerData.name.replace(/[^a-zA-Z0-9_-]/g, "_");
+              document.title = `Customer_Statement_${safeName}_${dateStr}`;
+            } else {
+              document.title = `Accounts_Report_${dateStr}`;
+            }
+          }
           onCompleteRef.current();
+          if (typeof document !== "undefined") {
+            setTimeout(() => { document.title = prevTitle; }, 1500);
+          }
         } catch (e) {
           console.error("Print invocation error:", e);
         }
@@ -89,7 +103,20 @@ export function ReceiptPrinterModal({
     setStage("complete");
     printFiredRef.current = true;
     try {
+      const prevTitle = typeof document !== "undefined" ? document.title : "";
+      const dateStr = getDayMonthYearString();
+      if (typeof document !== "undefined") {
+        if (reportType === "customer-statement" && customerData?.name) {
+          const safeName = customerData.name.replace(/[^a-zA-Z0-9_-]/g, "_");
+          document.title = `Customer_Statement_${safeName}_${dateStr}`;
+        } else {
+          document.title = `Accounts_Report_${dateStr}`;
+        }
+      }
       onCompleteRef.current();
+      if (typeof document !== "undefined") {
+        setTimeout(() => { document.title = prevTitle; }, 1500);
+      }
     } catch (e) {
       console.error("Print invocation error:", e);
     }

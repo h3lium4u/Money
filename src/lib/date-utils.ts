@@ -52,3 +52,10 @@ export function getStartOfYearDateString(): string {
   const d = new Date();
   return `${d.getFullYear()}-01-01`;
 }
+
+export function getDayMonthYearString(d: Date = new Date()): string {
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}-${month}-${year}`;
+}
