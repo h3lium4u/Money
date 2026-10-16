@@ -5,9 +5,13 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
 
+export type WipeScope = "all" | "week" | "month" | "year";
+
 export interface ScheduledWipeStatus {
   isScheduled: boolean;
   id?: string;
+  scope?: WipeScope;
+  scopeLabel?: string;
   status: "IDLE" | "SCHEDULED" | "REVOKED" | "EXECUTED";
   scheduledAt?: string;
   executeAt?: string;
@@ -19,6 +23,20 @@ export interface ScheduledWipeStatus {
 const STATE_FILE_PATH = path.resolve(process.cwd(), "data", "scheduled_wipe_state.json");
 let isTableInitialized = false;
 
+export function getScopeLabel(scope?: WipeScope): string {
+  switch (scope) {
+    case "week":
+      return "Older than 1 Week (> 7 Days)";
+    case "month":
+      return "Older than 1 Month (> 30 Days)";
+    case "year":
+      return "Older than 1 Year (> 365 Days)";
+    case "all":
+    default:
+      return "Entire Ledger (Complete Reset)";
+  }
+}
+
 async function ensureTableInitialized() {
   if (isTableInitialized) return;
   try {
@@ -26,12 +44,17 @@ async function ensureTableInitialized() {
       CREATE TABLE IF NOT EXISTS scheduled_wipes (
         id TEXT PRIMARY KEY,
         status TEXT NOT NULL,
+        scope TEXT DEFAULT 'all',
         scheduled_at TEXT NOT NULL,
         execute_at TEXT NOT NULL,
         backup_downloaded BOOLEAN DEFAULT false,
         created_at TEXT NOT NULL
       )
     `);
+    // Attempt column migration if scope is missing
+    try {
+      await execute(`ALTER TABLE scheduled_wipes ADD COLUMN IF NOT EXISTS scope TEXT DEFAULT 'all'`);
+    } catch {}
     isTableInitialized = true;
   } catch (err) {
     console.warn("[ScheduledWipe] DB table check warning (falling back to JSON store):", err);
@@ -104,32 +127,44 @@ export async function getScheduledWipeStatus(): Promise<ScheduledWipeStatus> {
       isScheduled: false,
       status: "IDLE",
       remainingSeconds: 0,
-      remainingFormatted: "None",
+      remainingFormatted: "0s",
+      backupDownloaded: false,
     };
   }
 
   const now = Date.now();
-  const executeTime = new Date(activeRecord.execute_at).getTime();
-  const remainingSeconds = Math.max(0, Math.ceil((executeTime - now) / 1000));
+  const executeAtTime = new Date(activeRecord.execute_at).getTime();
+  const remainingSeconds = Math.max(0, Math.ceil((executeAtTime - now) / 1000));
+  const scope: WipeScope = (activeRecord.scope as WipeScope) || "all";
 
-  // If 24 hours have elapsed, execute the scheduled wipe automatically
+  // Check if schedule expired and needs execution
   if (remainingSeconds <= 0) {
-    console.log(`[ScheduledWipe] 24-hour delay reached for wipe ${activeRecord.id}. Executing complete ledger clear...`);
-    await executeWipeNow(activeRecord.id);
+    console.log(`[ScheduledWipe] Scheduled timer reached 0 (${scope}). Executing automatic clean...`);
+    try {
+      await executeWipeNow(activeRecord.id, scope);
+    } catch (e) {
+      console.error("[ScheduledWipe] Auto-execution error:", e);
+    }
+
     return {
       isScheduled: false,
       id: activeRecord.id,
+      scope,
+      scopeLabel: getScopeLabel(scope),
       status: "EXECUTED",
       scheduledAt: activeRecord.scheduled_at,
       executeAt: activeRecord.execute_at,
       remainingSeconds: 0,
-      remainingFormatted: "Executed",
+      remainingFormatted: "Completed",
+      backupDownloaded: true,
     };
   }
 
   return {
     isScheduled: true,
     id: activeRecord.id,
+    scope,
+    scopeLabel: getScopeLabel(scope),
     status: "SCHEDULED",
     scheduledAt: activeRecord.scheduled_at,
     executeAt: activeRecord.execute_at,
@@ -140,9 +175,9 @@ export async function getScheduledWipeStatus(): Promise<ScheduledWipeStatus> {
 }
 
 /**
- * Schedules a complete ledger & Excel clear for 24 hours (86,400 seconds) in the future.
+ * Schedules a ledger & Excel clear with safety buffer (default 10 minutes).
  */
-export async function scheduleWipe(delayHours = 24): Promise<ScheduledWipeStatus> {
+export async function scheduleWipe(delayMinutes = 10, scope: WipeScope = "all"): Promise<ScheduledWipeStatus> {
   await ensureTableInitialized();
 
   // Cancel any prior pending schedule
@@ -150,11 +185,12 @@ export async function scheduleWipe(delayHours = 24): Promise<ScheduledWipeStatus
 
   const id = `wipe_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
   const now = new Date();
-  const executeAt = new Date(now.getTime() + delayHours * 60 * 60 * 1000);
+  const executeAt = new Date(now.getTime() + delayMinutes * 60 * 1000);
 
   const newRecord = {
     id,
     status: "SCHEDULED",
+    scope,
     scheduled_at: now.toISOString(),
     execute_at: executeAt.toISOString(),
     backup_downloaded: true,
@@ -163,19 +199,21 @@ export async function scheduleWipe(delayHours = 24): Promise<ScheduledWipeStatus
 
   try {
     await execute(`
-      INSERT INTO scheduled_wipes (id, status, scheduled_at, execute_at, backup_downloaded, created_at)
-      VALUES ($1, $2, $3, $4, $5, $6)
-    `, [newRecord.id, newRecord.status, newRecord.scheduled_at, newRecord.execute_at, true, newRecord.created_at]);
+      INSERT INTO scheduled_wipes (id, status, scope, scheduled_at, execute_at, backup_downloaded, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `, [newRecord.id, newRecord.status, newRecord.scope, newRecord.scheduled_at, newRecord.execute_at, true, newRecord.created_at]);
   } catch (err) {
     console.warn("[ScheduledWipe] Failed to insert schedule into DB:", err);
   }
 
   await writeStateFile(newRecord);
 
-  const remainingSeconds = delayHours * 3600;
+  const remainingSeconds = delayMinutes * 60;
   return {
     isScheduled: true,
     id,
+    scope,
+    scopeLabel: getScopeLabel(scope),
     status: "SCHEDULED",
     scheduledAt: newRecord.scheduled_at,
     executeAt: newRecord.execute_at,
@@ -187,7 +225,6 @@ export async function scheduleWipe(delayHours = 24): Promise<ScheduledWipeStatus
 
 /**
  * Revokes / Cancels any currently pending scheduled wipe.
- * Immediately halts the countdown and preserves all data intact.
  */
 export async function revokeWipe(): Promise<ScheduledWipeStatus> {
   await ensureTableInitialized();
@@ -217,82 +254,129 @@ export async function revokeWipe(): Promise<ScheduledWipeStatus> {
 }
 
 /**
- * Executes the complete ledger and Excel clear.
- * - Deletes all transactions, payments, distribution splits, and bank distrip records.
- * - Cleans non-party customer accounts.
- * - Preserves the 5 master parties (HAJA, MK, NF2, SALA, SARAB) and master distributor accounts.
- * - Automatically regenerates a pristine Remittance_Business_Normalized_Master.xlsx.
+ * Executes the ledger and Excel clear based on chosen scope.
+ * Scope options:
+ * - "all": Complete wipe of all transactions, splits, payments, settlements, non-party customers. Resets balances to 0.
+ * - "week": Clears data older than 7 days, preserves last 7 days.
+ * - "month": Clears data older than 30 days, preserves last 30 days.
+ * - "year": Clears data older than 365 days, preserves current year.
  */
-export async function executeWipeNow(wipeId?: string): Promise<void> {
-  console.log("[ScheduledWipe] Executing complete ledger clear...");
+export async function executeWipeNow(wipeId?: string, forceScope?: WipeScope): Promise<void> {
+  let scope: WipeScope = forceScope || "all";
 
-  // 1. Transactional tables
-  try {
-    await execute(`DELETE FROM distribution_splits`);
-  } catch (err) {
-    console.warn("[ScheduledWipe] Delete splits:", err);
+  // If scope not provided, try to detect from active wipe record
+  if (!forceScope) {
+    try {
+      const rec = await queryOne(`SELECT scope FROM scheduled_wipes WHERE status = 'SCHEDULED' ORDER BY created_at DESC LIMIT 1`);
+      if (rec?.scope) scope = rec.scope as WipeScope;
+    } catch {}
   }
 
-  try {
-    await execute(`DELETE FROM customer_payments`);
-  } catch (err) {
-    console.warn("[ScheduledWipe] Delete payments:", err);
+  console.log(`[ScheduledWipe] Executing clear with scope: ${scope}...`);
+
+  if (scope === "all") {
+    // ── Scope ALL: Complete Reset ──
+    try { await execute(`DELETE FROM distribution_splits`); } catch (err) { console.warn("Delete splits:", err); }
+    try { await execute(`DELETE FROM customer_payments`); } catch (err) { console.warn("Delete payments:", err); }
+    try { await execute(`DELETE FROM transactions`); } catch (err) { console.warn("Delete transactions:", err); }
+    try { await execute(`DELETE FROM bank_distrip_records`); } catch (err) { console.warn("Delete bank records:", err); }
+    try { await execute(`DELETE FROM wholesale_settlements`); } catch (err) { console.warn("Delete wholesale settlements:", err); }
+
+    // Clean temporary customer accounts, preserve master parties
+    try {
+      await execute(`
+        DELETE FROM customers 
+        WHERE entity_type != 'PARTY' OR entity_type IS NULL
+      `);
+    } catch (err) { console.warn("Delete non-party customers:", err); }
+
+    // Reset balances on preserved master parties
+    try {
+      await execute(`
+        UPDATE customers 
+        SET total_inr = 0, total_aed = 0, total_paid = 0, outstanding_balance = 0 
+        WHERE entity_type = 'PARTY'
+      `);
+    } catch (err) { console.warn("Reset party totals:", err); }
+
+    // Remove any test distributors, keep official distributors
+    try {
+      await execute(`
+        DELETE FROM distributors 
+        WHERE code NOT IN ('HAJA', 'MK', 'NF2', 'SALA', 'SARAB')
+      `);
+    } catch (err) { console.warn("Clean distributors:", err); }
+
+  } else {
+    // ── Time-based Scopes: week (7d), month (30d), year (365d) ──
+    const now = Date.now();
+    let daysToKeep = 7;
+    if (scope === "month") daysToKeep = 30;
+    if (scope === "year") daysToKeep = 365;
+
+    const cutoffDate = new Date(now - daysToKeep * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    console.log(`[ScheduledWipe] Wiping records older than ${cutoffDate} (${daysToKeep} days retention)...`);
+
+    // 1. Delete distribution splits for transactions older than cutoff
+    try {
+      await execute(`
+        DELETE FROM distribution_splits 
+        WHERE transaction_id IN (SELECT id FROM transactions WHERE date < $1)
+      `, [cutoffDate]);
+    } catch (err) { console.warn("Delete old splits:", err); }
+
+    // 2. Delete transactions older than cutoff
+    try {
+      await execute(`DELETE FROM transactions WHERE date < $1`, [cutoffDate]);
+    } catch (err) { console.warn("Delete old transactions:", err); }
+
+    // 3. Delete customer payments older than cutoff
+    try {
+      await execute(`DELETE FROM customer_payments WHERE payment_date < $1`, [cutoffDate]);
+    } catch (err) { console.warn("Delete old payments:", err); }
+
+    // 4. Delete bank distrip records older than cutoff
+    try {
+      await execute(`DELETE FROM bank_distrip_records WHERE date < $1`, [cutoffDate]);
+    } catch (err) { console.warn("Delete old bank records:", err); }
+
+    // 5. Delete wholesale settlements older than cutoff
+    try {
+      await execute(`DELETE FROM wholesale_settlements WHERE settlement_date < $1`, [cutoffDate]);
+    } catch (err) { console.warn("Delete old settlements:", err); }
+
+    // 6. Recalculate customer balances from remaining transactions and payments
+    try {
+      await execute(`
+        UPDATE customers c
+        SET 
+          total_inr = COALESCE((SELECT SUM(inr_amount) FROM transactions WHERE customer_id = c.id AND status = 'CONFIRMED'), 0),
+          total_aed = COALESCE((SELECT SUM(aed_amount) FROM transactions WHERE customer_id = c.id AND status = 'CONFIRMED'), 0),
+          total_paid = COALESCE((SELECT SUM(amount_aed) FROM customer_payments WHERE customer_id = c.id), 0),
+          outstanding_balance = COALESCE((SELECT SUM(aed_amount) FROM transactions WHERE customer_id = c.id AND status = 'CONFIRMED'), 0) - COALESCE((SELECT SUM(amount_aed) FROM customer_payments WHERE customer_id = c.id), 0)
+        WHERE c.entity_type = 'CUSTOMER'
+      `);
+    } catch (err) { console.warn("Recalculate customer totals:", err); }
+
+    // 7. Recalculate party balances
+    try {
+      await execute(`
+        UPDATE customers c
+        SET 
+          total_inr = COALESCE((SELECT SUM(inr_amount) FROM transactions WHERE customer_id = c.id AND status = 'CONFIRMED'), 0),
+          total_aed = COALESCE((SELECT SUM(aed_amount) FROM transactions WHERE customer_id = c.id AND status = 'CONFIRMED'), 0),
+          total_paid = COALESCE((SELECT SUM(amount_aed) FROM wholesale_settlements WHERE party_id = c.id), 0),
+          outstanding_balance = COALESCE((SELECT SUM(aed_amount) FROM transactions WHERE customer_id = c.id AND status = 'CONFIRMED'), 0) - COALESCE((SELECT SUM(amount_aed) FROM wholesale_settlements WHERE party_id = c.id), 0)
+        WHERE c.entity_type = 'PARTY'
+      `);
+    } catch (err) { console.warn("Recalculate party totals:", err); }
   }
 
-  try {
-    await execute(`DELETE FROM transactions`);
-  } catch (err) {
-    console.warn("[ScheduledWipe] Delete transactions:", err);
-  }
-
-  try {
-    await execute(`DELETE FROM bank_distrip_records`);
-  } catch (err) {
-    console.warn("[ScheduledWipe] Delete bank records:", err);
-  }
-
-  try {
-    await execute(`DELETE FROM wholesale_settlements`);
-  } catch (err) {
-    console.warn("[ScheduledWipe] Delete wholesale settlements:", err);
-  }
-
-  // 2. Clean temporary customer accounts, strictly preserving master parties
-  try {
-    await execute(`
-      DELETE FROM customers 
-      WHERE entity_type != 'PARTY' OR entity_type IS NULL
-    `);
-  } catch (err) {
-    console.warn("[ScheduledWipe] Delete non-party customers:", err);
-  }
-
-  // 3. Reset balances on preserved master parties
-  try {
-    await execute(`
-      UPDATE customers 
-      SET total_inr = 0, total_aed = 0, total_paid = 0, outstanding_balance = 0 
-      WHERE entity_type = 'PARTY'
-    `);
-  } catch (err) {
-    console.warn("[ScheduledWipe] Reset party totals:", err);
-  }
-
-  // 4. Remove any test distributors, keep official distributors (HAJA, MK, NF2, SALA, SARAB)
-  try {
-    await execute(`
-      DELETE FROM distributors 
-      WHERE code NOT IN ('HAJA', 'MK', 'NF2', 'SALA', 'SARAB')
-    `);
-  } catch (err) {
-    console.warn("[ScheduledWipe] Clean distributors:", err);
-  }
-
-  // 5. Invalidate in-memory caches
+  // Invalidate in-memory caches
   invalidateAllCaches();
   invalidateBankDistripCache();
 
-  // 6. Update wipe record status to EXECUTED
+  // Update wipe record status to EXECUTED
   if (wipeId) {
     try {
       await execute(`UPDATE scheduled_wipes SET status = 'EXECUTED' WHERE id = $1`, [wipeId]);
@@ -309,12 +393,12 @@ export async function executeWipeNow(wipeId?: string): Promise<void> {
     await writeStateFile(fileState);
   }
 
-  // 7. Regenerate Remittance_Business_Normalized_Master.xlsx with zero records and fresh structure
+  // Regenerate clean master workbook
   try {
     const buffer = await generateNormalizedMasterWorkbook();
     const filePath = path.resolve(process.cwd(), "Remittance_Business_Normalized_Master.xlsx");
     await fs.writeFile(filePath, buffer);
-    console.log(`[ScheduledWipe] Remittance_Business_Normalized_Master.xlsx refreshed clean (${buffer.length} bytes)`);
+    console.log(`[ScheduledWipe] Remittance_Business_Normalized_Master.xlsx refreshed (${buffer.length} bytes)`);
   } catch (err) {
     console.error("[ScheduledWipe] Failed to regenerate clean master Excel:", err);
   }

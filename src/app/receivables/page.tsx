@@ -498,7 +498,7 @@ export default function ReceivablesPage() {
       {printCustomerData && (
         <div className="hidden print-only thermal-receipt max-w-[80mm] mx-auto p-2 font-mono text-black text-xs">
           <div className="text-center pb-2 mb-2 border-b border-dashed border-black">
-            <h1 className="text-base font-extrabold uppercase tracking-wider">PETTI REMITTANCE</h1>
+            <h1 className="text-base font-extrabold uppercase tracking-wider">REMITTANCE SERVICES</h1>
             <p className="text-[10px] tracking-tight">DUBAI ⇄ INDIA FINANCIAL SERVICES</p>
             <p className="text-[11px] font-bold mt-1 uppercase">CUSTOMER STATEMENT RECEIPT</p>
             <p className="text-[9px] mt-0.5">DATE: {new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</p>

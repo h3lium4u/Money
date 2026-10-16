@@ -4,6 +4,7 @@ import {
   scheduleWipe,
   revokeWipe,
   executeWipeNow,
+  WipeScope,
 } from "@/lib/scheduled-wipe";
 
 export async function GET(request: Request) {
@@ -17,8 +18,9 @@ export async function GET(request: Request) {
     }
 
     if (action === "schedule") {
-      const hours = Number(searchParams.get("hours")) || 24;
-      const status = await scheduleWipe(hours);
+      const minutes = Number(searchParams.get("minutes")) || 10;
+      const scope = (searchParams.get("scope") as WipeScope) || "all";
+      const status = await scheduleWipe(minutes, scope);
       return NextResponse.json(status);
     }
 
@@ -44,13 +46,15 @@ export async function POST(request: Request) {
     }
 
     if (action === "execute_now") {
-      await executeWipeNow();
-      return NextResponse.json({ status: "EXECUTED", message: "Ledger cleared successfully" });
+      const scope = (body.scope as WipeScope) || "all";
+      await executeWipeNow(undefined, scope);
+      return NextResponse.json({ status: "EXECUTED", message: "Ledger cleared successfully", scope });
     }
 
-    // Default action: schedule wipe with delay (default 24 hours)
-    const hours = Number(body.hours) || 24;
-    const status = await scheduleWipe(hours);
+    // Default action: schedule wipe with safety buffer (default 10 minutes)
+    const minutes = Number(body.minutes) || 10;
+    const scope = (body.scope as WipeScope) || "all";
+    const status = await scheduleWipe(minutes, scope);
     return NextResponse.json(status);
   } catch (error: any) {
     console.error("Scheduled wipe POST error:", error);

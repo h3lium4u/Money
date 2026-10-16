@@ -1,19 +1,21 @@
 import { NextResponse } from "next/server";
 import { generateNormalizedMasterWorkbook } from "@/lib/reports/normalized-master-generator";
-import { scheduleWipe } from "@/lib/scheduled-wipe";
+import { scheduleWipe, WipeScope } from "@/lib/scheduled-wipe";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const shouldSchedule = searchParams.get("schedule") !== "false";
+    const minutes = Number(searchParams.get("minutes")) || 10;
+    const scope = (searchParams.get("scope") as WipeScope) || "all";
 
     if (shouldSchedule) {
-      await scheduleWipe(24);
+      await scheduleWipe(minutes, scope);
     }
 
     const buffer = await generateNormalizedMasterWorkbook();
     const dateStr = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-    const filename = `Petti_Remittance_PreWipe_Backup_${dateStr}.xlsx`;
+    const filename = `Remittance_PreWipe_Backup_${scope}_${dateStr}.xlsx`;
 
     return new Response(new Uint8Array(buffer), {
       status: 200,

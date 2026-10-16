@@ -61,12 +61,12 @@ export function ReceiptPrinterModal({
 
     printFiredRef.current = false;
 
-    // Stage 1: Snappy processing (150ms)
+    // Stage 1: Processing animation (600ms)
     const timer1 = setTimeout(() => {
       setStage("printing");
-    }, 150);
+    }, 600);
 
-    // Stage 2: Printing ready & trigger within active user activation window (400ms)
+    // Stage 2: Paper emerges animation completes (2200ms) - triggers print AFTER animation
     const timer2 = setTimeout(() => {
       setStage("complete");
       if (!printFiredRef.current) {
@@ -77,7 +77,7 @@ export function ReceiptPrinterModal({
           console.error("Print invocation error:", e);
         }
       }
-    }, 400);
+    }, 2200);
 
     return () => {
       clearTimeout(timer1);
@@ -85,7 +85,7 @@ export function ReceiptPrinterModal({
     };
   }, [isOpen]);
 
-  const handleInstantPrint = () => {
+  const handlePrintNow = () => {
     setStage("complete");
     printFiredRef.current = true;
     try {
@@ -124,9 +124,9 @@ export function ReceiptPrinterModal({
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <button
               type="button"
-              onClick={handleInstantPrint}
+              onClick={handlePrintNow}
               className={styles.printNowBtn}
-              title="Skip animation and trigger print dialog immediately"
+              title="Print receipt now"
             >
               <Printer size={13} />
               <span>Print Now</span>
@@ -159,7 +159,7 @@ export function ReceiptPrinterModal({
               <ReceiptPrinter.Paper>
                 {/* Header */}
                 <div className={styles.receiptHeader}>
-                  <span className={styles.receiptCompany}>PETTI REMITTANCE</span>
+                  <span className={styles.receiptCompany}>REMITTANCE SERVICES</span>
                   <span className={styles.receiptSubtitle}>DUBAI ➔ INDIA</span>
                   <span className={styles.receiptTitle}>
                     {reportType === "customer-statement"
@@ -290,7 +290,7 @@ export function ReceiptPrinterModal({
           <div className={styles.modalFooter}>
             <button
               type="button"
-              onClick={handleInstantPrint}
+              onClick={handlePrintNow}
               className={styles.printAgainBtn}
               title="Re-open system print dialog"
             >

@@ -83,11 +83,16 @@ export default function ScheduledWipeBanner() {
       <div className="flex items-center gap-2">
         <Hourglass className="w-4 h-4 animate-spin text-amber-200 shrink-0" style={{ animationDuration: "3s" }} />
         <span className="font-bold tracking-tight">
-          24-Hour Ledger Clear Active:
+          10-Minute Ledger Clear Active:
         </span>
         <span className="font-mono font-bold bg-white/20 px-2 py-0.5 rounded text-amber-100">
           {countdownText || wipeStatus.remainingFormatted}
         </span>
+        {wipeStatus.scopeLabel && (
+          <span className="bg-black/30 text-amber-200 px-2 py-0.5 rounded text-[11px] font-semibold">
+            {wipeStatus.scopeLabel}
+          </span>
+        )}
         <span className="hidden md:inline text-rose-100 text-[11px]">
           (Only clears when timer reaches zero. Master parties protected.)
         </span>

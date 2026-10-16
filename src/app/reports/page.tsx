@@ -34,11 +34,12 @@ export default function ReportsPage() {
   const [dailyRows, setDailyRows] = useState<any[]>([]);
   const [showPrinterModal, setShowPrinterModal] = useState(false);
 
-  // 24-Hour Scheduled Wipe & Backup State
+  // 10-Minute Scheduled Wipe & Backup State
   const [wipeStatus, setWipeStatus] = useState<any | null>(null);
   const [wipeLoading, setWipeLoading] = useState(false);
   const [countdownText, setCountdownText] = useState("");
   const [showConfirmSchedule, setShowConfirmSchedule] = useState(false);
+  const [wipeScope, setWipeScope] = useState<"all" | "week" | "month" | "year">("all");
 
   const fromDateRef = useRef<HTMLInputElement>(null);
   const toDateRef = useRef<HTMLInputElement>(null);
@@ -123,8 +124,8 @@ export default function ReportsPage() {
     try {
       // 1. Trigger instantaneous pre-wipe backup download cleanly via blob
       await downloadMasterExcel({
-        url: "/api/system/scheduled-wipe/download-backup?schedule=true",
-        filename: `Petti_Remittance_PreWipe_Backup_${new Date().toISOString().slice(0, 10)}.xlsx`,
+        url: `/api/system/scheduled-wipe/download-backup?schedule=true&minutes=10&scope=${wipeScope}`,
+        filename: `Remittance_PreWipe_Backup_${wipeScope}_${new Date().toISOString().slice(0, 10)}.xlsx`,
       });
 
       // 2. Fetch updated scheduled status
@@ -132,8 +133,9 @@ export default function ReportsPage() {
       const data = await res.json();
       setWipeStatus(data);
 
-      toast.success("24-Hour Clear Scheduled! Pre-wipe backup downloaded.", {
-        description: "Countdown is now running. All data will ONLY be cleared after 24 hours. You can revoke anytime.",
+      const scopeName = wipeScope === "week" ? "Older than 1 Week" : wipeScope === "month" ? "Older than 1 Month" : wipeScope === "year" ? "Older than 1 Year" : "Entire Ledger";
+      toast.success(`10-Minute Clear Scheduled! (${scopeName})`, {
+        description: "Countdown is now running (10 minutes). Pre-wipe backup downloaded. You can revoke anytime.",
         duration: 8000,
       });
     } catch (err: any) {
@@ -218,7 +220,7 @@ export default function ReportsPage() {
       <div className="hidden print-only border-b border-slate-300 pb-3 mb-4">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-lg font-bold text-slate-900 tracking-tight">PETTI REMITTANCE (DUBAI ⇄ INDIA)</h1>
+            <h1 className="text-lg font-bold text-slate-900 tracking-tight">REMITTANCE SERVICES (DUBAI ⇄ INDIA)</h1>
             <p className="text-xs text-slate-600">Financial Operations & Period Report</p>
           </div>
           <div className="text-right text-xs text-slate-700">
@@ -260,7 +262,7 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* 24-Hour Scheduled Ledger & Excel Clear Section - Hidden on Print */}
+      {/* 10-Minute Scheduled Ledger & Excel Clear Section - Hidden on Print */}
       {wipeStatus?.isScheduled ? (
         <div className="bg-gradient-to-r from-rose-50 via-amber-50 to-orange-50 border-2 border-rose-300 dark:border-rose-900 rounded-xl p-5 shadow-sm space-y-3.5 no-print animate-in fade-in duration-300">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -270,14 +272,17 @@ export default function ReportsPage() {
               </div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-sm sm:text-base font-bold text-rose-900">24-Hour Ledger Clear Scheduled</h3>
+                  <h3 className="text-sm sm:text-base font-bold text-rose-900">10-Minute Ledger Clear Scheduled</h3>
                   <span className="px-2.5 py-0.5 text-[10px] font-extrabold bg-rose-200 text-rose-800 rounded-full uppercase tracking-wider animate-pulse flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
                     Countdown Running
                   </span>
+                  <span className="px-2.5 py-0.5 text-[10px] font-bold bg-amber-200 text-amber-900 rounded-full uppercase">
+                    Scope: {wipeStatus.scopeLabel || (wipeStatus.scope === "week" ? "Older than 1 Week" : wipeStatus.scope === "month" ? "Older than 1 Month" : wipeStatus.scope === "year" ? "Older than 1 Year" : "Entire Ledger")}
+                  </span>
                 </div>
                 <p className="text-xs text-rose-700 font-medium">
-                  Ledger and Excel data will ONLY be cleared when the 24-hour timer expires. Master parties are preserved.
+                  Selected ledger data will ONLY be cleared when the 10-minute timer reaches zero. Master parties are preserved.
                 </p>
               </div>
             </div>
@@ -317,7 +322,7 @@ export default function ReportsPage() {
             <div className="flex items-center gap-2">
               <span className="text-slate-500 font-medium">Scheduled Execution:</span>
               <span className="font-semibold text-slate-800 dark:text-slate-200">
-                {wipeStatus.executeAt ? new Date(wipeStatus.executeAt).toLocaleString() : "-"}
+                {wipeStatus.executeAt ? new Date(wipeStatus.executeAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : "-"}
               </span>
             </div>
 
@@ -333,14 +338,14 @@ export default function ReportsPage() {
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                 <ShieldAlert className="w-4 h-4 text-rose-600" />
-                24-Hour Scheduled Excel & Ledger Clear
+                10-Minute Scheduled Excel & Ledger Clear
               </span>
               <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded">
-                Safety Delay Guard
+                10-Min Safety Delay Guard
               </span>
             </div>
             <p className="text-xs text-slate-500 max-w-2xl leading-relaxed">
-              Clear all transactions and reset the Excel ledger with a strict 24-hour safety delay. Clicking the button immediately downloads the latest Excel backup file and starts the countdown. You can click <strong>Revoke</strong> anytime within 24 hours to cancel.
+              Clear your ledger with a strict 10-minute safety delay. Choose to wipe entire data, old week, month, or year data. The latest backup downloads immediately upon scheduling. You can click <strong>Revoke</strong> anytime within 10 minutes to cancel.
             </p>
           </div>
 
@@ -349,25 +354,130 @@ export default function ReportsPage() {
             onClick={() => setShowConfirmSchedule(true)}
             disabled={wipeLoading}
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition-all shrink-0 cursor-pointer active:scale-95"
-            title="Schedule a full clear of the Excel workbook and database with a 24-hour delayed timer"
+            title="Schedule a ledger clear with a 10-minute delay buffer"
           >
             <AlertTriangle className="w-4 h-4" />
-            <span>Schedule 24-Hour Clear & Download Backup</span>
+            <span>Schedule 10-Minute Clear & Download Backup</span>
           </button>
         </div>
       )}
 
-      {/* Confirmation Modal */}
+      {/* Confirmation & Scope Modal */}
       {showConfirmSchedule && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 no-print">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
             <div className="flex items-center gap-3 text-rose-600">
-              <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center shrink-0">
                 <AlertTriangle className="w-5 h-5 text-rose-600" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">Schedule 24-Hour Ledger Clear?</h3>
-                <p className="text-xs text-slate-500">24-hour delayed reset with safety revoke</p>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Schedule 10-Minute Ledger Clear</h3>
+                <p className="text-xs text-slate-500">Choose data wipe scope with 10-minute safety revoke buffer</p>
+              </div>
+            </div>
+
+            {/* Scope Selection Options */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                Select Data Wipe Scope:
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                {/* 1. Entire Data */}
+                <label
+                  onClick={() => setWipeScope("all")}
+                  className={`p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between ${
+                    wipeScope === "all"
+                      ? "border-rose-500 bg-rose-50/50 dark:bg-rose-950/30 ring-1 ring-rose-500"
+                      : "border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-bold text-slate-900 dark:text-white">Entire Ledger</span>
+                    <input
+                      type="radio"
+                      name="wipeScope"
+                      checked={wipeScope === "all"}
+                      onChange={() => setWipeScope("all")}
+                      className="text-rose-600 focus:ring-rose-500"
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-tight">
+                    Full reset. Clears all transactions, splits & retail customers.
+                  </p>
+                </label>
+
+                {/* 2. Old Week Data */}
+                <label
+                  onClick={() => setWipeScope("week")}
+                  className={`p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between ${
+                    wipeScope === "week"
+                      ? "border-rose-500 bg-rose-50/50 dark:bg-rose-950/30 ring-1 ring-rose-500"
+                      : "border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-bold text-slate-900 dark:text-white">Older than 1 Week</span>
+                    <input
+                      type="radio"
+                      name="wipeScope"
+                      checked={wipeScope === "week"}
+                      onChange={() => setWipeScope("week")}
+                      className="text-rose-600 focus:ring-rose-500"
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-tight">
+                    Deletes data &gt; 7 days old. Keeps the last 7 days of records.
+                  </p>
+                </label>
+
+                {/* 3. Old Month Data */}
+                <label
+                  onClick={() => setWipeScope("month")}
+                  className={`p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between ${
+                    wipeScope === "month"
+                      ? "border-rose-500 bg-rose-50/50 dark:bg-rose-950/30 ring-1 ring-rose-500"
+                      : "border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-bold text-slate-900 dark:text-white">Older than 1 Month</span>
+                    <input
+                      type="radio"
+                      name="wipeScope"
+                      checked={wipeScope === "month"}
+                      onChange={() => setWipeScope("month")}
+                      className="text-rose-600 focus:ring-rose-500"
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-tight">
+                    Deletes data &gt; 30 days old. Keeps the last 30 days of records.
+                  </p>
+                </label>
+
+                {/* 4. Old Year Data */}
+                <label
+                  onClick={() => setWipeScope("year")}
+                  className={`p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between ${
+                    wipeScope === "year"
+                      ? "border-rose-500 bg-rose-50/50 dark:bg-rose-950/30 ring-1 ring-rose-500"
+                      : "border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-bold text-slate-900 dark:text-white">Older than 1 Year</span>
+                    <input
+                      type="radio"
+                      name="wipeScope"
+                      checked={wipeScope === "year"}
+                      onChange={() => setWipeScope("year")}
+                      className="text-rose-600 focus:ring-rose-500"
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-tight">
+                    Deletes data &gt; 365 days old. Keeps current year transactions.
+                  </p>
+                </label>
               </div>
             </div>
 
@@ -378,11 +488,11 @@ export default function ReportsPage() {
               </p>
               <p className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
                 <Hourglass className="w-4 h-4 text-amber-600 shrink-0" />
-                Data will NOT be touched for 24 hours.
+                Data will NOT be touched for 10 minutes.
               </p>
               <p className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                You can Revoke / Cancel the clear anytime within the 24 hours.
+                You can Revoke / Cancel the clear anytime within 10 minutes.
               </p>
               <p className="text-[11px] text-slate-500 pt-1 border-t border-slate-200 dark:border-slate-700">
                 Core master parties (HAJA · MK · NF2 · SALA · SARAB) are permanently protected and never deleted.
@@ -404,7 +514,7 @@ export default function ReportsPage() {
                 className="px-4 py-2 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-sm cursor-pointer flex items-center gap-1.5"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>{wipeLoading ? "Processing..." : "Confirm & Download Backup"}</span>
+                <span>{wipeLoading ? "Processing..." : "Confirm & Download Backup (10m Delay)"}</span>
               </button>
             </div>
           </div>

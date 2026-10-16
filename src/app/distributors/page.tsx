@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, Fragment, useMemo, useRef } from "react";
 import Link from "next/link";
 import { numberToIndianWords } from "@/lib/number-to-words";
 import { getTodayDateString } from "@/lib/date-utils";
@@ -13,6 +13,7 @@ import {
   Trash2,
   User,
   ChevronDown,
+  ChevronUp,
   Filter,
   Landmark,
 } from "lucide-react";
@@ -71,6 +72,8 @@ export default function IndiaDistributionPage() {
   const [sortField, setSortField] = useState<"date" | "customer" | "distributor" | "amount">("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [groupByDistributor, setGroupByDistributor] = useState(false);
+  const [isCustomerCardsCollapsed, setIsCustomerCardsCollapsed] = useState(false);
+  const detailsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadData();
@@ -82,6 +85,10 @@ export default function IndiaDistributionPage() {
     } else {
       setSelectedTxnId(txnId);
       setModalTxnId(txnId);
+      // Automatically scroll smoothly to the details & splits breakdown table
+      setTimeout(() => {
+        detailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 60);
     }
   }
 
@@ -272,92 +279,117 @@ export default function IndiaDistributionPage() {
   const totalPendingInr = transactions.reduce((sum, t) => sum + (Number(t.remaining_inr) || 0), 0);
 
 
+  // High-performance O(1) indexed lookup map for splits (eliminates 368,000 loop overhead)
+  const splitsByTxn = useMemo(() => {
+    const map = new Map<string, any[]>();
+    for (let i = 0; i < splits.length; i++) {
+      const s = splits[i];
+      const tId = s.transaction_id;
+      const tNum = s.transaction_number;
+      if (tId) {
+        let arr = map.get(tId);
+        if (!arr) { arr = []; map.set(tId, arr); }
+        arr.push(s);
+      }
+      if (tNum && tNum !== tId) {
+        let arr = map.get(tNum);
+        if (!arr) { arr = []; map.set(tNum, arr); }
+        arr.push(s);
+      }
+    }
+    return map;
+  }, [splits]);
+
   // Selected Txn in page / modal
-  const selectedTxn = transactions.find(
-    (t) => t.id === selectedTxnId || t.transaction_number === selectedTxnId
-  );
+  const selectedTxn = useMemo(() => {
+    if (!selectedTxnId) return null;
+    return transactions.find(
+      (t) => t.id === selectedTxnId || t.transaction_number === selectedTxnId
+    ) || null;
+  }, [transactions, selectedTxnId]);
+
   const selectedModalTxn = transactions.find((t) => t.id === modalTxnId) || selectedTxn || transactions[0];
 
   // Base pool: filter by selected customer first
-  const baseSplits = selectedTxnId
-    ? splits.filter(
-        (s) =>
-          s.transaction_id === selectedTxnId ||
-          s.transaction_number === selectedTxn?.transaction_number
-      )
-    : splits;
+  const baseSplits = useMemo(() => {
+    if (!selectedTxnId) return splits;
+    return splitsByTxn.get(selectedTxnId) || (selectedTxn?.transaction_number ? splitsByTxn.get(selectedTxn.transaction_number) : []) || [];
+  }, [splits, selectedTxnId, splitsByTxn, selectedTxn?.transaction_number]);
 
   // Apply search + filters to raw splits (for grouped view)
-  const filteredSplits = baseSplits.filter((s) => {
-    const q = searchText.toLowerCase();
-    if (q && !(
-      s.customer_name?.toLowerCase().includes(q) ||
-      s.distributor_name?.toLowerCase().includes(q) ||
-      s.distributor_code?.toLowerCase().includes(q) ||
-      s.transaction_number?.toLowerCase().includes(q) ||
-      s.notes?.toLowerCase().includes(q)
-    )) return false;
-    if (filterDistributor !== "all" && s.distributor_id !== filterDistributor) return false;
-    if (filterStatus !== "all" && s.status !== filterStatus) return false;
-    return true;
-  });
+  const filteredSplits = useMemo(() => {
+    return baseSplits.filter((s) => {
+      const q = searchText.toLowerCase();
+      if (q && !(
+        s.customer_name?.toLowerCase().includes(q) ||
+        s.distributor_name?.toLowerCase().includes(q) ||
+        s.distributor_code?.toLowerCase().includes(q) ||
+        s.transaction_number?.toLowerCase().includes(q) ||
+        s.notes?.toLowerCase().includes(q)
+      )) return false;
+      if (filterDistributor !== "all" && s.distributor_id !== filterDistributor) return false;
+      if (filterStatus !== "all" && s.status !== filterStatus) return false;
+      return true;
+    });
+  }, [baseSplits, searchText, filterDistributor, filterStatus]);
 
-  // Combine splits by transaction so each customer transaction is ONE single line
-  const combinedTxnRows = transactions
-    .map((t) => {
-      const txnSplits = splits.filter(
-        (s) => s.transaction_id === t.id || s.transaction_number === t.transaction_number
-      );
-      const totalAllocated = txnSplits.reduce((sum, s) => sum + Number(s.inr_amount || 0), 0);
-      const orderInr = Number(t.inr_amount || 0);
-      const remainingInr = Math.max(0, orderInr - totalAllocated);
-      const isFullyAllocated = remainingInr === 0 && totalAllocated > 0;
+  // Combine splits by transaction (Memoized with O(1) indexed lookups for 0 latency)
+  const combinedTxnRows = useMemo(() => {
+    return transactions
+      .map((t) => {
+        const txnSplits = splitsByTxn.get(t.id) || (t.transaction_number ? splitsByTxn.get(t.transaction_number) : []) || [];
+        const totalAllocated = txnSplits.reduce((sum, s) => sum + Number(s.inr_amount || 0), 0);
+        const orderInr = Number(t.inr_amount || 0);
+        const remainingInr = Math.max(0, orderInr - totalAllocated);
+        const isFullyAllocated = remainingInr === 0 && totalAllocated > 0;
 
-      // Group distributors for this transaction
-      const distMap: Record<string, { id: string; name: string; code: string; inr_amount: number; aed_equivalent: number }> = {};
-      txnSplits.forEach((s) => {
-        const dId = s.distributor_id;
-        const dName = s.distributor_name || s.distributor_code || "Distributor";
-        if (!distMap[dId]) {
-          distMap[dId] = {
-            id: dId,
-            name: dName,
-            code: s.distributor_code || dName,
-            inr_amount: 0,
-            aed_equivalent: 0,
-          };
+        // Group distributors for this transaction
+        const distMap: Record<string, { id: string; name: string; code: string; inr_amount: number; aed_equivalent: number }> = {};
+        for (let i = 0; i < txnSplits.length; i++) {
+          const s = txnSplits[i];
+          const dId = s.distributor_id;
+          const dName = s.distributor_name || s.distributor_code || "Distributor";
+          if (!distMap[dId]) {
+            distMap[dId] = {
+              id: dId,
+              name: dName,
+              code: s.distributor_code || dName,
+              inr_amount: 0,
+              aed_equivalent: 0,
+            };
+          }
+          distMap[dId].inr_amount += Number(s.inr_amount || 0);
+          distMap[dId].aed_equivalent += Number(s.aed_equivalent || 0);
         }
-        distMap[dId].inr_amount += Number(s.inr_amount || 0);
-        distMap[dId].aed_equivalent += Number(s.aed_equivalent || 0);
-      });
 
-      const distList = Object.values(distMap);
-      const distNamesStr = distList.map((d) => d.name).join(", ");
-      const totalAedEq = txnSplits.reduce((sum, s) => sum + Number(s.aed_equivalent || 0), 0);
-      const latestDate = txnSplits.length > 0 ? txnSplits[0].split_date : t.transaction_date;
+        const distList = Object.values(distMap);
+        const distNamesStr = distList.map((d) => d.name).join(", ");
+        const totalAedEq = txnSplits.reduce((sum, s) => sum + Number(s.aed_equivalent || 0), 0);
+        const latestDate = txnSplits.length > 0 ? txnSplits[0].split_date : t.transaction_date;
 
-      return {
-        id: t.id,
-        transaction_number: t.transaction_number,
-        transaction_date: latestDate,
-        customer_id: t.customer_id,
-        customer_code: t.customer_code,
-        customer_name: t.customer_name,
-        order_inr: orderInr,
-        total_allocated_inr: totalAllocated,
-        remaining_inr: remainingInr,
-        wholesale_rate: txnSplits[0]?.wholesale_rate || t.base_rate,
-        total_aed_equivalent: totalAedEq,
-        distributors: distList,
-        distributor_names_str: distNamesStr || "-",
-        is_fully_allocated: isFullyAllocated,
-        status: isFullyAllocated ? "FULLY ALLOCATED" : totalAllocated > 0 ? "PARTIAL" : "UNALLOCATED",
-        splits: txnSplits,
-        notes: txnSplits.map((s) => s.notes).filter(Boolean).join("; ") || t.notes || "-",
-        raw_txn: t,
-      };
-    })
-    .filter((row) => row.splits.length > 0 || (selectedTxnId && (row.id === selectedTxnId || row.transaction_number === selectedTxn?.transaction_number)));
+        return {
+          id: t.id,
+          transaction_number: t.transaction_number,
+          transaction_date: latestDate,
+          customer_id: t.customer_id,
+          customer_code: t.customer_code,
+          customer_name: t.customer_name,
+          order_inr: orderInr,
+          total_allocated_inr: totalAllocated,
+          remaining_inr: remainingInr,
+          wholesale_rate: txnSplits[0]?.wholesale_rate || t.base_rate,
+          total_aed_equivalent: totalAedEq,
+          distributors: distList,
+          distributor_names_str: distNamesStr || "-",
+          is_fully_allocated: isFullyAllocated,
+          status: isFullyAllocated ? "FULLY ALLOCATED" : totalAllocated > 0 ? "PARTIAL" : "UNALLOCATED",
+          splits: txnSplits,
+          notes: txnSplits.map((s) => s.notes).filter(Boolean).join("; ") || t.notes || "-",
+          raw_txn: t,
+        };
+      })
+      .filter((row) => row.splits.length > 0 || (selectedTxnId && (row.id === selectedTxnId || row.transaction_number === selectedTxn?.transaction_number)));
+  }, [transactions, splitsByTxn, selectedTxnId, selectedTxn?.transaction_number]);
 
   // Filter combined rows
   const filteredTxnRows = combinedTxnRows.filter((r) => {
@@ -592,6 +624,69 @@ export default function IndiaDistributionPage() {
 
       <div className="space-y-4">
 
+          {/* ACTIVE SELECTED CUSTOMER BANNER (Shown at the TOP so user sees details immediately without scrolling) */}
+          {selectedTxn && (
+            <div className="p-4 bg-teal-50 border-2 border-teal-500 rounded-xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 animate-in fade-in duration-150">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] uppercase tracking-wider font-extrabold text-teal-950 bg-teal-200 px-2 py-0.5 rounded">
+                    Selected Customer
+                  </span>
+                  <span className="text-base font-extrabold text-slate-900">{selectedTxn.customer_name}</span>
+                  <span className="font-mono text-xs font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-teal-300">
+                    {selectedTxn.transaction_number}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-700 pt-1">
+                  <span>Total Order: <strong className="text-slate-900">{formatINR(selectedTxn.inr_amount)}</strong></span>
+                  <span>Allocated: <strong className="text-emerald-700">{formatINR(selectedTxn.total_distributed_inr)}</strong></span>
+                  <span>
+                    Remaining to Split:{" "}
+                    <strong
+                      className={
+                        (selectedTxn.remaining_inr || 0) > 0
+                          ? "text-amber-800 font-extrabold text-sm"
+                          : "text-teal-700 font-bold"
+                      }
+                    >
+                      {formatINR(selectedTxn.remaining_inr)}
+                    </strong>
+                  </span>
+                  {(selectedTxn.remaining_inr || 0) > 0 && numberToIndianWords(selectedTxn.remaining_inr) && (
+                    <span className="text-[11px] text-teal-900 bg-white px-2 py-0.5 rounded border border-teal-200 font-medium">
+                      ({numberToIndianWords(selectedTxn.remaining_inr)})
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {(selectedTxn.remaining_inr || 0) > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => openAddModalForTxn(selectedTxn)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    <span>+ Add Split ({formatINR(selectedTxn.remaining_inr)})</span>
+                  </button>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-xs font-bold bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-lg border border-emerald-300">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>100% Fully Distributed</span>
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setSelectedTxnId(null)}
+                  className="px-2.5 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 rounded-lg border border-slate-300 cursor-pointer"
+                >
+                  Show All Customers
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Customer Orders & Allocation Selector */}
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
@@ -599,26 +694,46 @@ export default function IndiaDistributionPage() {
                 <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                   <User className="w-4 h-4 text-teal-700" />
                   <span>Customer Orders & Remaining Allocation</span>
+                  <span className="text-[11px] font-normal text-slate-400 font-mono">({transactions.length} orders)</span>
                 </h3>
                 <p className="text-[11px] text-slate-500">
-                  Click any customer below to view their remaining split balance and allocate to another India party.
+                  Click any customer below to view their allocation and distribute splits.
                 </p>
               </div>
-              {selectedTxnId && (
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setSelectedTxnId(null)}
-                  className="text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg transition-all"
+                  onClick={() => setIsCustomerCardsCollapsed(!isCustomerCardsCollapsed)}
+                  className="text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer"
                 >
-                  ✕ Show All ({splits.length} splits)
+                  {isCustomerCardsCollapsed ? (
+                    <>
+                      <span>Show Customer Grid</span>
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </>
+                  ) : (
+                    <>
+                      <span>Compact Grid</span>
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    </>
+                  )}
                 </button>
-              )}
+                {selectedTxnId && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTxnId(null)}
+                    className="text-xs font-bold text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-2.5 py-1 rounded-lg transition-all cursor-pointer"
+                  >
+                    ✕ Clear Selection
+                  </button>
+                )}
+              </div>
             </div>
 
             {transactions.length === 0 ? (
               <p className="text-xs text-slate-400 py-2">No customer remittance orders found.</p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+            ) : !isCustomerCardsCollapsed ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 max-h-64 overflow-y-auto pr-1">
                 {transactions.map((t) => {
                   const isSelected = selectedTxnId === t.id;
                   const rem = Number(t.remaining_inr || 0);
@@ -664,7 +779,7 @@ export default function IndiaDistributionPage() {
                               e.stopPropagation();
                               openAddModalForTxn(t);
                             }}
-                            className="text-[10px] font-bold text-white bg-teal-700 hover:bg-teal-800 px-2 py-0.5 rounded shadow-sm"
+                            className="text-[10px] font-bold text-white bg-teal-700 hover:bg-teal-800 px-2 py-0.5 rounded shadow-sm cursor-pointer"
                           >
                             + Split
                           </button>
@@ -674,71 +789,11 @@ export default function IndiaDistributionPage() {
                   );
                 })}
               </div>
-            )}
+            ) : null}
           </div>
 
-          {/* ACTIVE SELECTED CUSTOMER BANNER */}
-          {selectedTxn && (
-            <div className="p-4 bg-teal-50 border-2 border-teal-400 rounded-xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 animate-in fade-in duration-150">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] uppercase tracking-wider font-extrabold text-teal-950 bg-teal-200 px-2 py-0.5 rounded">
-                    Selected Customer
-                  </span>
-                  <span className="text-base font-extrabold text-slate-900">{selectedTxn.customer_name}</span>
-                  <span className="font-mono text-xs font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-teal-300">
-                    {selectedTxn.transaction_number}
-                  </span>
-                </div>
-                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-700 pt-1">
-                  <span>Total Order: <strong className="text-slate-900">{formatINR(selectedTxn.inr_amount)}</strong></span>
-                  <span>Allocated: <strong className="text-emerald-700">{formatINR(selectedTxn.total_distributed_inr)}</strong></span>
-                  <span>
-                    Remaining to Split:{" "}
-                    <strong
-                      className={
-                        (selectedTxn.remaining_inr || 0) > 0
-                          ? "text-amber-800 font-extrabold text-sm"
-                          : "text-teal-700 font-bold"
-                      }
-                    >
-                      {formatINR(selectedTxn.remaining_inr)}
-                    </strong>
-                  </span>
-                  {(selectedTxn.remaining_inr || 0) > 0 && numberToIndianWords(selectedTxn.remaining_inr) && (
-                    <span className="text-[11px] text-teal-900 bg-white px-2 py-0.5 rounded border border-teal-200 font-medium">
-                      ({numberToIndianWords(selectedTxn.remaining_inr)})
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                {(selectedTxn.remaining_inr || 0) > 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => openAddModalForTxn(selectedTxn)}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-lg shadow-sm"
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                    <span>+ Add Split for {selectedTxn.customer_name} ({formatINR(selectedTxn.remaining_inr)})</span>
-                  </button>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-xs font-bold bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-lg border border-emerald-300">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>100% Fully Distributed</span>
-                  </span>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setSelectedTxnId(null)}
-                  className="px-2.5 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 rounded-lg border border-slate-300"
-                >
-                  Show All
-                </button>
-              </div>
-            </div>
-          )}
+          {/* Anchor Ref for smooth scroll to details & splits table */}
+          <div ref={detailsRef} className="scroll-mt-4"></div>
 
           {/* ─── Filter & Sort Bar ─── */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3.5 space-y-2.5">
