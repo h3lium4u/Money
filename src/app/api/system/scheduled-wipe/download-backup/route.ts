@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { generateNormalizedMasterWorkbook } from "@/lib/reports/normalized-master-generator";
 import { scheduleWipe, WipeScope } from "@/lib/scheduled-wipe";
+import { verifyMasterPassword } from "@/lib/auth";
 
 export async function GET(request: Request) {
   try {
@@ -8,8 +9,16 @@ export async function GET(request: Request) {
     const shouldSchedule = searchParams.get("schedule") !== "false";
     const minutes = Number(searchParams.get("minutes")) || 10;
     const scope = (searchParams.get("scope") as WipeScope) || "all";
+    const password = searchParams.get("password") || "";
 
     if (shouldSchedule) {
+      const isAuth = await verifyMasterPassword(password);
+      if (!isAuth) {
+        return NextResponse.json(
+          { error: "Incorrect password. Wipe authorization denied." },
+          { status: 401 }
+        );
+      }
       await scheduleWipe(minutes, scope);
     }
 

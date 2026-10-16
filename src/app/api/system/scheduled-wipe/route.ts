@@ -6,6 +6,7 @@ import {
   executeWipeNow,
   WipeScope,
 } from "@/lib/scheduled-wipe";
+import { verifyMasterPassword } from "@/lib/auth";
 
 let cachedStatus: any = null;
 let lastStatusFetchTime = 0;
@@ -19,14 +20,6 @@ export async function GET(request: Request) {
     if (action === "revoke") {
       cachedStatus = null;
       const status = await revokeWipe();
-      return NextResponse.json(status);
-    }
-
-    if (action === "schedule") {
-      cachedStatus = null;
-      const minutes = Number(searchParams.get("minutes")) || 10;
-      const scope = (searchParams.get("scope") as WipeScope) || "all";
-      const status = await scheduleWipe(minutes, scope);
       return NextResponse.json(status);
     }
 
@@ -57,6 +50,24 @@ export async function POST(request: Request) {
     if (action === "revoke") {
       const status = await revokeWipe();
       return NextResponse.json(status);
+    }
+
+    // Wiping data strictly requires master password authorization
+    if (action === "execute_now" || action === "schedule") {
+      const password = body.password;
+      if (!password || typeof password !== "string") {
+        return NextResponse.json(
+          { error: "Master password is required to authorize data wipe." },
+          { status: 401 }
+        );
+      }
+      const isAuth = await verifyMasterPassword(password);
+      if (!isAuth) {
+        return NextResponse.json(
+          { error: "Incorrect password. Data wipe unauthorized." },
+          { status: 401 }
+        );
+      }
     }
 
     if (action === "execute_now") {

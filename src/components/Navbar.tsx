@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { Calendar, Globe, Sparkles, Menu, Moon, Sun } from "lucide-react";
+import { Calendar, Globe, Sparkles, Menu, Moon, Sun, KeyRound, Lock } from "lucide-react";
 import AIQuickModal from "@/components/AIQuickModal";
 import { useTheme } from "@/context/ThemeContext";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Navbar() {
   const pathname = usePathname();
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const { theme, toggleTheme, toggleMobileMenu } = useTheme();
+  const { openChangePassword, lock } = useAuth();
   const isDark = theme === "dark";
 
   let title = "Dashboard";
@@ -131,6 +133,36 @@ export default function Navbar() {
               />
               Neon
             </span>
+          </button>
+
+          {/* Change Password Button */}
+          <button
+            type="button"
+            onClick={openChangePassword}
+            title="Change Master Password"
+            className={`p-2 rounded-full border transition-all cursor-pointer flex items-center justify-center ${
+              isDark
+                ? "border-slate-700 bg-slate-800 text-teal-400 hover:bg-slate-700 hover:text-teal-300"
+                : "border-slate-300 bg-slate-50 text-teal-700 hover:bg-slate-100 hover:text-teal-800"
+            }`}
+            aria-label="Change Master Password"
+          >
+            <KeyRound className="w-4 h-4" />
+          </button>
+
+          {/* Quick Lock Button */}
+          <button
+            type="button"
+            onClick={lock}
+            title="Lock System"
+            className={`p-2 rounded-full border transition-all cursor-pointer flex items-center justify-center ${
+              isDark
+                ? "border-slate-700 bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-rose-400"
+                : "border-slate-300 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-rose-600"
+            }`}
+            aria-label="Lock System"
+          >
+            <Lock className="w-4 h-4" />
           </button>
 
           {/* Theme Toggle Button (Light/Dark Mode) */}

@@ -40,6 +40,7 @@ export default function ReportsPage() {
   const [countdownText, setCountdownText] = useState("");
   const [showConfirmSchedule, setShowConfirmSchedule] = useState(false);
   const [wipeScope, setWipeScope] = useState<"all" | "week" | "month" | "year">("all");
+  const [wipePassword, setWipePassword] = useState("");
 
   const fromDateRef = useRef<HTMLInputElement>(null);
   const toDateRef = useRef<HTMLInputElement>(null);
@@ -77,7 +78,7 @@ export default function ReportsPage() {
       const sp = new URLSearchParams(window.location.search);
       const trigger = sp.get("trigger") || sp.get("action");
       if (trigger === "schedule-wipe") {
-        handleScheduleWipe();
+        setShowConfirmSchedule(true);
         window.history.replaceState({}, "", window.location.pathname);
       } else if (trigger === "revoke-wipe") {
         handleRevokeWipe();
@@ -121,11 +122,15 @@ export default function ReportsPage() {
   }, [wipeStatus?.isScheduled, wipeStatus?.executeAt]);
 
   async function handleScheduleWipe() {
+    if (!wipePassword.trim()) {
+      toast.error("Master password is required to authorize wiping data.");
+      return;
+    }
     setWipeLoading(true);
     try {
-      // 1. Trigger instantaneous pre-wipe backup download cleanly via blob
+      // 1. Trigger instantaneous pre-wipe backup download cleanly via blob with password authentication
       await downloadMasterExcel({
-        url: `/api/system/scheduled-wipe/download-backup?schedule=true&minutes=10&scope=${wipeScope}`,
+        url: `/api/system/scheduled-wipe/download-backup?schedule=true&minutes=10&scope=${wipeScope}&password=${encodeURIComponent(wipePassword.trim())}`,
         filename: `Remittance_PreWipe_Backup_${wipeScope}_${new Date().toISOString().slice(0, 10)}.xlsx`,
       });
 
@@ -139,11 +144,12 @@ export default function ReportsPage() {
         description: "Countdown is now running (10 minutes). Pre-wipe backup downloaded. You can revoke anytime.",
         duration: 8000,
       });
+      setWipePassword("");
+      setShowConfirmSchedule(false);
     } catch (err: any) {
-      toast.error("Failed to schedule clear: " + (err?.message || "Unknown error"));
+      toast.error(err?.message || "Failed to schedule clear. Invalid password or server error.");
     } finally {
       setWipeLoading(false);
-      setShowConfirmSchedule(false);
     }
   }
 
@@ -500,10 +506,34 @@ export default function ReportsPage() {
               </p>
             </div>
 
+            {/* Master Password Input for Security Authorization */}
+            <div className="space-y-1.5 pt-1">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                <span>Enter Master Password to authorize wipe: <span className="text-rose-500">*</span></span>
+                <span className="text-[10px] text-slate-400">Strictly required</span>
+              </label>
+              <input
+                type="password"
+                value={wipePassword}
+                onChange={(e) => setWipePassword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && wipePassword.trim() && !wipeLoading) {
+                    handleScheduleWipe();
+                  }
+                }}
+                placeholder="Enter master password..."
+                className="w-full px-3.5 py-2.5 rounded-lg text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                autoFocus
+              />
+            </div>
+
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => setShowConfirmSchedule(false)}
+                onClick={() => {
+                  setShowConfirmSchedule(false);
+                  setWipePassword("");
+                }}
                 className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
               >
                 Cancel
@@ -511,8 +541,8 @@ export default function ReportsPage() {
               <button
                 type="button"
                 onClick={handleScheduleWipe}
-                disabled={wipeLoading}
-                className="px-4 py-2 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-sm cursor-pointer flex items-center gap-1.5"
+                disabled={wipeLoading || !wipePassword.trim()}
+                className="px-4 py-2 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white shadow-sm cursor-pointer flex items-center gap-1.5"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>{wipeLoading ? "Processing..." : "Confirm & Download Backup (10m Delay)"}</span>
