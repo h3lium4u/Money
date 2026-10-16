@@ -358,7 +358,7 @@ export default function PartiesPage() {
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-              Parties & Remittance Settlement
+              Parties & Distribution Settlement
             </h2>
             <span className="px-2.5 py-0.5 text-[11px] font-bold rounded-full bg-teal-100 dark:bg-teal-950/80 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
               Dubai & India Partners
@@ -374,7 +374,7 @@ export default function PartiesPage() {
             href="/transactions/new"
             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-lg shadow-sm transition-colors cursor-pointer"
           >
-            <span>+ New Remittance</span>
+            <span>+ New Transfer</span>
           </Link>
 
           <button
@@ -660,7 +660,7 @@ export default function PartiesPage() {
                 <span>INR Parties Split Allocation Matrix</span>
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Breakdown of customer remittance splits assigned to each India party across all periods.
+                Breakdown of customer distribution splits assigned to each India party across all periods.
               </p>
             </div>
             <div className="text-xs text-slate-500 font-mono">
@@ -855,7 +855,7 @@ export default function PartiesPage() {
                 )}
               </h3>
               <p className="text-xs text-teal-200/80 mt-1">
-                Grand total of all customer remittance amounts assigned across all India parties for this period.
+                Grand total of all customer transfer amounts assigned across all India parties for this period.
               </p>
             </div>
 
@@ -937,7 +937,7 @@ export default function PartiesPage() {
             <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5 text-teal-600" />
-                <span>Customer Remittance Splits in this Period</span>
+                <span>Customer Distribution Splits in this Period</span>
               </h4>
               <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
                 Total: {formatINR(totalFilteredSplitInr)}
@@ -946,7 +946,7 @@ export default function PartiesPage() {
 
             {filteredAssignments.length === 0 ? (
               <div className="p-8 text-center text-slate-400 text-xs">
-                No customer remittance splits recorded in this period.
+                No customer distribution splits recorded in this period.
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -1037,7 +1037,7 @@ export default function PartiesPage() {
               <div>
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5 text-teal-600" />
-                  <span>Customer Remittances Assigned to INR Parties</span>
+                  <span>Customer Transfers Assigned to INR Parties</span>
                 </h3>
                 <p className="text-[11px] text-slate-400 mt-0.5">
                   Showing {filteredAssignments.length} split allocation records.
@@ -1050,7 +1050,7 @@ export default function PartiesPage() {
 
             {filteredAssignments.length === 0 ? (
               <div className="p-8 text-center text-slate-400 text-xs">
-                No customer remittance splits match your query.
+                No customer transfer splits match your query.
               </div>
             ) : (
               <div className="overflow-x-auto">

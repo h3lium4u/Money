@@ -644,19 +644,19 @@ function DubaiClientTransactionsContent() {
         <FadeIn delay={0.2}>
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
             <div className="w-full overflow-x-auto">
-              <table className="w-full text-left text-xs table-fixed min-w-[1260px]">
+              <table className="w-full text-left text-xs table-fixed min-w-[1300px]">
                 <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800 text-[10px]">
                   <tr>
                     <th className="px-2.5 py-3 w-[7.5%]">Date</th>
                     <th className="px-2.5 py-3 w-[11%]">Dubai Client</th>
                     <th className="px-2.5 py-3 w-[10%]">Total (INR)</th>
-                    <th className="px-2.5 py-3 w-[7%]">Client Rate</th>
-                    <th className="px-2.5 py-3 w-[7%]">Wholesale Rate</th>
+                    <th className="px-2 py-3 w-[6.5%]">Client Rate</th>
+                    <th className="px-2 py-3 w-[6.5%]">Wholesale Rate</th>
                     <th className="px-2.5 py-3 w-[9.5%]">In Dhirams</th>
                     <th className="px-2.5 py-3 w-[9%]">Paid Amount</th>
-                    <th className="px-2.5 py-3 w-[10.5%]">Balance to Paid</th>
-                    <th className="px-3 py-3 w-[13.5%]">Daily Balance</th>
-                    <th className="px-3 py-3 text-right w-[15%]">Actions</th>
+                    <th className="px-2.5 py-3 w-[10%]">Balance to Paid</th>
+                    <th className="px-2.5 py-3 w-[13%]">Daily Balance</th>
+                    <th className="px-2.5 py-3 text-right w-[17%]">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
@@ -804,8 +804,8 @@ function DubaiClientTransactionsContent() {
                           </td>
 
                           {/* 10. Actions */}
-                          <td className="px-3 py-2.5 text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-1.5 shrink-0">
+                          <td className="px-2.5 py-2.5 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-1 shrink-0">
                               {/* Quick Pay */}
                               {t.status === "CONFIRMED" && balanceToPaidVal > 0 && (
                                 <button

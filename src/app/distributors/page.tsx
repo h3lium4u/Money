@@ -583,7 +583,7 @@ export default function IndiaDistributionPage() {
             </span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Allocate customer remittance orders to India distributors (MK · SALA). Date-wise settlement & payouts are tracked in Bank Distribution.
+            Allocate customer transfer orders to India distributors (MK · SALA). Date-wise settlement & payouts are tracked in Bank Distribution.
           </p>
         </div>
 
@@ -699,7 +699,7 @@ export default function IndiaDistributionPage() {
       <div className="space-y-4">
 
           {/* ─── TOP PANEL: SELECTED CUSTOMER DETAILS & DISTRIBUTION BREAKDOWN ─── */}
-          <div ref={topDetailsRef} className="scroll-mt-6">
+          <div ref={topDetailsRef} className="scroll-mt-24">
             {selectedTxn && (
               <div className="p-5 bg-white dark:bg-slate-900 border-2 border-teal-500 rounded-2xl shadow-lg space-y-4 animate-in fade-in duration-200">
                 {/* Header: Customer Name, Code, Txn ID, Date & Actions */}
@@ -992,7 +992,7 @@ export default function IndiaDistributionPage() {
             </div>
 
             {transactions.length === 0 ? (
-              <p className="text-xs text-slate-400 py-2">No customer remittance orders found.</p>
+              <p className="text-xs text-slate-400 py-2">No customer transfer orders found.</p>
             ) : !isCustomerCardsCollapsed ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 max-h-64 overflow-y-auto pr-1">
                 {transactions.map((t) => {
@@ -1817,7 +1817,7 @@ export default function IndiaDistributionPage() {
             {/* Read-only Context */}
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1">
               <div className="flex justify-between">
-                <span className="text-slate-500 font-semibold">Remittance Txn:</span>
+                <span className="text-slate-500 font-semibold">Transfer Txn:</span>
                 <span className="font-mono font-bold text-slate-800">{editSplit.transaction_number}</span>
               </div>
               <div className="flex justify-between">
@@ -1964,7 +1964,7 @@ export default function IndiaDistributionPage() {
                   <strong className="text-slate-900">{deleteSplitTarget.distributor_code}</strong>?
                 </p>
                 <p className="text-teal-700 bg-teal-50 p-2.5 rounded border border-teal-200">
-                  Deleting this will release the allocated amount back to remittance <strong>{deleteSplitTarget.transaction_number}</strong>.
+                  Deleting this will release the allocated amount back to transfer <strong>{deleteSplitTarget.transaction_number}</strong>.
                 </p>
               </div>
             )}

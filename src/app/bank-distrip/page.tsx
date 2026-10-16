@@ -893,7 +893,7 @@ export default function BankDistripPage() {
                   {loading ? <div className="h-6 w-20 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" /> : formatINR(todayOrder)}
                 </div>
                 <div className="text-[10px] text-slate-400 mt-0.5">
-                  Sum of all customer remittance splits today
+                  Sum of all customer transfer splits today
                 </div>
               </div>
 
@@ -1456,7 +1456,7 @@ export default function BankDistripPage() {
                   )}
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Automatically populated from remittance splits & distributor allocations. Never entered manually.
+                  Automatically populated from transfer splits & distributor allocations. Never entered manually.
                 </p>
               </div>
 

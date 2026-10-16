@@ -12,14 +12,16 @@ export async function GET(request: Request) {
     const scope = (searchParams.get("scope") as WipeScope) || "all";
     const password = searchParams.get("password") || "";
 
+    // Master password authorization is strictly required to download confidential ledger backup
+    const isAuth = await verifyMasterPassword(password);
+    if (!isAuth) {
+      return NextResponse.json(
+        { error: "Incorrect or missing master password. Backup download and wipe authorization denied." },
+        { status: 401 }
+      );
+    }
+
     if (shouldSchedule) {
-      const isAuth = await verifyMasterPassword(password);
-      if (!isAuth) {
-        return NextResponse.json(
-          { error: "Incorrect password. Wipe authorization denied." },
-          { status: 401 }
-        );
-      }
       await scheduleWipe(minutes, scope);
     }
 

@@ -836,7 +836,7 @@ function PartyTransfersContent() {
             </div>
           )}
           <div className="text-[10px] text-emerald-800/80 dark:text-emerald-300/80 mt-0.5 font-medium">
-            {currencyFilter === "AED" ? "Due to be paid across party transfers" : "Prepaid advance with parties for remittances"}
+            {currencyFilter === "AED" ? "Due to be paid across party transfers" : "Prepaid advance with parties for transfers"}
           </div>
         </div>
 
@@ -1348,7 +1348,7 @@ function PartyTransfersContent() {
                                 <span>Pre-paid Advance: <strong>{formatINR(t.inr_amount)}</strong></span>
                                 {totalDeducted > 0 && (
                                   <span className="block text-amber-700 dark:text-amber-400 font-semibold">
-                                    Used in Remittances: {formatINR(totalDeducted)}
+                                    Used in Customer Transfers: {formatINR(totalDeducted)}
                                   </span>
                                 )}
                               </div>

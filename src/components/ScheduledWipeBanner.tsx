@@ -69,7 +69,7 @@ export default function ScheduledWipeBanner() {
       const data = await res.json();
       setWipeStatus(data);
       toast.success("Scheduled Clear Revoked!", {
-        description: "The scheduled 24-hour clear was cancelled. All records remain safe.",
+        description: "The scheduled ledger clear was cancelled. All records remain safe.",
       });
     } catch {
       toast.error("Failed to revoke scheduled clear");
@@ -85,7 +85,7 @@ export default function ScheduledWipeBanner() {
       <div className="flex items-center gap-2">
         <Hourglass className="w-4 h-4 animate-spin text-amber-200 shrink-0" style={{ animationDuration: "3s" }} />
         <span className="font-bold tracking-tight">
-          10-Minute Ledger Clear Active:
+          Scheduled Ledger Clear Active:
         </span>
         <span className="font-mono font-bold bg-white/20 px-2 py-0.5 rounded text-amber-100">
           {countdownText || wipeStatus.remainingFormatted}

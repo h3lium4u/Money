@@ -46,6 +46,13 @@ export async function POST(request: Request) {
     cachedStatus = null;
     const body = await request.json().catch(() => ({}));
     const action = body.action || "schedule";
+    const allowedActions = ["revoke", "schedule", "execute_now"];
+    if (!allowedActions.includes(action)) {
+      return NextResponse.json(
+        { error: `Invalid action '${action}'. Allowed actions: ${allowedActions.join(", ")}` },
+        { status: 400 }
+      );
+    }
 
     if (action === "revoke") {
       const status = await revokeWipe();
@@ -53,21 +60,19 @@ export async function POST(request: Request) {
     }
 
     // Wiping data strictly requires master password authorization
-    if (action === "execute_now" || action === "schedule") {
-      const password = body.password;
-      if (!password || typeof password !== "string") {
-        return NextResponse.json(
-          { error: "Master password is required to authorize data wipe." },
-          { status: 401 }
-        );
-      }
-      const isAuth = await verifyMasterPassword(password);
-      if (!isAuth) {
-        return NextResponse.json(
-          { error: "Incorrect password. Data wipe unauthorized." },
-          { status: 401 }
-        );
-      }
+    const password = body.password;
+    if (!password || typeof password !== "string") {
+      return NextResponse.json(
+        { error: "Master password is required to authorize data wipe." },
+        { status: 401 }
+      );
+    }
+    const isAuth = await verifyMasterPassword(password);
+    if (!isAuth) {
+      return NextResponse.json(
+        { error: "Incorrect password. Data wipe unauthorized." },
+        { status: 401 }
+      );
     }
 
     if (action === "execute_now") {
@@ -76,7 +81,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ status: "EXECUTED", message: "Ledger cleared successfully", scope });
     }
 
-    // Default action: schedule wipe with safety buffer (default 10 minutes)
+    // Scheduled wipe with safety buffer
     const minutes = Number(body.minutes) || 10;
     const scope = (body.scope as WipeScope) || "all";
     const status = await scheduleWipe(minutes, scope);

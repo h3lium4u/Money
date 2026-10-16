@@ -199,14 +199,14 @@ function DashboardContent() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-[22px] font-bold text-slate-900 dark:text-slate-100" style={{ fontFamily: '"Helvetica Neue", Arial, sans-serif', letterSpacing: "-0.02em" }}>
-            Remittance Dashboard
+            Accounts Dashboard
           </h2>
           <p className="text-[13.5px] text-slate-500 dark:text-slate-400 mt-1">
-            Real-time Dubai → India remittance volume, margins, profit, and receivables tracking.
+            Real-time Dubai → India transfer volume, margins, profit, and receivables tracking.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          {/* New Customer Remittance (Retail) */}
+          {/* New Customer Transfer (Retail) */}
           <Link
             href="/remittances/new"
             className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-[13px] font-semibold transition-all cursor-pointer shadow-sm hover:shadow"
@@ -215,7 +215,7 @@ function DashboardContent() {
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "#0F766E"; }}
           >
             <PlusCircle className="w-4 h-4" />
-            <span>+ New Remittance</span>
+            <span>+ New Transfer</span>
           </Link>
           {/* New Dubai Client Transfer (Wholesale) */}
           <Link
@@ -667,7 +667,7 @@ function DashboardContent() {
       <div className="rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden">
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div>
-            <h3 className="text-[15px] font-bold text-slate-900 dark:text-slate-100">Recent Remittance Transfers</h3>
+            <h3 className="text-[15px] font-bold text-slate-900 dark:text-slate-100">Recent Customer Transfers</h3>
             <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-0.5">
               Dubai customer orders and their India distribution status
             </p>

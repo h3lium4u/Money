@@ -774,16 +774,16 @@ function CustomerRemittancesContent() {
         <FadeIn delay={0.2}>
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
             <div className="w-full overflow-x-auto">
-              <table className="w-full text-left text-xs min-w-[1100px]">
+              <table className="w-full text-left text-xs table-fixed min-w-[1180px]">
                 <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800 text-[10px]">
                   <tr>
-                    <th className="px-3.5 py-3 w-[15%]">Txn ID / Date</th>
-                    <th className="px-3.5 py-3 w-[16%]">Customer</th>
-                    <th className="px-3.5 py-3 w-[16%]">INR Amount</th>
-                    <th className="px-3.5 py-3 w-[10%]">Rate</th>
-                    <th className="px-3.5 py-3 w-[12%]">AED Billed</th>
-                    <th className="px-3.5 py-3 w-[16%]">Payment Status</th>
-                    <th className="px-3.5 py-3 text-right w-[15%]">Actions</th>
+                    <th className="px-3.5 py-3 w-[14%]">Txn ID / Date</th>
+                    <th className="px-3.5 py-3 w-[15%]">Customer</th>
+                    <th className="px-3.5 py-3 w-[14%]">INR Amount</th>
+                    <th className="px-2.5 py-3 w-[9%]">Rate</th>
+                    <th className="px-3 py-3 w-[11%]">AED Billed</th>
+                    <th className="px-3.5 py-3 w-[15%]">Payment Status</th>
+                    <th className="px-3 py-3 text-right w-[22%]">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">

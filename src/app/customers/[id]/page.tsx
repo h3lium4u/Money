@@ -242,7 +242,7 @@ export default function CustomerDetailPage() {
       <div className="hidden print-only border-b border-slate-300 pb-3 mb-4">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-lg font-bold text-slate-900 tracking-tight">REMITTANCE SERVICES (DUBAI ⇄ INDIA)</h1>
+            <h1 className="text-lg font-bold text-slate-900 tracking-tight">ACCOUNTS & FINANCIAL SERVICES (DUBAI ⇄ INDIA)</h1>
             <p className="text-xs text-slate-600">Official Customer Account Statement</p>
           </div>
           <div className="text-right">
@@ -615,7 +615,7 @@ export default function CustomerDetailPage() {
           entries: entries.map((e: any) => ({
             date: e.date,
             type: e.type,
-            reference: e.reference || (e.type === "TRANSACTION" ? "Remittance Order" : "Payment Received"),
+            reference: e.reference || (e.type === "TRANSACTION" ? "Transfer Order" : "Payment Received"),
             amount: e.type === "TRANSACTION" ? e.inr_amount : e.aed_amount,
             currency: e.type === "TRANSACTION" ? "INR" : "AED",
           })),

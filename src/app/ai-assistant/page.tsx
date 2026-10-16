@@ -140,7 +140,7 @@ export default function AIAssistantPage() {
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              Ask questions about remittances, profit, customer receivables, and India distributions.
+              Ask questions about customer transfers, profit, receivables, and India distributions.
             </p>
           </div>
         </div>

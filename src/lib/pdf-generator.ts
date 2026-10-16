@@ -34,13 +34,19 @@ export function generateTransactionReceipt(txn: any, businessName = "ACCOUNTS MA
   doc.setFont("helvetica", "bold");
   doc.text(txn.transaction_date, 55, 52);
 
+  // Detect whether this is a Party Transfer or Customer Transfer
+  const isPartyTransfer = Boolean(txn.party_name || txn.customer_id?.startsWith?.("pty_") || txn.party_id);
+  const partyOrCustLabel = isPartyTransfer ? "Party:" : "Customer:";
+  const entityName = txn.party_name || txn.customer_name || txn.name || "Unknown";
+  const entityCode = txn.party_code || txn.customer_code || txn.code;
+  const entityDisplay = entityCode ? `${entityName} (${entityCode})` : entityName;
+
   doc.setFont("helvetica", "normal");
   doc.setTextColor(71, 85, 105);
-  doc.text("Customer:", 20, 59);
+  doc.text(partyOrCustLabel, 20, 59);
   doc.setTextColor(15, 23, 42);
   doc.setFont("helvetica", "bold");
-  const custDisplay = txn.customer_code ? `${txn.customer_name} (${txn.customer_code})` : (txn.customer_name || "Unknown");
-  doc.text(custDisplay, 55, 59);
+  doc.text(entityDisplay, 55, 59);
 
   // Status (Right)
   doc.setFont("helvetica", "normal");
@@ -71,19 +77,27 @@ export function generateTransactionReceipt(txn: any, businessName = "ACCOUNTS MA
   doc.setTextColor(15, 23, 42);
 
   const totalInr = Number(txn.total ?? txn.inr_amount ?? 0);
-  const manualRate = Number(txn.manual_rate ?? txn.customer_rate ?? 0);
-  const wholesaleRate = Number(txn.wholesale_rate ?? (manualRate > 0 ? (1000 / manualRate) : 0));
+  const manualRate = Number(txn.manual_rate ?? txn.customer_rate ?? txn.rate ?? 0);
+  const wholesaleRate = Number(txn.wholesale_rate ?? txn.base_rate ?? (manualRate > 0 ? (1000 / manualRate) : 0));
   const inDhirams = Number(txn.in_dhirams ?? txn.aed_amount ?? 0);
   const paidAmt = Number(txn.paid_amount ?? txn.paid_aed ?? 0);
-  const balanceToPaid = Number(txn.balance_to_paid ?? (inDhirams - paidAmt));
+  const balanceToPaid = Number(txn.balance_to_paid ?? (inDhirams > 0 ? inDhirams - paidAmt : 0));
 
   // Amounts Table
-  const tableData = [
-    ["Total Amount (INR)", `Rs. ${totalInr.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`],
-    ["Manual Rate Value", `${manualRate.toFixed(3)} AED/1000`],
-    ["Whole Sale Rate (=1000/Rate)", wholesaleRate.toFixed(3)],
-    ["In Dhirams (=Total/Wholesale)", `${inDhirams.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED`]
-  ];
+  const tableData: [string, string][] = [];
+  if (totalInr > 0) {
+    tableData.push(["Total Amount (INR)", `Rs. ${totalInr.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`]);
+  }
+  if (manualRate > 0) {
+    const rateText = manualRate >= 30 ? `${manualRate.toFixed(3)} AED/1000` : `${manualRate.toFixed(3)} INR/AED`;
+    tableData.push([isPartyTransfer ? "Agreed Rate" : "Manual Rate Value", rateText]);
+  }
+  if (wholesaleRate > 0) {
+    tableData.push(["Wholesale / Base Rate", wholesaleRate.toFixed(3)]);
+  }
+  if (inDhirams > 0) {
+    tableData.push(["In Dhirams (AED)", `${inDhirams.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED`]);
+  }
 
   if (paidAmt > 0 || balanceToPaid > 0) {
     tableData.push(["Paid Amount (AED)", `${paidAmt.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED`]);
@@ -112,8 +126,12 @@ export function generateTransactionReceipt(txn: any, businessName = "ACCOUNTS MA
   
   doc.setFont("helvetica", "bolditalic");
   doc.setTextColor(15, 23, 42);
-  const words = numberToIndianWords(String(totalInr));
-  doc.text(words ? `${words} Rupees Only` : "", 20, finalY + 16);
+  const words = totalInr > 0
+    ? (numberToIndianWords(String(totalInr)) ? `${numberToIndianWords(String(totalInr))} Rupees Only` : "")
+    : inDhirams > 0
+    ? `${inDhirams.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED`
+    : "";
+  doc.text(words, 20, finalY + 16);
 
   // Footer
   doc.setFontSize(8);
