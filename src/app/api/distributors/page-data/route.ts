@@ -77,19 +77,19 @@ export async function GET(request: Request) {
       // 3. Most recent splits (250 items for rapid initial load)
       listDistributionSplits({ limit: 250 }),
 
-      // 4. Instant aggregate pool stats
-      query<{ total_allocated_inr: string; total_splits_count: string }>(`
+      // 4. Instant aggregate pool stats across all customer orders
+      query<{ total_orders_inr: string; total_allocated_inr: string; total_splits_count: string }>(`
         SELECT 
-          COALESCE(SUM(inr_amount), 0) as total_allocated_inr,
-          COUNT(*)::text as total_splits_count
-        FROM distribution_splits;
+          (SELECT COALESCE(SUM(t.inr_amount), 0) FROM transactions t JOIN customers c ON c.id = t.customer_id WHERE COALESCE(c.entity_type, 'CUSTOMER') = 'CUSTOMER' AND t.status = 'CONFIRMED') as total_orders_inr,
+          (SELECT COALESCE(SUM(inr_amount), 0) FROM distribution_splits) as total_allocated_inr,
+          (SELECT COUNT(*)::text FROM distribution_splits) as total_splits_count;
       `),
     ]);
 
-    // Compute overview pool metrics
-    const totalOrdersInr = targetTxns.reduce((sum: number, t: any) => sum + (Number(t.inr_amount) || 0), 0);
+    // Compute overview pool metrics across the entire business database
+    const totalOrdersInr = poolStats[0]?.total_orders_inr ? Number(poolStats[0].total_orders_inr) : targetTxns.reduce((sum: number, t: any) => sum + (Number(t.inr_amount) || 0), 0);
     const totalAllocatedInr = poolStats[0]?.total_allocated_inr ? Number(poolStats[0].total_allocated_inr) : 0;
-    const totalPendingInr = targetTxns.reduce((sum: number, t: any) => sum + (Number(t.remaining_inr) || 0), 0);
+    const totalPendingInr = Math.max(0, Math.round((totalOrdersInr - totalAllocatedInr) * 100) / 100);
 
     const payload = {
       distributors: dists || [],
