@@ -1326,16 +1326,13 @@ function CustomerRemittancesContent() {
                     const currentOrder = parseFloat(editInr) || 0;
                     const allocated = editSplits.reduce((sum, s) => sum + (parseFloat(s.inr_amount) || 0), 0);
                     const diff = Math.round((currentOrder - allocated + Number.EPSILON) * 1000) / 1000;
-                    const isExactMatch = currentOrder > 0 && Math.abs(diff) < 0.001;
-                    const isWithinTolerance = currentOrder > 0 && Math.abs(diff) <= 1.00 && !isExactMatch;
+                    const isExactMatch = currentOrder > 0 && Math.abs(diff) < 0.0001;
 
                     return (
                       <div
                         className={`p-2 rounded-lg border text-[11px] flex flex-wrap items-center justify-between gap-2 font-mono ${
                           isExactMatch
                             ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-                            : isWithinTolerance
-                            ? "bg-teal-50 border-teal-200 text-teal-800"
                             : diff > 0
                             ? "bg-amber-50 border-amber-200 text-amber-800"
                             : "bg-rose-50 border-rose-200 text-rose-800"
@@ -1344,34 +1341,6 @@ function CustomerRemittancesContent() {
                         <span className="font-sans font-semibold flex items-center gap-2">
                           {isExactMatch ? (
                             "✓ Splits match order total exactly."
-                          ) : isWithinTolerance ? (
-                            <>
-                              <span>⚡ Fraction: {diff > 0 ? `+₹${diff.toFixed(2)}` : `-₹${Math.abs(diff).toFixed(2)}`} (Auto-absorbed on save)</span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (editSplits.length > 0) {
-                                    const lastIdx = editSplits.length - 1;
-                                    setEditSplits((prev) => {
-                                      const next = [...prev];
-                                      const cur = parseFloat(next[lastIdx].inr_amount) || 0;
-                                      const nextVal = Math.round((cur + diff + Number.EPSILON) * 1000) / 1000;
-                                      const auditTag = `[Fractional adjustment: ${diff > 0 ? `+${diff.toFixed(3)}` : diff.toFixed(3)} INR]`;
-                                      const curNotes = next[lastIdx].notes || "";
-                                      next[lastIdx] = {
-                                        ...next[lastIdx],
-                                        inr_amount: String(nextVal),
-                                        notes: curNotes.includes("Fractional adjustment") ? curNotes : (curNotes ? `${curNotes} ${auditTag}` : auditTag),
-                                      };
-                                      return next;
-                                    });
-                                  }
-                                }}
-                                className="px-1.5 py-0.5 bg-teal-200 hover:bg-teal-300 text-teal-900 rounded font-bold text-[10px] cursor-pointer"
-                              >
-                                Auto-balance Fraction
-                              </button>
-                            </>
                           ) : diff > 0 ? (
                             `⚠️ Unallocated: ₹${diff.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} remaining.`
                           ) : (

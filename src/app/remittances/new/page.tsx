@@ -1147,8 +1147,7 @@ export default function NewRemittancePage() {
             {/* Allocation Status Indicator */}
             {(() => {
               const diff = Math.round((totalOrderInr - totalAllocatedInr + Number.EPSILON) * 1000) / 1000;
-              const isExact = totalOrderInr > 0 && Math.abs(diff) < 0.001;
-              const isFractional = totalOrderInr > 0 && Math.abs(diff) <= 1.00 && !isExact;
+              const isExact = totalOrderInr > 0 && Math.abs(diff) < 0.0001;
 
               return (
                 <div
@@ -1157,8 +1156,6 @@ export default function NewRemittancePage() {
                       ? "bg-slate-50 border-slate-200 text-slate-600"
                       : isExact
                       ? "bg-emerald-50 border-emerald-200 text-emerald-900"
-                      : isFractional
-                      ? "bg-teal-50 border-teal-200 text-teal-900"
                       : diff > 0
                       ? "bg-amber-50 border-amber-200 text-amber-900"
                       : "bg-rose-50 border-rose-200 text-rose-900"
@@ -1178,27 +1175,6 @@ export default function NewRemittancePage() {
                       <strong className="text-emerald-700 flex items-center gap-1">
                         <CheckCircle2 className="w-3.5 h-3.5" /> 100% Allocated
                       </strong>
-                    ) : isFractional ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-teal-800 font-semibold text-[11px]">
-                          ⚡ Fraction diff: {diff > 0 ? `+₹${diff.toFixed(2)}` : `-₹${Math.abs(diff).toFixed(2)}`} (Auto-absorbed on submit)
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (splits.length > 0) {
-                              const last = splits[splits.length - 1];
-                              const cur = parseFloat(last.inr_amount) || 0;
-                              const nextVal = Math.round((cur + diff + Number.EPSILON) * 1000) / 1000;
-                              updateSplit(last.id, "inr_amount", String(nextVal));
-                            }
-                          }}
-                          className="px-2 py-0.5 text-[11px] font-bold bg-teal-200 hover:bg-teal-300 text-teal-900 rounded border border-teal-300 transition-colors shadow-xs cursor-pointer flex items-center gap-1"
-                          title="Auto-balance fraction to last split"
-                        >
-                          Auto-balance Fraction
-                        </button>
-                      </div>
                     ) : diff > 0 ? (
                       <span className="text-amber-800 font-semibold">
                         Remaining: <strong>₹{diff.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</strong>

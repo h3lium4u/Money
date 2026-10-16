@@ -318,16 +318,31 @@ export default function IndiaDistributionPage() {
     }
   }
 
-  const formatINR = (val?: number | string) =>
-    `₹ ${(Number(val) || 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`;
+  const formatINR = (val?: number | string) => {
+    if (val === null || val === undefined || val === "") return "₹ 0";
+    const str = String(val).trim();
+    const num = Number(str);
+    if (isNaN(num)) return `₹ ${str}`;
+    const parts = str.split(".");
+    const intFormatted = Number(parts[0]).toLocaleString("en-IN");
+    return parts.length > 1 ? `₹ ${intFormatted}.${parts[1]}` : `₹ ${intFormatted}`;
+  };
 
-  const formatAED = (val?: number | string) =>
-    `${(Number(val) || 0).toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED`;
+  const formatAED = (val?: number | string) => {
+    if (val === null || val === undefined || val === "") return "0 AED";
+    const str = String(val).trim();
+    const num = Number(str);
+    if (isNaN(num)) return `${str} AED`;
+    const parts = str.split(".");
+    const intFormatted = Number(parts[0]).toLocaleString("en-US");
+    return parts.length > 1 ? `${intFormatted}.${parts[1]} AED` : `${intFormatted} AED`;
+  };
 
   const formatRate = (val?: any) => {
     if (val === null || val === undefined || val === "") return "-";
-    const num = Number(val);
-    return isNaN(num) ? String(val) : num.toFixed(3);
+    const str = String(val).trim();
+    if (str === "" || str === "NaN") return "-";
+    return str;
   };
 
   // IND group = India-side distributors for distribution splits (MK, SALA)

@@ -47,7 +47,7 @@ export async function GET(request: Request) {
         split_agg AS (
           SELECT s2.transaction_id,
                  STRING_AGG(DISTINCT d2.name, ', ' ORDER BY d2.name) AS distributor_names,
-                 STRING_AGG(d2.name || ' (₹' || ROUND(s2.inr_amount)::text || ')', ', ') AS distributor_split_details,
+                 STRING_AGG(d2.name || ' (₹' || s2.inr_amount::text || ')', ', ') AS distributor_split_details,
                  SUM(s2.inr_amount) AS total_distributed_inr
           FROM distribution_splits s2
           JOIN distributors d2 ON d2.id = s2.distributor_id
