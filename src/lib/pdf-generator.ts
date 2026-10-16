@@ -111,7 +111,7 @@ export function generateTransactionReceipt(txn: any, businessName = "REMITTANCE 
   
   doc.setFont("helvetica", "bolditalic");
   doc.setTextColor(15, 23, 42);
-  const words = numberToIndianWords(String(txn.inr_amount));
+  const words = numberToIndianWords(String(totalInr));
   doc.text(words ? `${words} Rupees Only` : "", 20, finalY + 16);
 
   // Footer

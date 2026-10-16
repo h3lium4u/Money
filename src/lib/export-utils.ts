@@ -4,21 +4,33 @@ export interface DownloadExcelOptions {
   from?: string;
   to?: string;
   filename?: string;
+  url?: string;
 }
+
+let isExportDownloading = false;
 
 /**
  * Downloads the master Excel workbook cleanly using browser fetch and blob URL.
  * Avoids Next.js client-side router interception and never leaves the page stuck in "rendering".
  */
 export async function downloadMasterExcel(options?: DownloadExcelOptions): Promise<boolean> {
+  if (isExportDownloading) {
+    toast.info("An Excel download is already in progress, please wait...");
+    return false;
+  }
+  isExportDownloading = true;
   const toastId = toast.loading("Generating Excel workbook... Please wait a moment.");
   try {
-    const params = new URLSearchParams();
-    if (options?.from) params.set("from", options.from);
-    if (options?.to) params.set("to", options.to);
-    const qs = params.toString() ? `?${params.toString()}` : "";
+    let fetchUrl = options?.url;
+    if (!fetchUrl) {
+      const params = new URLSearchParams();
+      if (options?.from) params.set("from", options.from);
+      if (options?.to) params.set("to", options.to);
+      const qs = params.toString() ? `?${params.toString()}` : "";
+      fetchUrl = `/api/reports/export-excel${qs}`;
+    }
 
-    const res = await fetch(`/api/reports/export-excel${qs}`, {
+    const res = await fetch(fetchUrl, {
       method: "GET",
       headers: {
         "Accept": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/octet-stream",
@@ -71,5 +83,7 @@ export async function downloadMasterExcel(options?: DownloadExcelOptions): Promi
     console.error("Excel download error:", error);
     toast.error("Failed to download Excel: " + (error?.message || "Unknown error"), { id: toastId });
     return false;
+  } finally {
+    isExportDownloading = false;
   }
 }

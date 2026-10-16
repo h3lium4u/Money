@@ -61,19 +61,23 @@ export function ReceiptPrinterModal({
 
     printFiredRef.current = false;
 
-    // Stage 1: Processing (600ms)
+    // Stage 1: Snappy processing (150ms)
     const timer1 = setTimeout(() => {
       setStage("printing");
-    }, 600);
+    }, 150);
 
-    // Stage 2: Printing paper emerges (until 2800ms)
+    // Stage 2: Printing ready & trigger within active user activation window (400ms)
     const timer2 = setTimeout(() => {
       setStage("complete");
       if (!printFiredRef.current) {
         printFiredRef.current = true;
-        onCompleteRef.current();
+        try {
+          onCompleteRef.current();
+        } catch (e) {
+          console.error("Print invocation error:", e);
+        }
       }
-    }, 2800);
+    }, 400);
 
     return () => {
       clearTimeout(timer1);
@@ -84,7 +88,11 @@ export function ReceiptPrinterModal({
   const handleInstantPrint = () => {
     setStage("complete");
     printFiredRef.current = true;
-    onCompleteRef.current();
+    try {
+      onCompleteRef.current();
+    } catch (e) {
+      console.error("Print invocation error:", e);
+    }
   };
 
   if (!isOpen) return null;

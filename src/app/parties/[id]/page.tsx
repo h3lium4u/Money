@@ -19,6 +19,7 @@ import {
   Zap,
 } from "lucide-react";
 import { ReceiptPrinterModal } from "@/components/animation/ReceiptPrinterModal";
+import { downloadMasterExcel } from "@/lib/export-utils";
 import { getTodayDateString } from "@/lib/date-utils";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
@@ -254,6 +255,16 @@ export default function PartyDetailPage() {
           >
             <Printer className="w-3.5 h-3.5 text-slate-500" />
             <span>Print Statement</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => downloadMasterExcel()}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-xs cursor-pointer transition-all"
+            title="Download Master Excel Workbook"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />
+            <span>Download Excel</span>
           </button>
 
           <button

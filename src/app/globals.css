@@ -271,12 +271,20 @@ html.dark input[type="date"]::-webkit-calendar-picker-indicator {
 @media print {
   aside, header, nav, button, .no-print, input, select { display: none !important; }
   html, body {
-    height: auto !important; overflow: visible !important;
-    background: #fff !important; color: #000 !important;
-    font-size: 10pt !important; margin: 0 !important; padding: 0 !important;
+    height: auto !important;
+    min-height: 100% !important;
+    overflow: visible !important;
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 10pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
-  main { padding: 0 !important; margin: 0 !important; overflow: visible !important; width: 100% !important; }
-  div { overflow: visible !important; }
+  div, main, section, article {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
   table { width: 100% !important; border-collapse: collapse !important; }
   tr { page-break-inside: avoid; }
   thead { display: table-header-group; }

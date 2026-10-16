@@ -121,13 +121,11 @@ export default function ReportsPage() {
   async function handleScheduleWipe() {
     setWipeLoading(true);
     try {
-      // 1. Trigger instantaneous pre-wipe backup download
-      const dl = document.createElement("a");
-      dl.href = "/api/system/scheduled-wipe/download-backup?schedule=true";
-      dl.download = "";
-      document.body.appendChild(dl);
-      dl.click();
-      document.body.removeChild(dl);
+      // 1. Trigger instantaneous pre-wipe backup download cleanly via blob
+      await downloadMasterExcel({
+        url: "/api/system/scheduled-wipe/download-backup?schedule=true",
+        filename: `Petti_Remittance_PreWipe_Backup_${new Date().toISOString().slice(0, 10)}.xlsx`,
+      });
 
       // 2. Fetch updated scheduled status
       const res = await fetch("/api/system/scheduled-wipe");

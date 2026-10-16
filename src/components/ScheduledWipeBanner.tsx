@@ -79,7 +79,7 @@ export default function ScheduledWipeBanner() {
   if (!wipeStatus?.isScheduled) return null;
 
   return (
-    <div className="bg-gradient-to-r from-rose-700 via-rose-600 to-amber-600 text-white px-4 py-2 text-xs flex flex-wrap items-center justify-between gap-2 shadow-md z-30 shrink-0">
+    <div className="bg-gradient-to-r from-rose-700 via-rose-600 to-amber-600 text-white px-4 py-2 text-xs flex flex-wrap items-center justify-between gap-2 shadow-md z-30 shrink-0 no-print">
       <div className="flex items-center gap-2">
         <Hourglass className="w-4 h-4 animate-spin text-amber-200 shrink-0" style={{ animationDuration: "3s" }} />
         <span className="font-bold tracking-tight">
