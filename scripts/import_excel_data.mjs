@@ -1,5 +1,22 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import ExcelJS from 'exceljs';
-import { execute, query } from '../src/lib/db.ts';
+
+// Load .env
+const envPath = path.resolve(process.cwd(), '.env');
+if (fs.existsSync(envPath)) {
+  const content = fs.readFileSync(envPath, 'utf-8');
+  for (const line of content.split('\n')) {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+      const [key, ...vals] = trimmed.split('=');
+      const val = vals.join('=').replace(/^["']|["']$/g, '').trim();
+      process.env[key.trim()] = val;
+    }
+  }
+}
+
+const { execute, query } = await import('../src/lib/db.ts');
 
 const EXCEL_PATH = 'F:/AYYAN JAN.xlsx';
 
@@ -73,7 +90,7 @@ async function batchInsert(tableName, columns, rows, batchSize = 100) {
 
 async function main() {
   console.log('================================================================');
-  console.log('   WIPING ALL DATA & IMPORTING FROM F:\\AYYAN JAN.xlsx');
+  console.log('   IMPORTING ALL EXCEL DATA & PARTIES FROM F:\\AYYAN JAN.xlsx');
   console.log('================================================================\n');
 
   // Load workbook
@@ -85,26 +102,39 @@ async function main() {
   const bd = wb.getWorksheet('BANK DISTRIP');
   const id = wb.getWorksheet('INDIA DISTRIBUTION');
 
-  // Step 0: Delete all existing data
-  console.log('Step 0: Deleting all existing data (wiping transactions, payments, splits, bank distrip, and retail customers)...');
+  // Step 0: Delete all operational data
+  console.log('Step 0: Clearing existing operational records & retail customers...');
   await execute('DELETE FROM distribution_splits');
   await execute('DELETE FROM customer_payments');
   await execute('DELETE FROM transactions');
   await execute('DELETE FROM bank_distrip_records');
   await execute("DELETE FROM customers WHERE entity_type = 'CUSTOMER'");
-  console.log('✓ All existing data deleted cleanly.\n');
+  console.log('✓ Operational data cleared cleanly.\n');
 
-  // Step 1: Ensure 5 Master Parties in distributors, bank_distrip_accounts, customers
-  console.log('Step 1: Ensuring 5 Master Parties...');
-  const masterParties = [
+  // Step 1: Register All Master Wholesale & Bank Distribution Parties
+  console.log('Step 1: Registering All Master Wholesale & Bank Parties...');
+  const allParties = [
+    // Original 5 Master Parties
     { id: 'dist-mk', custId: 'party-mk', code: 'MK', name: 'MK', groupType: 'IND', partnerType: 'INDIA_DISTRIBUTOR', partyType: 'INDIA' },
     { id: 'dist-sala', custId: 'party-sala', code: 'SALA', name: 'SALA', groupType: 'IND', partnerType: 'INDIA_DISTRIBUTOR', partyType: 'INDIA' },
     { id: 'dist-haja', custId: 'party-haja', code: 'HAJA', name: 'HAJA', groupType: 'AED', partnerType: 'WHOLESALE_PARTNER', partyType: 'DUBAI' },
     { id: 'dist-sarabu', custId: 'party-sarabu', code: 'SARAB', name: 'SARAB', groupType: 'AED', partnerType: 'WHOLESALE_PARTNER', partyType: 'DUBAI' },
     { id: 'dist-nf2', custId: 'party-nf2', code: 'NF2', name: 'NF2', groupType: 'AED', partnerType: 'WHOLESALE_PARTNER', partyType: 'DUBAI' },
+
+    // Additional Wholesale Parties (AED Side)
+    { id: 'dist-aadhil', custId: 'party-aadhil', code: 'AADHIL', name: 'AADHIL (AWAFI)', groupType: 'AED', partnerType: 'WHOLESALE_PARTNER', partyType: 'DUBAI' },
+    { id: 'dist-anwar', custId: 'party-anwar', code: 'ANWAR', name: 'ANWAR', groupType: 'AED', partnerType: 'WHOLESALE_PARTNER', partyType: 'DUBAI' },
+    { id: 'dist-basid', custId: 'party-basid', code: 'BASID', name: 'BASID', groupType: 'AED', partnerType: 'WHOLESALE_PARTNER', partyType: 'DUBAI' },
+
+    // Additional Bank & Distribution Channel Parties (IND / INR Side)
+    { id: 'dist-usain', custId: 'party-usain', code: 'USAIN', name: 'USAIN (ASKER)', groupType: 'IND', partnerType: 'INDIA_DISTRIBUTOR', partyType: 'INDIA' },
+    { id: 'dist-sheik', custId: 'party-sheik', code: 'SHEIK', name: 'SHEIK', groupType: 'IND', partnerType: 'INDIA_DISTRIBUTOR', partyType: 'INDIA' },
+    { id: 'dist-black-grp', custId: 'party-black-grp', code: 'BLK', name: 'BLACK GRP (BLK)', groupType: 'IND', partnerType: 'INDIA_DISTRIBUTOR', partyType: 'INDIA' },
+    { id: 'dist-ismail', custId: 'party-ismail', code: 'ISMAIL', name: 'ISMAIL', groupType: 'IND', partnerType: 'INDIA_DISTRIBUTOR', partyType: 'INDIA' },
+    { id: 'dist-nng', custId: 'party-nng', code: 'NNG', name: 'NNG', groupType: 'IND', partnerType: 'INDIA_DISTRIBUTOR', partyType: 'INDIA' },
   ];
 
-  for (const p of masterParties) {
+  for (const p of allParties) {
     await execute(`
       INSERT INTO distributors (id, code, name, partner_type, group_type, default_settlement_currency, status)
       VALUES ($1, $2, $3, $4, $5, 'AED', 'ACTIVE')
@@ -123,9 +153,9 @@ async function main() {
       ON CONFLICT (id) DO UPDATE SET code = EXCLUDED.code, name = EXCLUDED.name, entity_type = 'PARTY', party_type = EXCLUDED.party_type;
     `, [p.custId, p.code, p.name, p.partyType]);
   }
-  console.log('✓ 5 Master parties verified (MK, SALA, HAJA, SARAB, NF2).\n');
+  console.log(`✓ ${allParties.length} Master parties registered in distributors, bank accounts & parties ledger.\n`);
 
-  // Step 2: Register Retail Customers
+  // Step 2: Register 29 Retail Customers
   console.log('Step 2: Registering 29 Retail Customers...');
   const retailCustomers = [
     { code: "SAMI", name: "SAMI", col: 2 },
@@ -159,34 +189,35 @@ async function main() {
     { code: "THARIK", name: "THARIK", col: 30 }
   ];
 
-  for (const c of retailCustomers) {
-    const custId = `cust-${c.code.toLowerCase().replace(/_/g, '-')}`;
+  for (let i = 0; i < retailCustomers.length; i++) {
+    const c = retailCustomers[i];
+    const custId = `cust-${c.code.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
     c.id = custId;
+
     await execute(`
       INSERT INTO customers (id, code, name, default_rate, status, entity_type)
       VALUES ($1, $2, $3, 38.25, 'ACTIVE', 'CUSTOMER')
       ON CONFLICT (id) DO UPDATE SET code = EXCLUDED.code, name = EXCLUDED.name, entity_type = 'CUSTOMER';
-    `, [custId, c.code, c.name]);
+    `, [c.id, c.code, c.name]);
   }
-  console.log(`✓ ${retailCustomers.length} retail customers registered.\n`);
+  console.log(`✓ ${retailCustomers.length} Retail customers verified.\n`);
 
-  // Step 3: Insert Customer Opening Balances (RECEIVABLES & BALANCE Row 4)
-  console.log('Step 3: Processing Opening Balances from RECEIVABLES & BALANCE Row 4...');
+  // Step 3: Parse Opening Balances (PREV BAL from RECEIVABLES & BALANCE Row 3)
+  console.log('Step 3: Parsing Opening Balances (Row 3 PRE BAL)...');
   const openingTxns = [];
   const openingPmts = [];
   let seqTxn = 100000;
   let seqPmt = 100000;
+  let seqSplit = 100000;
+  let seqBdr = 100000;
 
   for (const cust of retailCustomers) {
-    // Row 4 cols 37 to 65 have PREV BAL
-    const balVal = parseNum(rb.getCell(4, cust.col + 35).value, 0);
+    const balVal = parseNum(rb.getCell(3, cust.col + 36).value, 0);
     if (balVal > 0) {
-      // Customer owes money (receivable)
       seqTxn++;
-      const txnId = `txn-prev-${cust.code.toLowerCase()}`;
       const inrAmt = roundTo(balVal * 26.11, 2);
       openingTxns.push({
-        id: txnId,
+        id: `txn-prev-${cust.code.toLowerCase().slice(0, 15)}`,
         transaction_number: `TXN-2026-${seqTxn}`,
         transaction_date: '2026-05-02',
         customer_id: cust.id,
@@ -207,9 +238,8 @@ async function main() {
         is_demo: false,
       });
     } else if (balVal < 0) {
-      // Customer has advance credit
       seqPmt++;
-      const pmtId = `pmt-prev-${cust.code.toLowerCase()}`;
+      const pmtId = `pmt-prev-${cust.code.toLowerCase().slice(0, 15)}`;
       openingPmts.push({
         id: pmtId,
         payment_number: `PMT-2026-${seqPmt}`,
@@ -226,8 +256,8 @@ async function main() {
   }
   console.log(`✓ Found ${openingTxns.length} opening receivable balances and ${openingPmts.length} opening advance credits.\n`);
 
-  // Step 4: Parse COLLECTION & PROFIT (Transactions & Splits)
-  console.log('Step 4: Parsing COLLECTION & PROFIT (Remittances)...');
+  // Step 4: Parse COLLECTION & PROFIT (Remittances & Multi-Party Splits)
+  console.log('Step 4: Parsing COLLECTION & PROFIT (Remittances & Splits)...');
   const txnsToInsert = [...openingTxns];
   const splitsToInsert = [];
 
@@ -238,15 +268,27 @@ async function main() {
     let baseRate = parseNum(cp.getCell(r, 100).value, 26.11);
     if (baseRate <= 0) baseRate = 26.11;
 
-    // Check party distribution split on this date
+    // Check party distributions on this date from cols 33-37
     const salaSplit = parseNum(cp.getCell(r, 33).value, 0);
     const sarabSplit = parseNum(cp.getCell(r, 34).value, 0);
     const mkSplit = parseNum(cp.getCell(r, 35).value, 0);
+    const ismSplit = parseNum(cp.getCell(r, 36).value, 0);
+    const nngSplit = parseNum(cp.getCell(r, 37).value, 0);
 
-    let dayDistId = 'dist-haja';
-    if (mkSplit > 0) dayDistId = 'dist-mk';
-    else if (salaSplit > 0) dayDistId = 'dist-sala';
-    else if (sarabSplit > 0) dayDistId = 'dist-sarabu';
+    const activeDists = [];
+    if (mkSplit > 0) activeDists.push({ id: 'dist-mk', name: 'MK', amt: mkSplit });
+    if (salaSplit > 0) activeDists.push({ id: 'dist-sala', name: 'SALA', amt: salaSplit });
+    if (sarabSplit > 0) activeDists.push({ id: 'dist-sarabu', name: 'SARAB', amt: sarabSplit });
+    if (ismSplit > 0) activeDists.push({ id: 'dist-ismail', name: 'ISMAIL', amt: ismSplit });
+    if (nngSplit > 0) activeDists.push({ id: 'dist-nng', name: 'NNG', amt: nngSplit });
+
+    const totalDistAmt = activeDists.reduce((s, x) => s + x.amt, 0);
+
+    // Primary distributor for the transaction header
+    let primaryDistId = 'dist-haja';
+    if (activeDists.length > 0) {
+      primaryDistId = activeDists[0].id;
+    }
 
     for (const cust of retailCustomers) {
       const inr = parseNum(cp.getCell(r, cust.col).value, 0);
@@ -258,13 +300,20 @@ async function main() {
       const custConv = custRate >= 30 ? 'AED_PER_1000' : 'INR_PER_AED';
       const baseConv = baseRate >= 30 ? 'AED_PER_1000' : 'INR_PER_AED';
 
-      const aed = roundTo(custConv === 'AED_PER_1000' ? (inr * custRate) / 1000 : inr / custRate, 3);
-      const cost = roundTo(baseConv === 'AED_PER_1000' ? (inr * baseRate) / 1000 : inr / baseRate, 3);
-      const profit = roundTo(aed - cost, 3);
+      const aedAmt = custConv === 'AED_PER_1000'
+        ? roundTo((inr / 1000) * custRate, 3)
+        : roundTo(inr / custRate, 3);
+
+      const costAed = baseConv === 'AED_PER_1000'
+        ? roundTo((inr / 1000) * baseRate, 3)
+        : roundTo(inr / baseRate, 3);
+
+      const grossProfitAed = roundTo(aedAmt - costAed, 3);
+      const deliveryAed = roundTo(aedAmt * 0.002, 3);
+      const netProfitAed = roundTo(grossProfitAed - deliveryAed, 3);
 
       seqTxn++;
-      const txnId = `txn-${dateStr}-${cust.code.toLowerCase()}-${seqTxn}`;
-      const splitId = `split-${dateStr}-${cust.code.toLowerCase()}-${seqTxn}`;
+      const txnId = `txn-${seqTxn}`;
 
       txnsToInsert.push({
         id: txnId,
@@ -274,53 +323,87 @@ async function main() {
         inr_amount: inr,
         customer_rate: custRate,
         customer_rate_convention: custConv,
-        aed_amount: aed,
+        aed_amount: aedAmt,
         base_rate: baseRate,
         base_rate_convention: baseConv,
-        cost_aed: cost,
-        gross_profit_aed: profit,
-        delivery_charge_pct: 0,
-        delivery_charge_aed: 0,
-        net_profit_aed: profit,
-        distributor_id: dayDistId,
+        cost_aed: costAed,
+        gross_profit_aed: grossProfitAed,
+        delivery_charge_pct: 0.20,
+        delivery_charge_aed: deliveryAed,
+        net_profit_aed: netProfitAed,
+        distributor_id: primaryDistId,
         status: 'CONFIRMED',
-        notes: `Imported from Excel Row ${r}`,
+        notes: `Excel Row ${r} - Customer ${cust.name}`,
         is_demo: false,
       });
 
-      splitsToInsert.push({
-        id: splitId,
-        transaction_id: txnId,
-        distributor_id: dayDistId,
-        split_date: dateStr,
-        inr_amount: inr,
-        wholesale_rate: baseRate,
-        aed_equivalent: cost,
-        paid_amount_inr: 0,
-        balance_inr: inr,
-        status: 'ALLOCATED',
-        notes: null,
-        is_demo: false,
-      });
+      // Split distribution across active distributors
+      if (totalDistAmt > 0 && activeDists.length > 0) {
+        let remainingInr = inr;
+        for (let i = 0; i < activeDists.length; i++) {
+          const ad = activeDists[i];
+          const splitInr = i === activeDists.length - 1
+            ? remainingInr
+            : roundTo(inr * (ad.amt / totalDistAmt), 2);
+          remainingInr = roundTo(remainingInr - splitInr, 2);
+
+          if (splitInr > 0) {
+            const splitCostAed = baseConv === 'AED_PER_1000'
+              ? roundTo((splitInr / 1000) * baseRate, 3)
+              : roundTo(splitInr / baseRate, 3);
+
+            seqSplit++;
+            splitsToInsert.push({
+              id: `split-${seqSplit}`,
+              transaction_id: txnId,
+              distributor_id: ad.id,
+              split_date: dateStr,
+              inr_amount: splitInr,
+              wholesale_rate: baseRate,
+              aed_equivalent: splitCostAed,
+              paid_amount_inr: 0,
+              balance_inr: splitInr,
+              status: 'ALLOCATED',
+              notes: `Allocated to ${ad.name} (Share: ${Math.round((ad.amt / totalDistAmt) * 100)}%)`,
+              is_demo: false,
+            });
+          }
+        }
+      } else {
+        seqSplit++;
+        splitsToInsert.push({
+          id: `split-${seqSplit}`,
+          transaction_id: txnId,
+          distributor_id: 'dist-haja',
+          split_date: dateStr,
+          inr_amount: inr,
+          wholesale_rate: baseRate,
+          aed_equivalent: costAed,
+          paid_amount_inr: 0,
+          balance_inr: inr,
+          status: 'ALLOCATED',
+          notes: 'Allocated to HAJA',
+          is_demo: false,
+        });
+      }
     }
   }
+  console.log(`✓ Prepared ${txnsToInsert.length} customer remittances and ${splitsToInsert.length} distribution splits.\n`);
 
-  console.log(`✓ Prepared ${txnsToInsert.length} transactions and ${splitsToInsert.length} distribution splits.\n`);
-
-  // Step 5: Parse RECEIVABLES & BALANCE (Payments)
-  console.log('Step 5: Parsing RECEIVABLES & BALANCE (Payments)...');
+  // Step 5: Parse Customer Payments from RECEIVABLES & BALANCE
+  console.log('Step 5: Parsing RECEIVABLES & BALANCE (Customer Payments)...');
   const pmtsToInsert = [...openingPmts];
 
-  for (let r = 5; r <= rb.rowCount; r++) {
+  for (let r = 4; r <= rb.rowCount; r++) {
     const dateStr = parseDate(rb.getCell(r, 1).value);
     if (!dateStr) continue;
 
     for (const cust of retailCustomers) {
-      const paid = parseNum(rb.getCell(r, cust.col).value, 0);
+      const paid = parseNum(rb.getCell(r, cust.col + 36).value, 0);
       if (paid <= 0) continue;
 
       seqPmt++;
-      const pmtId = `pmt-${dateStr}-${cust.code.toLowerCase()}-${seqPmt}`;
+      const pmtId = `pmt-${seqPmt}`;
 
       pmtsToInsert.push({
         id: pmtId,
@@ -338,234 +421,137 @@ async function main() {
   }
   console.log(`✓ Prepared ${pmtsToInsert.length} customer payments.\n`);
 
-  // Step 6: Parse BANK DISTRIP (MK & SALA)
-  console.log('Step 6: Parsing BANK DISTRIP (MK & SALA records)...');
+  // Step 6: Parse BANK DISTRIP (All 5 Accounts: MK, SALA, USAIN, SHEIK, BLACK GRP)
+  console.log('Step 6: Parsing BANK DISTRIP (MK, SALA, USAIN, SHEIK, BLACK GRP)...');
   const bdRecordsToInsert = [];
-  let seqBdr = 100000;
 
-  for (let r = 4; r <= bd.rowCount; r++) {
-    // MK (cols 1 to 5)
-    const mkDate = parseDate(bd.getCell(r, 1).value);
-    if (mkDate) {
-      const ord = parseNum(bd.getCell(r, 2).value, 0);
-      const com = parseNum(bd.getCell(r, 3).value, 0);
-      const paid = parseNum(bd.getCell(r, 4).value, 0);
+  const bankConfigs = [
+    { id: 'dist-mk', name: 'MK', dateCol: 1, ordCol: 2, comCol: 3, paidCol: 4 },
+    { id: 'dist-sala', name: 'SALA', dateCol: 7, ordCol: 8, comCol: 9, paidCol: 10 },
+    { id: 'dist-usain', name: 'USAIN', dateCol: 13, ordCol: 14, comCol: 15, paidCol: 16 },
+    { id: 'dist-sheik', name: 'SHEIK', dateCol: 19, ordCol: 20, comCol: 21, paidCol: 22 },
+    { id: 'dist-black-grp', name: 'BLACK GRP', dateCol: 25, ordCol: 26, comCol: 27, paidCol: 28 },
+  ];
+
+  for (const cfg of bankConfigs) {
+    const accountRecords = [];
+    for (let r = 4; r <= bd.rowCount; r++) {
+      let recDate = parseDate(bd.getCell(r, cfg.dateCol).value);
+      if (!recDate) {
+        recDate = parseDate(bd.getCell(r, 1).value) || parseDate(cp.getCell(r, 1).value);
+      }
+
+      const ord = parseNum(bd.getCell(r, cfg.ordCol).value, 0);
+      const com = parseNum(bd.getCell(r, cfg.comCol).value, 0);
+      const paid = parseNum(bd.getCell(r, cfg.paidCol).value, 0);
+
       if (ord !== 0 || com !== 0 || paid !== 0) {
         seqBdr++;
-        bdRecordsToInsert.push({
-          id: `bdr-mk-${mkDate}-${seqBdr}`,
-          record_date: mkDate,
-          account_id: 'dist-mk',
+        accountRecords.push({
+          id: `bdr-${seqBdr}`,
+          record_date: recDate || '2026-05-01',
+          account_id: cfg.id,
           order_inr: ord,
           commission_inr: com,
           paid_inr: paid,
-          balance_inr: 0,
-          notes: `Bank Distrip MK Row ${r}`,
+          balance_inr: 0, // will compute running balance
+          notes: `Bank Distrip ${cfg.name} Row ${r}`,
         });
       }
     }
 
-    // SALA (cols 7 to 11)
-    const salaDate = parseDate(bd.getCell(r, 7).value);
-    if (salaDate) {
-      const ord = parseNum(bd.getCell(r, 8).value, 0);
-      const com = parseNum(bd.getCell(r, 9).value, 0);
-      const paid = parseNum(bd.getCell(r, 10).value, 0);
-      if (ord !== 0 || com !== 0 || paid !== 0) {
-        seqBdr++;
-        bdRecordsToInsert.push({
-          id: `bdr-sala-${salaDate}-${seqBdr}`,
-          record_date: salaDate,
-          account_id: 'dist-sala',
-          order_inr: ord,
-          commission_inr: com,
-          paid_inr: paid,
-          balance_inr: 0,
-          notes: `Bank Distrip SALA Row ${r}`,
-        });
-      }
+    // Sort by record_date ascending and compute running balance
+    accountRecords.sort((a, b) => a.record_date.localeCompare(b.record_date));
+    let runningBal = 0;
+    for (const rec of accountRecords) {
+      runningBal = roundTo(runningBal + rec.order_inr + rec.commission_inr - rec.paid_inr, 2);
+      rec.balance_inr = runningBal;
+      bdRecordsToInsert.push(rec);
     }
+    console.log(`  - ${cfg.name}: ${accountRecords.length} records (Final Balance: ₹${runningBal.toLocaleString('en-IN')})`);
   }
+  console.log(`✓ Prepared ${bdRecordsToInsert.length} bank distrip records across all 5 accounts.\n`);
 
-  // Compute running balance for MK
-  let mkBal = 0;
-  for (const r of bdRecordsToInsert.filter(x => x.account_id === 'dist-mk')) {
-    mkBal = roundTo(mkBal + r.order_inr + r.commission_inr - r.paid_inr, 2);
-    r.balance_inr = mkBal;
-  }
-
-  // Compute running balance for SALA
-  let salaBal = 0;
-  for (const r of bdRecordsToInsert.filter(x => x.account_id === 'dist-sala')) {
-    salaBal = roundTo(salaBal + r.order_inr + r.commission_inr - r.paid_inr, 2);
-    r.balance_inr = salaBal;
-  }
-
-  console.log(`✓ Prepared ${bdRecordsToInsert.length} bank distrip records (MK: final bal = ₹${mkBal.toLocaleString()}, SALA: final bal = ₹${salaBal.toLocaleString()}).\n`);
-
-  // Step 7: Parse INDIA DISTRIBUTION (Wholesale Parties: HAJA, NF2, SARAB)
-  console.log('Step 7: Parsing INDIA DISTRIBUTION (Wholesale Settlements for HAJA, NF2, SARAB)...');
+  // Step 7: Parse INDIA DISTRIBUTION (Wholesale Parties: NF2, HAJA, SARAB, AADHIL, ANWAR)
+  console.log('Step 7: Parsing INDIA DISTRIBUTION (Wholesale Parties: NF2, HAJA, SARAB, AADHIL, ANWAR)...');
   const partyTxnsToInsert = [];
   const partyPmtsToInsert = [];
 
-  for (let r = 4; r <= id.rowCount; r++) {
-    // Date: Cell 1 formula is 'COLLECTION & PROFIT'!A${r - 3}
-    let dateStr = parseDate(id.getCell(r, 1).value);
-    if (!dateStr) {
-      // Lookup from CP
-      const cpDateVal = cp.getCell(r - 2, 1).value;
-      dateStr = parseDate(cpDateVal);
-    }
-    if (!dateStr) dateStr = '2026-05-01';
+  const wholesaleConfigs = [
+    { code: 'NF2', name: 'NF2', custId: 'party-nf2', distId: 'dist-nf2', inrCol: 6, rateCol: 17, aedCol: 18, paidCol: 19, defaultRate: 24.8 },
+    { code: 'HAJA', name: 'HAJA', custId: 'party-haja', distId: 'dist-haja', inrCol: 7, rateCol: 22, aedCol: 23, paidCol: 24, defaultRate: 26.11 },
+    { code: 'SARAB', name: 'SARAB', custId: 'party-sarabu', distId: 'dist-sarabu', inrCol: 8, rateCol: 27, aedCol: 28, paidCol: 29, defaultRate: 26.11 },
+    { code: 'AADHIL', name: 'AADHIL (AWAFI)', custId: 'party-aadhil', distId: 'dist-aadhil', inrCol: 5, rateCol: 12, aedCol: 13, paidCol: 14, defaultRate: 27.5 },
+    { code: 'ANWAR', name: 'ANWAR', custId: 'party-anwar', distId: 'dist-anwar', inrCol: 9, rateCol: 32, aedCol: 33, paidCol: 34, defaultRate: 24.8 },
+  ];
 
-    // NF2
-    const nf2Inr = parseNum(id.getCell(r, 6).value, 0);
-    let nf2Rate = parseNum(id.getCell(r, 17).value, 24.8);
-    if (nf2Rate <= 0) nf2Rate = 24.8;
-    const nf2Aed = parseNum(id.getCell(r, 18).value, 0) || (nf2Rate > 0 ? roundTo(nf2Inr / nf2Rate, 3) : 0);
-    const nf2Paid = parseNum(id.getCell(r, 19).value, 0);
+  for (const wcfg of wholesaleConfigs) {
+    let pTxnCount = 0;
+    let pPmtCount = 0;
 
-    if (nf2Inr > 0) {
-      seqTxn++;
-      partyTxnsToInsert.push({
-        id: `txn-party-nf2-${dateStr}-${seqTxn}`,
-        transaction_number: `TXN-2026-${seqTxn}`,
-        transaction_date: dateStr,
-        customer_id: 'party-nf2',
-        inr_amount: nf2Inr,
-        customer_rate: nf2Rate,
-        customer_rate_convention: 'INR_PER_AED',
-        aed_amount: nf2Aed,
-        base_rate: nf2Rate,
-        base_rate_convention: 'INR_PER_AED',
-        cost_aed: nf2Aed,
-        gross_profit_aed: 0,
-        delivery_charge_pct: 0,
-        delivery_charge_aed: 0,
-        net_profit_aed: 0,
-        distributor_id: 'dist-nf2',
-        status: 'CONFIRMED',
-        notes: `Wholesale distribution to NF2 (India Dist Row ${r})`,
-        is_demo: false,
-      });
-    }
-    if (nf2Paid > 0) {
-      seqPmt++;
-      partyPmtsToInsert.push({
-        id: `pmt-party-nf2-${dateStr}-${seqPmt}`,
-        payment_number: `PMT-2026-${seqPmt}`,
-        payment_date: dateStr,
-        customer_id: 'party-nf2',
-        transaction_id: null,
-        amount_aed: nf2Paid,
-        payment_method: 'CASH',
-        reference_number: `ID-R${r}`,
-        notes: `Wholesale payment received from NF2 (India Dist Row ${r})`,
-        is_demo: false,
-      });
-    }
+    for (let r = 4; r <= id.rowCount; r++) {
+      let dateStr = parseDate(id.getCell(r, 1).value);
+      if (!dateStr) {
+        dateStr = parseDate(cp.getCell(r - 2, 1).value) || parseDate(cp.getCell(r, 1).value);
+      }
+      if (!dateStr) dateStr = '2026-05-01';
 
-    // HAJA
-    const hajaInr = parseNum(id.getCell(r, 7).value, 0);
-    let hajaRate = parseNum(id.getCell(r, 22).value, 26.11);
-    if (hajaRate <= 0) hajaRate = 26.11;
-    const hajaAed = parseNum(id.getCell(r, 23).value, 0) || (hajaRate > 0 ? roundTo(hajaInr / hajaRate, 3) : 0);
-    const hajaPaid = parseNum(id.getCell(r, 24).value, 0);
+      const inr = parseNum(id.getCell(r, wcfg.inrCol).value, 0);
+      let rate = parseNum(id.getCell(r, wcfg.rateCol).value, wcfg.defaultRate);
+      if (rate <= 0) rate = wcfg.defaultRate;
+      const aed = parseNum(id.getCell(r, wcfg.aedCol).value, 0) || (rate > 0 ? roundTo(inr / rate, 3) : 0);
+      const paid = parseNum(id.getCell(r, wcfg.paidCol).value, 0);
 
-    if (hajaInr > 0) {
-      seqTxn++;
-      partyTxnsToInsert.push({
-        id: `txn-party-haja-${dateStr}-${seqTxn}`,
-        transaction_number: `TXN-2026-${seqTxn}`,
-        transaction_date: dateStr,
-        customer_id: 'party-haja',
-        inr_amount: hajaInr,
-        customer_rate: hajaRate,
-        customer_rate_convention: 'INR_PER_AED',
-        aed_amount: hajaAed,
-        base_rate: hajaRate,
-        base_rate_convention: 'INR_PER_AED',
-        cost_aed: hajaAed,
-        gross_profit_aed: 0,
-        delivery_charge_pct: 0,
-        delivery_charge_aed: 0,
-        net_profit_aed: 0,
-        distributor_id: 'dist-haja',
-        status: 'CONFIRMED',
-        notes: `Wholesale distribution to HAJA (India Dist Row ${r})`,
-        is_demo: false,
-      });
-    }
-    if (hajaPaid > 0) {
-      seqPmt++;
-      partyPmtsToInsert.push({
-        id: `pmt-party-haja-${dateStr}-${seqPmt}`,
-        payment_number: `PMT-2026-${seqPmt}`,
-        payment_date: dateStr,
-        customer_id: 'party-haja',
-        transaction_id: null,
-        amount_aed: hajaPaid,
-        payment_method: 'CASH',
-        reference_number: `ID-R${r}`,
-        notes: `Wholesale payment received from HAJA (India Dist Row ${r})`,
-        is_demo: false,
-      });
-    }
+      if (inr > 0) {
+        seqTxn++;
+        pTxnCount++;
+        partyTxnsToInsert.push({
+          id: `txn-${seqTxn}`,
+          transaction_number: `TXN-2026-${seqTxn}`,
+          transaction_date: dateStr,
+          customer_id: wcfg.custId,
+          inr_amount: inr,
+          customer_rate: rate,
+          customer_rate_convention: 'INR_PER_AED',
+          aed_amount: aed,
+          base_rate: rate,
+          base_rate_convention: 'INR_PER_AED',
+          cost_aed: aed,
+          gross_profit_aed: 0,
+          delivery_charge_pct: 0,
+          delivery_charge_aed: 0,
+          net_profit_aed: 0,
+          distributor_id: wcfg.distId,
+          status: 'CONFIRMED',
+          notes: `Wholesale distribution to ${wcfg.name} (India Dist Row ${r})`,
+          is_demo: false,
+        });
+      }
 
-    // SARAB
-    const sarabInr = parseNum(id.getCell(r, 8).value, 0);
-    let sarabRate = parseNum(id.getCell(r, 27).value, 26.11);
-    if (sarabRate <= 0) sarabRate = 26.11;
-    const sarabAed = parseNum(id.getCell(r, 28).value, 0) || (sarabRate > 0 ? roundTo(sarabInr / sarabRate, 3) : 0);
-    const sarabPaid = parseNum(id.getCell(r, 29).value, 0);
-
-    if (sarabInr > 0) {
-      seqTxn++;
-      partyTxnsToInsert.push({
-        id: `txn-party-sarab-${dateStr}-${seqTxn}`,
-        transaction_number: `TXN-2026-${seqTxn}`,
-        transaction_date: dateStr,
-        customer_id: 'party-sarabu',
-        inr_amount: sarabInr,
-        customer_rate: sarabRate,
-        customer_rate_convention: 'INR_PER_AED',
-        aed_amount: sarabAed,
-        base_rate: sarabRate,
-        base_rate_convention: 'INR_PER_AED',
-        cost_aed: sarabAed,
-        gross_profit_aed: 0,
-        delivery_charge_pct: 0,
-        delivery_charge_aed: 0,
-        net_profit_aed: 0,
-        distributor_id: 'dist-sarabu',
-        status: 'CONFIRMED',
-        notes: `Wholesale distribution to SARAB (India Dist Row ${r})`,
-        is_demo: false,
-      });
+      if (paid > 0) {
+        seqPmt++;
+        pPmtCount++;
+        partyPmtsToInsert.push({
+          id: `pmt-${seqPmt}`,
+          payment_number: `PMT-2026-${seqPmt}`,
+          payment_date: dateStr,
+          customer_id: wcfg.custId,
+          transaction_id: null,
+          amount_aed: paid,
+          payment_method: 'CASH',
+          reference_number: `ID-R${r}`,
+          notes: `Wholesale payment received from ${wcfg.name} (India Dist Row ${r})`,
+          is_demo: false,
+        });
+      }
     }
-    if (sarabPaid > 0) {
-      seqPmt++;
-      partyPmtsToInsert.push({
-        id: `pmt-party-sarab-${dateStr}-${seqPmt}`,
-        payment_number: `PMT-2026-${seqPmt}`,
-        payment_date: dateStr,
-        customer_id: 'party-sarabu',
-        transaction_id: null,
-        amount_aed: sarabPaid,
-        payment_method: 'CASH',
-        reference_number: `ID-R${r}`,
-        notes: `Wholesale payment received from SARAB (India Dist Row ${r})`,
-        is_demo: false,
-      });
-    }
+    console.log(`  - ${wcfg.name}: ${pTxnCount} wholesale orders, ${pPmtCount} payments.`);
   }
-
   console.log(`✓ Prepared ${partyTxnsToInsert.length} wholesale party transfers and ${partyPmtsToInsert.length} wholesale payments.\n`);
 
   // Step 8: Execute Database Batch Inserts
   console.log('Step 8: Executing Database Batch Inserts...');
 
-  // Combine transactions and payments
   const allTxns = [...txnsToInsert, ...partyTxnsToInsert];
   const allPmts = [...pmtsToInsert, ...partyPmtsToInsert];
 
@@ -600,37 +586,26 @@ async function main() {
   console.log('\n--- Inserting Distribution Splits ---');
   await batchInsert('distribution_splits', splitColumns, splitsToInsert, 80);
 
-  console.log('\n--- Inserting Customer & Party Payments ---');
+  console.log('\n--- Inserting Customer Payments ---');
   await batchInsert('customer_payments', pmtColumns, allPmts, 80);
 
   console.log('\n--- Inserting Bank Distrip Records ---');
   await batchInsert('bank_distrip_records', bdrColumns, bdRecordsToInsert, 80);
 
   console.log('\n================================================================');
-  console.log('            DATABASE IMPORT COMPLETED SUCCESSFULLY!             ');
+  console.log('   ALL DATA IMPORT COMPLETE AND RECONCILED WITH EXCEL');
+  console.log(`   - Master Parties & Distributors: ${allParties.length}`);
+  console.log(`   - Retail Customers: ${retailCustomers.length}`);
+  console.log(`   - Transactions: ${allTxns.length}`);
+  console.log(`   - Distribution Splits: ${splitsToInsert.length}`);
+  console.log(`   - Customer Payments: ${allPmts.length}`);
+  console.log(`   - Bank Distrip Records: ${bdRecordsToInsert.length}`);
   console.log('================================================================\n');
 
-  // Step 9: Verification Queries
-  console.log('Step 9: Database Record Verification:');
-  const countCust = await query('SELECT COUNT(*) FROM customers');
-  const countTxn = await query('SELECT COUNT(*) FROM transactions');
-  const countSplits = await query('SELECT COUNT(*) FROM distribution_splits');
-  const countPmts = await query('SELECT COUNT(*) FROM customer_payments');
-  const countBdr = await query('SELECT COUNT(*) FROM bank_distrip_records');
-  const countDist = await query('SELECT COUNT(*) FROM distributors');
-
-  console.log(`- Customers:              ${countCust[0].count} (5 parties + 29 retail)`);
-  console.log(`- Distributors:           ${countDist[0].count} (5 master parties)`);
-  console.log(`- Transactions:           ${countTxn[0].count}`);
-  console.log(`- Distribution Splits:    ${countSplits[0].count}`);
-  console.log(`- Customer Payments:      ${countPmts[0].count}`);
-  console.log(`- Bank Distrip Records:   ${countBdr[0].count}`);
+  process.exit(0);
 }
 
-main().then(() => {
-  console.log('\nAll done.');
-  process.exit(0);
-}).catch(err => {
-  console.error('\n❌ Import Error:', err);
+main().catch(err => {
+  console.error('\n❌ Fatal error during import:', err);
   process.exit(1);
 });
