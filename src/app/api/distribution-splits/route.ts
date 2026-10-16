@@ -6,6 +6,7 @@ import {
   deleteDistributionSplit,
 } from "@/lib/repository";
 import { z } from "zod";
+import { invalidateDistributorsPageCache } from "@/app/api/distributors/page-data/route";
 
 const createSplitSchema = z.object({
   transaction_id: z.string().min(1, "Transaction ID is required"),
@@ -33,11 +34,14 @@ export async function GET(request: Request) {
     const from = searchParams.get("from") || undefined;
     const to = searchParams.get("to") || undefined;
 
+    const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!, 10) : undefined;
+
     const splits = await listDistributionSplits({
       transaction_id: transactionId,
       distributor_id: distributorId,
       from,
       to,
+      limit,
     });
 
     return NextResponse.json(splits);
@@ -52,6 +56,7 @@ export async function POST(request: Request) {
     const validated = createSplitSchema.parse(body);
 
     const created = await createDistributionSplit(validated);
+    invalidateDistributorsPageCache();
     return NextResponse.json(created, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to create distribution split" }, { status: 400 });
@@ -64,6 +69,7 @@ export async function PUT(request: Request) {
     const validated = updateSplitSchema.parse(body);
 
     const updated = await updateDistributionSplit(validated.id, validated);
+    invalidateDistributorsPageCache();
     return NextResponse.json(updated);
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to update distribution split" }, { status: 400 });
@@ -79,6 +85,7 @@ export async function DELETE(request: Request) {
     }
 
     await deleteDistributionSplit(id);
+    invalidateDistributorsPageCache();
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to delete distribution split" }, { status: 500 });

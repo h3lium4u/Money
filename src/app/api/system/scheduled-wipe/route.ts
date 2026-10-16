@@ -7,24 +7,37 @@ import {
   WipeScope,
 } from "@/lib/scheduled-wipe";
 
+let cachedStatus: any = null;
+let lastStatusFetchTime = 0;
+const STATUS_CACHE_TTL = 5000;
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get("action");
 
     if (action === "revoke") {
+      cachedStatus = null;
       const status = await revokeWipe();
       return NextResponse.json(status);
     }
 
     if (action === "schedule") {
+      cachedStatus = null;
       const minutes = Number(searchParams.get("minutes")) || 10;
       const scope = (searchParams.get("scope") as WipeScope) || "all";
       const status = await scheduleWipe(minutes, scope);
       return NextResponse.json(status);
     }
 
+    const now = Date.now();
+    if (cachedStatus && now - lastStatusFetchTime < STATUS_CACHE_TTL) {
+      return NextResponse.json(cachedStatus);
+    }
+
     const status = await getScheduledWipeStatus();
+    cachedStatus = status;
+    lastStatusFetchTime = now;
     return NextResponse.json(status);
   } catch (error: any) {
     console.error("Scheduled wipe API error:", error);
@@ -37,6 +50,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    cachedStatus = null;
     const body = await request.json().catch(() => ({}));
     const action = body.action || "schedule";
 

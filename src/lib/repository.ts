@@ -1588,11 +1588,21 @@ export async function getCustomerLedger(customerId: string): Promise<{
 // ---------------- DISTRIBUTORS & INDIA PARTIES ----------------
 export async function listDistributors(groupType?: "IND" | "AED"): Promise<DistributorRecord[]> {
   let sql = `
-    SELECT d.*,
-           COALESCE((SELECT SUM(s.inr_amount) FROM distribution_splits s WHERE s.distributor_id = d.id), 0) as total_splits_inr,
-           COALESCE((SELECT SUM(s.paid_amount_inr) FROM distribution_splits s WHERE s.distributor_id = d.id), 0) as total_splits_paid_inr,
-           COALESCE((SELECT SUM(s.balance_inr) FROM distribution_splits s WHERE s.distributor_id = d.id), 0) as splits_balance_inr
+    SELECT 
+      d.*,
+      COALESCE(agg.total_splits_inr, 0) as total_splits_inr,
+      COALESCE(agg.total_splits_paid_inr, 0) as total_splits_paid_inr,
+      COALESCE(agg.splits_balance_inr, 0) as splits_balance_inr
     FROM distributors d
+    LEFT JOIN (
+      SELECT 
+        distributor_id,
+        SUM(inr_amount) as total_splits_inr,
+        SUM(paid_amount_inr) as total_splits_paid_inr,
+        SUM(balance_inr) as splits_balance_inr
+      FROM distribution_splits
+      GROUP BY distributor_id
+    ) agg ON agg.distributor_id = d.id
     WHERE 1=1
   `;
   const params: any[] = [];

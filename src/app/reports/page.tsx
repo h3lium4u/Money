@@ -99,6 +99,7 @@ export default function ReportsPage() {
       const diffSec = Math.max(0, Math.ceil((target - now) / 1000));
 
       if (diffSec <= 0) {
+        setCountdownText("Executing...");
         fetchWipeStatus();
         fetchReport();
         return;

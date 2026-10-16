@@ -12,10 +12,11 @@ export default function ScheduledWipeBanner() {
 
   useEffect(() => {
     checkStatus();
-    // Poll every 15 seconds to sync status across tabs/windows
-    const poll = setInterval(checkStatus, 15000);
+    // Poll status periodically (60s when idle, 15s when active)
+    const intervalMs = wipeStatus?.isScheduled ? 15000 : 60000;
+    const poll = setInterval(checkStatus, intervalMs);
     return () => clearInterval(poll);
-  }, []);
+  }, [wipeStatus?.isScheduled]);
 
   async function checkStatus() {
     try {
@@ -37,6 +38,7 @@ export default function ScheduledWipeBanner() {
       const diffSec = Math.max(0, Math.ceil((target - now) / 1000));
 
       if (diffSec <= 0) {
+        setCountdownText("Executing...");
         checkStatus();
         return;
       }

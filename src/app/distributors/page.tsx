@@ -73,9 +73,31 @@ export default function IndiaDistributionPage() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [groupByDistributor, setGroupByDistributor] = useState(false);
   const [isCustomerCardsCollapsed, setIsCustomerCardsCollapsed] = useState(false);
-  const detailsRef = useRef<HTMLDivElement>(null);
+  const [summaryStats, setSummaryStats] = useState<{
+    totalOrdersInr?: number;
+    totalAllocatedInr?: number;
+    totalPendingInr?: number;
+    totalSplitsCount?: number;
+  }>({});
+  const topDetailsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // 1. Instant hydration from client sessionStorage cache (0ms perceived latency!)
+    try {
+      const raw = typeof window !== "undefined" ? sessionStorage.getItem("petti_distributors_cache") : null;
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.distributors && parsed?.transactions) {
+          setDistributors(parsed.distributors);
+          setTransactions(parsed.transactions);
+          setSplits(parsed.splits || []);
+          if (parsed.summaryStats) setSummaryStats(parsed.summaryStats);
+          setLoading(false);
+        }
+      }
+    } catch {}
+
+    // 2. Parallel background fetch for live data
     loadData();
   }, []);
 
@@ -85,10 +107,32 @@ export default function IndiaDistributionPage() {
     } else {
       setSelectedTxnId(txnId);
       setModalTxnId(txnId);
-      // Automatically scroll smoothly to the details & splits breakdown table
+      ensureCustomerSplitsLoaded(txnId);
+      // Smoothly bring the top details & split breakdown table directly into view
       setTimeout(() => {
-        detailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 60);
+        topDetailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+    }
+  }
+
+  async function ensureCustomerSplitsLoaded(txnId: string) {
+    try {
+      const existing = splits.some((s) => s.transaction_id === txnId);
+      if (!existing) {
+        const res = await fetch(`/api/distribution-splits?transaction_id=${encodeURIComponent(txnId)}`);
+        if (res.ok) {
+          const extraSplits = await res.json();
+          if (Array.isArray(extraSplits) && extraSplits.length > 0) {
+            setSplits((prev) => {
+              const ids = new Set(prev.map((s) => s.id));
+              const additions = extraSplits.filter((s: any) => !ids.has(s.id));
+              return [...prev, ...additions];
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load customer splits:", err);
     }
   }
 
@@ -153,7 +197,7 @@ export default function IndiaDistributionPage() {
       if (!res.ok) throw new Error(data.error || "Failed to update split");
 
       setEditSplit(null);
-      loadData();
+      loadData(true);
     } catch (err: any) {
       setEditError(err.message || "Failed to update split");
     } finally {
@@ -175,7 +219,7 @@ export default function IndiaDistributionPage() {
       if (!res.ok) throw new Error(data.error || "Failed to delete split");
 
       setDeleteSplitTarget(null);
-      loadData();
+      loadData(true);
     } catch (err: any) {
       setDeleteError(err.message || "Failed to delete split");
     } finally {
@@ -183,33 +227,42 @@ export default function IndiaDistributionPage() {
     }
   }
 
-  async function loadData() {
+  async function loadData(forceRefresh = false) {
     setLoading(true);
     try {
-      const [distRes, splitsRes, txnsRes] = await Promise.all([
-        fetch("/api/distributors"),
-        fetch("/api/distribution-splits"),
-        fetch("/api/transactions?limit=100"),
-      ]);
+      const url = forceRefresh ? "/api/distributors/page-data?refresh=true" : "/api/distributors/page-data";
+      const res = await fetch(url);
+      const data = await res.json();
 
-      const distData = await distRes.json();
-      const splitsData = await splitsRes.json();
-      const txnsData = await txnsRes.json();
-
-      const validDists = Array.isArray(distData) ? distData : [];
-      const validSplits = Array.isArray(splitsData) ? splitsData : [];
-      const validTxns = Array.isArray(txnsData) ? txnsData : [];
+      const validDists = Array.isArray(data.distributors) ? data.distributors : [];
+      const validSplits = Array.isArray(data.splits) ? data.splits : [];
+      const validTxns = Array.isArray(data.transactions) ? data.transactions : [];
 
       setDistributors(validDists);
       setSplits(validSplits);
       setTransactions(validTxns);
+      if (data.summaryStats) {
+        setSummaryStats(data.summaryStats);
+      }
 
-      if (validDists.length > 0) {
+      if (validDists.length > 0 && !modalDistId) {
         setModalDistId(validDists[0].id);
       }
-      if (validTxns.length > 0) {
+      if (validTxns.length > 0 && !modalTxnId) {
         setModalTxnId(validTxns[0].id);
       }
+
+      try {
+        sessionStorage.setItem(
+          "petti_distributors_cache",
+          JSON.stringify({
+            distributors: validDists,
+            transactions: validTxns,
+            splits: validSplits,
+            summaryStats: data.summaryStats,
+          })
+        );
+      } catch {}
 
       if (typeof window !== "undefined") {
         const params = new URLSearchParams(window.location.search);
@@ -257,7 +310,7 @@ export default function IndiaDistributionPage() {
       setShowAddModal(false);
       setModalAmount("");
       setModalNotes("");
-      loadData();
+      loadData(true);
     } catch (err: any) {
       setModalError(err.message || "Failed to create split");
     } finally {
@@ -274,9 +327,9 @@ export default function IndiaDistributionPage() {
   // IND group = India-side distributors for distribution splits (MK, SALA)
   const confirmedIndiaParties = distributors.filter((d) => d.group_type === "IND");
 
-  const totalOrdersInr = transactions.reduce((sum, t) => sum + (Number(t.inr_amount) || 0), 0);
-  const totalAllocatedInr = splits.reduce((sum, s) => sum + (Number(s.inr_amount) || 0), 0);
-  const totalPendingInr = transactions.reduce((sum, t) => sum + (Number(t.remaining_inr) || 0), 0);
+  const totalOrdersInr = summaryStats.totalOrdersInr ?? transactions.reduce((sum, t) => sum + (Number(t.inr_amount) || 0), 0);
+  const totalAllocatedInr = summaryStats.totalAllocatedInr ?? splits.reduce((sum, s) => sum + (Number(s.inr_amount) || 0), 0);
+  const totalPendingInr = summaryStats.totalPendingInr ?? transactions.reduce((sum, t) => sum + (Number(t.remaining_inr) || 0), 0);
 
 
   // High-performance O(1) indexed lookup map for splits (eliminates 368,000 loop overhead)
@@ -624,68 +677,255 @@ export default function IndiaDistributionPage() {
 
       <div className="space-y-4">
 
-          {/* ACTIVE SELECTED CUSTOMER BANNER (Shown at the TOP so user sees details immediately without scrolling) */}
-          {selectedTxn && (
-            <div className="p-4 bg-teal-50 border-2 border-teal-500 rounded-xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 animate-in fade-in duration-150">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] uppercase tracking-wider font-extrabold text-teal-950 bg-teal-200 px-2 py-0.5 rounded">
-                    Selected Customer
-                  </span>
-                  <span className="text-base font-extrabold text-slate-900">{selectedTxn.customer_name}</span>
-                  <span className="font-mono text-xs font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-teal-300">
-                    {selectedTxn.transaction_number}
-                  </span>
+          {/* ─── TOP PANEL: SELECTED CUSTOMER DETAILS & DISTRIBUTION BREAKDOWN ─── */}
+          <div ref={topDetailsRef} className="scroll-mt-6">
+            {selectedTxn && (
+              <div className="p-5 bg-white dark:bg-slate-900 border-2 border-teal-500 rounded-2xl shadow-lg space-y-4 animate-in fade-in duration-200">
+                {/* Header: Customer Name, Code, Txn ID, Date & Actions */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] uppercase tracking-wider font-extrabold text-teal-950 bg-teal-200 px-2.5 py-0.5 rounded-full">
+                        Selected Customer Breakdown
+                      </span>
+                      <h3 className="text-lg font-black text-slate-900 dark:text-slate-100">
+                        {selectedTxn.customer_name}
+                      </h3>
+                      {selectedTxn.customer_code && (
+                        <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                          {selectedTxn.customer_code}
+                        </span>
+                      )}
+                      <span className="font-mono text-xs font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-300">
+                        Txn: {selectedTxn.transaction_number}
+                      </span>
+                      <span className="text-xs text-slate-500 font-medium">
+                        Order Date: {selectedTxn.transaction_date}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Top Action Buttons */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {(selectedTxn.remaining_inr || 0) > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => openAddModalForTxn(selectedTxn)}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-colors"
+                      >
+                        <PlusCircle className="w-4 h-4" />
+                        <span>+ Add Split ({formatINR(selectedTxn.remaining_inr)})</span>
+                      </button>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-xs font-bold bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-lg border border-emerald-300">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <span>100% Fully Distributed</span>
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTxnId(null)}
+                      className="px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-300 cursor-pointer transition-colors"
+                    >
+                      ✕ Close Details
+                    </button>
+                  </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-700 pt-1">
-                  <span>Total Order: <strong className="text-slate-900">{formatINR(selectedTxn.inr_amount)}</strong></span>
-                  <span>Allocated: <strong className="text-emerald-700">{formatINR(selectedTxn.total_distributed_inr)}</strong></span>
-                  <span>
-                    Remaining to Split:{" "}
-                    <strong
-                      className={
+
+                {/* Financial Metrics Strip */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 text-xs">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Customer Order</span>
+                    <span className="text-base font-extrabold text-slate-900 dark:text-slate-100">
+                      {formatINR(selectedTxn.inr_amount)}
+                    </span>
+                    <div className="text-[10px] text-slate-500 font-mono">
+                      {selectedTxn.aed_amount ? formatAED(selectedTxn.aed_amount) : ""} {selectedTxn.base_rate ? `@ ${selectedTxn.base_rate}` : ""}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Distributed (IND)</span>
+                    <span className="text-base font-extrabold text-emerald-700 dark:text-emerald-400">
+                      {formatINR(selectedTxn.total_distributed_inr)}
+                    </span>
+                    <div className="text-[10px] text-slate-500 font-mono">
+                      {selectedTxn.total_aed_equivalent ? formatAED(selectedTxn.total_aed_equivalent) : "-"}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Remaining to Split</span>
+                    <span
+                      className={`text-base font-extrabold ${
                         (selectedTxn.remaining_inr || 0) > 0
-                          ? "text-amber-800 font-extrabold text-sm"
+                          ? "text-amber-800 dark:text-amber-400"
                           : "text-teal-700 font-bold"
-                      }
+                      }`}
                     >
                       {formatINR(selectedTxn.remaining_inr)}
-                    </strong>
-                  </span>
-                  {(selectedTxn.remaining_inr || 0) > 0 && numberToIndianWords(selectedTxn.remaining_inr) && (
-                    <span className="text-[11px] text-teal-900 bg-white px-2 py-0.5 rounded border border-teal-200 font-medium">
-                      ({numberToIndianWords(selectedTxn.remaining_inr)})
                     </span>
+                    {(selectedTxn.remaining_inr || 0) > 0 && numberToIndianWords(selectedTxn.remaining_inr) && (
+                      <div className="text-[10px] text-amber-900 dark:text-amber-300 truncate font-medium" title={numberToIndianWords(selectedTxn.remaining_inr)}>
+                        ({numberToIndianWords(selectedTxn.remaining_inr)})
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Allocation Status</span>
+                    <span
+                      className={`inline-flex items-center gap-1 text-[11px] font-extrabold uppercase px-2.5 py-1 rounded-md mt-0.5 ${
+                        (selectedTxn.remaining_inr || 0) === 0
+                          ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                          : (selectedTxn.total_distributed_inr || 0) > 0
+                          ? "bg-amber-100 text-amber-900 border border-amber-300"
+                          : "bg-slate-100 text-slate-700 border border-slate-300"
+                      }`}
+                    >
+                      {(selectedTxn.remaining_inr || 0) === 0 ? "✓ 100% COMPLETE" : "PARTIAL / PENDING"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Interactive Allocation Progress Bar */}
+                <div className="space-y-1">
+                  {(() => {
+                    const total = Number(selectedTxn.inr_amount || 0);
+                    const alloc = Number(selectedTxn.total_distributed_inr || 0);
+                    const pct = total > 0 ? Math.min(100, Math.round((alloc / total) * 100)) : 0;
+                    return (
+                      <div>
+                        <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400 font-semibold mb-1">
+                          <span>India Distributor Allocation: <strong>{pct}%</strong></span>
+                          <span>{formatINR(alloc)} of {formatINR(total)}</span>
+                        </div>
+                        <div className="w-full bg-slate-200 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-300 ${
+                              pct >= 100 ? "bg-emerald-500" : "bg-teal-600"
+                            }`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* ─── Customer's Distributor Splits Table (Shown Right Here on Top) ─── */}
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                      <Split className="w-4 h-4 text-teal-600" />
+                      <span>Distributor Splits for this Customer ({baseSplits.length})</span>
+                    </span>
+                    {(selectedTxn.remaining_inr || 0) > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => openAddModalForTxn(selectedTxn)}
+                        className="text-xs font-bold text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-2.5 py-1 rounded-md transition-colors cursor-pointer"
+                      >
+                        + Add Another Split
+                      </button>
+                    )}
+                  </div>
+
+                  {baseSplits.length === 0 ? (
+                    <div className="bg-slate-50 dark:bg-slate-800/40 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-6 text-center space-y-2">
+                      <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        No distributor splits have been assigned yet for this customer order.
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        Assign this {formatINR(selectedTxn.inr_amount)} order to MK or SALA to record distribution.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => openAddModalForTxn(selectedTxn)}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer"
+                      >
+                        <PlusCircle className="w-3.5 h-3.5" />
+                        <span>Assign to MK / SALA</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800 font-bold">
+                          <tr>
+                            <th className="px-3 py-2.5">Distributor (IND)</th>
+                            <th className="px-3 py-2.5">Split Date</th>
+                            <th className="px-3 py-2.5">INR Allocated</th>
+                            <th className="px-3 py-2.5">AED Eq / Rate</th>
+                            <th className="px-3 py-2.5">Status & Notes</th>
+                            <th className="px-3 py-2.5 text-center">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                          {baseSplits.map((s) => (
+                            <tr key={s.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                              <td className="px-3 py-2.5 whitespace-nowrap">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded font-extrabold text-xs bg-teal-100 text-teal-800 border border-teal-300 font-mono">
+                                  {s.distributor_name || s.distributor_code}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2.5 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                                {s.split_date}
+                              </td>
+                              <td className="px-3 py-2.5 whitespace-nowrap font-bold text-slate-900 dark:text-slate-100 text-sm">
+                                {formatINR(s.inr_amount)}
+                              </td>
+                              <td className="px-3 py-2.5 whitespace-nowrap">
+                                <div className="font-semibold text-slate-700 dark:text-slate-300">
+                                  {s.aed_equivalent ? formatAED(s.aed_equivalent) : "-"}
+                                </div>
+                                <div className="text-[10px] text-slate-500 font-mono">
+                                  Rate: {s.wholesale_rate ? Number(s.wholesale_rate).toFixed(3) : "-"}
+                                </div>
+                              </td>
+                              <td className="px-3 py-2.5">
+                                <span
+                                  className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                                    s.status === "COMPLETED"
+                                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                      : "bg-amber-50 text-amber-700 border border-amber-200"
+                                  }`}
+                                >
+                                  {s.status}
+                                </span>
+                                {s.notes && (
+                                  <div className="text-[10px] text-slate-500 truncate max-w-[160px] mt-0.5" title={s.notes}>
+                                    {s.notes}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-3 py-2.5 text-center whitespace-nowrap">
+                                <div className="flex items-center justify-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => openEditSplit(s)}
+                                    title="Edit this split"
+                                    className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 hover:text-teal-700 rounded-md transition-colors cursor-pointer"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setDeleteSplitTarget(s)}
+                                    title="Delete this split"
+                                    className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-md transition-colors cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </div>
               </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                {(selectedTxn.remaining_inr || 0) > 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => openAddModalForTxn(selectedTxn)}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer"
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                    <span>+ Add Split ({formatINR(selectedTxn.remaining_inr)})</span>
-                  </button>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-xs font-bold bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-lg border border-emerald-300">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>100% Fully Distributed</span>
-                  </span>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setSelectedTxnId(null)}
-                  className="px-2.5 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 rounded-lg border border-slate-300 cursor-pointer"
-                >
-                  Show All Customers
-                </button>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Customer Orders & Allocation Selector */}
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
@@ -791,9 +1031,6 @@ export default function IndiaDistributionPage() {
               </div>
             ) : null}
           </div>
-
-          {/* Anchor Ref for smooth scroll to details & splits table */}
-          <div ref={detailsRef} className="scroll-mt-4"></div>
 
           {/* ─── Filter & Sort Bar ─── */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3.5 space-y-2.5">
