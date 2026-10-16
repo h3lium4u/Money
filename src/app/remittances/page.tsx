@@ -374,7 +374,7 @@ function CustomerRemittancesContent() {
       }
     }
     const diff = Math.round((parsedEditInr - totalEditSplits + Number.EPSILON) * 1000) / 1000;
-    if (Math.abs(diff) > 1.00) {
+    if (Math.abs(diff) > 0.001) {
       if (diff > 0) {
         setEditError(
           `Total splits (₹${totalEditSplits.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}) is less than order amount (₹${parsedEditInr.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}). Remaining unallocated: ₹${diff.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}.`
@@ -387,17 +387,7 @@ function CustomerRemittancesContent() {
       return;
     }
 
-    // Auto-absorb minor fractional discrepancy <= 1.00 INR into the last split row
-    let adjustedSplits = [...editSplits];
-    if (Math.abs(diff) > 0 && Math.abs(diff) <= 1.00 && adjustedSplits.length > 0) {
-      const lastIdx = adjustedSplits.length - 1;
-      const curAmt = parseFloat(adjustedSplits[lastIdx].inr_amount) || 0;
-      const nextAmt = Math.round((curAmt + diff + Number.EPSILON) * 1000) / 1000;
-      adjustedSplits[lastIdx] = {
-        ...adjustedSplits[lastIdx],
-        inr_amount: String(nextAmt),
-      };
-    }
+    const adjustedSplits = [...editSplits];
 
     setIsUpdating(true);
     setEditError(null);

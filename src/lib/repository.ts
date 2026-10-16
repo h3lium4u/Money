@@ -1,12 +1,12 @@
-import { query, queryOne, execute } from "@/lib/db";
-import { calculateTransaction, calculateDubaiClientTransfer, roundTo } from "@/lib/calculations";
+import { query, queryOne, execute } from "./db.ts";
+import { calculateTransaction, calculateDubaiClientTransfer, roundTo } from "./calculations.ts";
 import {
   getTodayDateString,
   getYesterdayDateString,
   getStartOfWeekDateString,
   getStartOfMonthDateString,
   getStartOfYearDateString,
-} from "@/lib/date-utils";
+} from "./date-utils.ts";
 import crypto from "node:crypto";
 
 export interface Customer {
@@ -206,14 +206,14 @@ function mapCustomerRecord(r: any): Customer {
 }
 
 function mapTransactionRecord(r: any): TransactionRecord {
-  const inrAmount = roundTo(Number(r.inr_amount), 3);
-  const aedAmount = roundTo(Number(r.aed_amount), 3);
-  const distributedInr = roundTo(Number(r.total_distributed_inr || 0), 3);
-  const remainingInr = roundTo(Math.max(0, inrAmount - distributedInr), 3);
-  const paidAed = roundTo(Number(r.paid_aed || 0), 3);
-  const pendingAed = roundTo(Math.max(0, aedAmount - paidAed), 3);
-  const customerRate = roundTo(Number(r.customer_rate), 3);
-  const baseRate = roundTo(Number(r.base_rate), 3);
+  const inrAmount = Number(r.inr_amount);
+  const aedAmount = Number(r.aed_amount);
+  const distributedInr = Number(r.total_distributed_inr || 0);
+  const remainingInr = Math.max(0, inrAmount - distributedInr);
+  const paidAed = Number(r.paid_aed || 0);
+  const pendingAed = Math.max(0, aedAmount - paidAed);
+  const customerRate = Number(r.customer_rate);
+  const baseRate = Number(r.base_rate);
 
   const hasCustConvention = r.customer_rate_convention === "AED_PER_1000" || r.customer_rate_convention === "INR_PER_AED";
   const hasBaseConvention = r.base_rate_convention === "AED_PER_1000" || r.base_rate_convention === "INR_PER_AED";
@@ -278,7 +278,7 @@ function mapDistributionSplitRecord(r: any): DistributionSplitRecord {
     group_type: r.group_type || "IND",
     split_date: formatDate(r.split_date),
     inr_amount: roundTo(Number(r.inr_amount || 0), 3),
-    wholesale_rate: r.wholesale_rate != null ? roundTo(Number(r.wholesale_rate), 3) : null,
+    wholesale_rate: r.wholesale_rate != null ? Number(r.wholesale_rate) : null,
     aed_equivalent: r.aed_equivalent != null ? roundTo(Number(r.aed_equivalent), 3) : null,
     paid_amount_inr: roundTo(Number(r.paid_amount_inr || 0), 3),
     balance_inr: roundTo(Number(r.balance_inr || 0), 3),
@@ -357,7 +357,7 @@ export function notifyDataChange(): void {
 
   // Automatically trigger disk workbook synchronization
   if (typeof window === "undefined") {
-    import("@/lib/reports/normalized-master-generator")
+    import("./reports/normalized-master-generator.ts")
       .then((m) => {
         if (typeof m.triggerMasterWorkbookSync === "function") {
           m.triggerMasterWorkbookSync();
@@ -1761,11 +1761,23 @@ export async function getDistributorOrderForDate(accountId: string, date: string
  * Automatically synchronizes ORDER from customer remittance splits and propagates to all subsequent transactions.
  */
 export async function recalculateBankDistripBalances(accountId: string): Promise<void> {
-  const today = getTodayDateString();
-  // 1. Get all distinct dates for this account (including customer splits, direct txns, existing records, and today)
-  const dates = await query(`
-    SELECT DISTINCT d::text as record_date FROM (
-      SELECT s.split_date::text as d 
+  const today = getTodayDateString().slice(0, 10);
+
+  // 1. Fetch all existing bank records for this account in one single query
+  const existingRows = await query(`
+    SELECT id, record_date::text, commission_inr, paid_inr, balance_inr, order_inr
+    FROM bank_distrip_records
+    WHERE account_id = $1
+  `, [accountId]);
+  const existingMap = new Map<string, any>();
+  for (const r of existingRows) {
+    if (r.record_date) existingMap.set(r.record_date.slice(0, 10), r);
+  }
+
+  // 2. Fetch all order totals grouped by date in one single aggregated query
+  const orderRows = await query(`
+    SELECT d::text as record_date, SUM(inr_amount) as total_order FROM (
+      SELECT s.split_date::text as d, s.inr_amount
       FROM distribution_splits s
       JOIN transactions t ON t.id = s.transaction_id
       WHERE t.status = 'CONFIRMED'
@@ -1775,8 +1787,8 @@ export async function recalculateBankDistripBalances(accountId: string): Promise
           OR s.distributor_id IN (SELECT account_code FROM bank_distrip_accounts WHERE id = $1)
           OR s.distributor_id IN (SELECT id FROM bank_distrip_accounts WHERE account_code = $1 OR id = $1)
         )
-      UNION
-      SELECT t.transaction_date::text as d
+      UNION ALL
+      SELECT t.transaction_date::text as d, t.inr_amount
       FROM transactions t
       WHERE t.status = 'CONFIRMED'
         AND (
@@ -1786,33 +1798,35 @@ export async function recalculateBankDistripBalances(accountId: string): Promise
           OR t.distributor_id IN (SELECT id FROM bank_distrip_accounts WHERE account_code = $1 OR id = $1)
         )
         AND t.id NOT IN (SELECT transaction_id FROM distribution_splits)
-      UNION
-      SELECT record_date::text as d FROM bank_distrip_records WHERE account_id = $1
-      UNION
-      SELECT $2::text as d
     ) combined
     WHERE d IS NOT NULL AND d != ''
-    ORDER BY record_date ASC
-  `, [accountId, today]);
+    GROUP BY d
+  `, [accountId]);
+  const orderMap = new Map<string, number>();
+  for (const r of orderRows) {
+    if (r.record_date) orderMap.set(r.record_date.slice(0, 10), Number(r.total_order || 0));
+  }
 
+  // 3. Collect and sort all distinct dates chronologically
+  const allDatesSet = new Set<string>();
+  existingMap.forEach((_, d) => allDatesSet.add(d));
+  orderMap.forEach((_, d) => allDatesSet.add(d));
+  if (today) allDatesSet.add(today);
+  const sortedDates = Array.from(allDatesSet).sort();
+
+  // 4. Compute running balance and update only changed records
   let runningBal = 0;
-  for (const { record_date } of dates) {
-    if (!record_date) continue;
-    const order = await getDistributorOrderForDate(accountId, record_date);
-    const existing = await queryOne(`
-      SELECT id, commission_inr, paid_inr, balance_inr, order_inr
-      FROM bank_distrip_records
-      WHERE account_id = $1 AND record_date::text = $2
-      LIMIT 1
-    `, [accountId, record_date]);
-
+  for (const record_date of sortedDates) {
+    const order = roundTo(orderMap.get(record_date) || 0, 3);
+    const existing = existingMap.get(record_date);
     const com = Number(existing?.commission_inr || 0);
     const paid = Number(existing?.paid_inr || 0);
-    // Formula from Excel: Balance = Previous Balance + Order + Commission - Paid
     runningBal = roundTo(runningBal + order + com - paid, 3);
 
     if (existing) {
-      if (Number(existing.order_inr) !== order || Number(existing.balance_inr) !== runningBal) {
+      const orderDiff = Math.abs(Number(existing.order_inr) - order);
+      const balDiff = Math.abs(Number(existing.balance_inr) - runningBal);
+      if (orderDiff > 0.001 || balDiff > 0.001) {
         await execute(`
           UPDATE bank_distrip_records
           SET order_inr = $1, balance_inr = $2

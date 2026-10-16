@@ -11,7 +11,7 @@ import {
   listBankDistripRecords,
   getBankDistributionSettlement,
   onDataChange,
-} from "@/lib/repository";
+} from "../repository.ts";
 
 export async function generateNormalizedMasterWorkbook(filters?: {
   from?: string;

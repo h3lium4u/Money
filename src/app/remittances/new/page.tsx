@@ -459,7 +459,7 @@ export default function NewRemittancePage() {
     }
 
     const diff = Math.round((totalOrderInr - totalAllocatedInr + Number.EPSILON) * 1000) / 1000;
-    if (Math.abs(diff) > 1.00) {
+    if (Math.abs(diff) > 0.001) {
       if (diff > 0) {
         setError(
           `India Distribution Split is mandatory: Full order amount must be distributed. Remaining unallocated: ₹${diff.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}`
@@ -470,18 +470,6 @@ export default function NewRemittancePage() {
         );
       }
       return;
-    }
-
-    // Auto-absorb minor fractional discrepancy <= 1.00 INR (e.g. 0.20 INR from floating-point or rounded splits) into the last split row
-    if (Math.abs(diff) > 0 && Math.abs(diff) <= 1.00 && splits.length > 0) {
-      const lastIdx = splits.length - 1;
-      const curAmt = parseFloat(splits[lastIdx].inr_amount) || 0;
-      const adjustedAmt = Math.round((curAmt + diff + Number.EPSILON) * 1000) / 1000;
-      splits[lastIdx].inr_amount = String(adjustedAmt);
-      const auditTag = `[Fractional balance adjustment: ${diff > 0 ? `+${diff.toFixed(3)}` : diff.toFixed(3)} INR]`;
-      if (!splits[lastIdx].notes || !splits[lastIdx].notes.includes("Fractional balance adjustment")) {
-        splits[lastIdx].notes = splits[lastIdx].notes ? `${splits[lastIdx].notes} ${auditTag}` : auditTag;
-      }
     }
 
     setError(null);

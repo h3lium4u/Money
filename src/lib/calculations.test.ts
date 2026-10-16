@@ -11,13 +11,13 @@ import {
 } from "./calculations.ts";
 
 test("Rate Conversions between conventions (3 decimals)", () => {
-  // 38.25 AED per 1000 INR -> 1000 / 38.25 = 26.144 INR/AED
+  // 38.25 AED per 1000 INR -> 1000 / 38.25 = ~26.144 INR/AED
   const inrPerAed = ratePer1000ToInrPerAed(38.25);
-  assert.equal(inrPerAed, 26.144);
+  assert.ok(Math.abs(inrPerAed - 26.144) < 0.001, `Expected ~26.144, got ${inrPerAed}`);
 
-  // 26.82 INR/AED -> 1000 / 26.82 = 37.286 AED per 1000 INR
+  // 26.82 INR/AED -> 1000 / 26.82 = ~37.286 AED per 1000 INR
   const ratePer1000 = inrPerAedToRatePer1000(26.82);
-  assert.equal(ratePer1000, 37.286);
+  assert.ok(Math.abs(ratePer1000 - 37.286) < 0.001, `Expected ~37.286, got ${ratePer1000}`);
 });
 
 test("No reduction in AED conversion: 60,000 INR @ 38.25 and fixed 20 AED delivery", () => {
@@ -46,7 +46,7 @@ test("Dubai Client Transfer: 60,000 total @ 38.25 rate", () => {
 
   // Exactly 2295.000 AED - must not drift to 59,998 or 2294.982
   assert.equal(result.inDhirams, 2295.000);
-  assert.equal(result.wholesaleRate, 26.144);
+  assert.ok(Math.abs(result.wholesaleRate - 26.144) < 0.001, `Expected ~26.144, got ${result.wholesaleRate}`);
   assert.equal(result.balanceToPaid, 295.000);
 });
 

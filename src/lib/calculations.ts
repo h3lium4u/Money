@@ -65,18 +65,18 @@ export function calculateDubaiClientTransfer(inputs: DubaiClientInputs): DubaiCl
   if (manualRate <= 0) throw new Error("Manual rate value must be greater than zero");
   if (paidAmount < 0) throw new Error("Paid amount cannot be negative");
 
-  // Wholesale rate = 1000 / manual rate (3 decimal points)
-  const wholesaleRate = roundTo(1000 / manualRate, 3);
-  // Exact In Dhirams formula avoids floating division rounding drift (prevents 60,000 drifting to 59,998)
+  // Wholesale rate = 1000 / manual rate (exact float, zero rounding off)
+  const wholesaleRate = 1000 / manualRate;
+  // Exact In Dhirams formula avoids floating division rounding drift
   const inDhirams = roundTo((total * manualRate) / 1000, 3);
   const balanceToPaid = roundTo(inDhirams - paidAmount, 3);
 
   return {
-    total: roundTo(total, 3),
-    manualRate: roundTo(manualRate, 3),
+    total,
+    manualRate,
     wholesaleRate,
     inDhirams,
-    paidAmount: roundTo(paidAmount, 3),
+    paidAmount,
     balanceToPaid,
   };
 }
@@ -93,15 +93,16 @@ export function roundTo(val: number, decimals: number = 3): number {
  * Normalizes rates between the two market quotation conventions:
  * 1. AED per 1,000 INR (e.g. 38.25 AED)
  * 2. INR per 1 AED (e.g. 26.14 INR)
+ * Zero rounding off is performed on prices/rates.
  */
 export function ratePer1000ToInrPerAed(ratePer1000: number): number {
   if (ratePer1000 <= 0) return 0;
-  return roundTo(1000 / ratePer1000, 3);
+  return 1000 / ratePer1000;
 }
 
 export function inrPerAedToRatePer1000(inrPerAed: number): number {
   if (inrPerAed <= 0) return 0;
-  return roundTo(1000 / inrPerAed, 3);
+  return 1000 / inrPerAed;
 }
 
 /**
@@ -174,18 +175,18 @@ export function calculateTransaction(inputs: TransactionInputs): TransactionCalc
   const marginPct = aedAmount > 0 ? roundTo((netProfitAed / aedAmount) * 100, 3) : 0;
 
   return {
-    inrAmount: roundTo(inr, 3),
-    customerRate: roundTo(custRate, 3),
+    inrAmount: inr,
+    customerRate: custRate,
     customerRateConvention: custConvention,
-    customerRateInrPerAed: roundTo(customerRateInrPerAed, 3),
+    customerRateInrPerAed: customerRateInrPerAed,
     aedAmount,
-    baseRate: roundTo(baseRate, 3),
+    baseRate: baseRate,
     baseRateConvention: baseConvention,
-    baseRateAedPer1000: roundTo(baseRatePer1000, 3),
-    baseRateInrPerAed: roundTo(baseRateInrPerAed, 3),
+    baseRateAedPer1000: baseRatePer1000,
+    baseRateInrPerAed: baseRateInrPerAed,
     costAed,
     grossProfitAed,
-    deliveryChargePct: roundTo(deliveryPct, 3),
+    deliveryChargePct: deliveryPct,
     deliveryChargeAed,
     netProfitAed,
     marginPct,
