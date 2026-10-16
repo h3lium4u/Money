@@ -19,6 +19,9 @@ import {
   CreditCard,
   Building2,
   Users,
+  Search,
+  Check,
+  ChevronDown,
 } from "lucide-react";
 import { numberToIndianWords } from "@/lib/number-to-words";
 import { getTodayDateString } from "@/lib/date-utils";
@@ -63,6 +66,33 @@ export default function NewDubaiClientTransactionPage() {
   // Options
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [loadingClients, setLoadingClients] = useState(true);
+
+  // Searchable Dubai Client Combobox State
+  const [clientSearchQuery, setClientSearchQuery] = useState("");
+  const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
+  const clientDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        clientDropdownRef.current &&
+        !clientDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsClientDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredClients = clients.filter((c) => {
+    if (!clientSearchQuery.trim()) return true;
+    const q = clientSearchQuery.toLowerCase().trim();
+    return (
+      c.name.toLowerCase().includes(q) ||
+      (c.code && c.code.toLowerCase().includes(q))
+    );
+  });
 
   // Calculation state
   const [preview, setPreview] = useState<DubaiCalculationPreview | null>(null);
@@ -400,36 +430,202 @@ export default function NewDubaiClientTransactionPage() {
             </div>
 
             {/* Choose Dubai Client */}
-            <div>
+            <div ref={clientDropdownRef} className="relative">
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                   <Building2 className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400" />
                   <span>Choose Dubai Client</span>
+                  {selectedClient && (
+                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.2 rounded font-semibold normal-case">
+                      Selected
+                    </span>
+                  )}
                 </label>
                 <button
                   type="button"
-                  onClick={() => setShowNewClientModal(true)}
-                  className="text-[11px] font-bold text-teal-700 dark:text-teal-400 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                  onClick={() => {
+                    setNewClientName(clientSearchQuery);
+                    setNewClientCode(
+                      clientSearchQuery ? clientSearchQuery.toUpperCase().replace(/\s+/g, "_").slice(0, 10) : ""
+                    );
+                    setShowNewClientModal(true);
+                  }}
+                  className="text-[11px] font-bold text-teal-700 dark:text-teal-400 hover:text-teal-800 bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/50 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800 flex items-center gap-1 transition-colors cursor-pointer"
                 >
-                  + Add Client
+                  <UserPlus className="w-3 h-3" />
+                  <span>+ New Client</span>
                 </button>
               </div>
-              <select
-                required
-                value={customerId}
-                onChange={(e) => handleClientChange(e.target.value)}
-                className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
-              >
-                <option value="">-- Choose Dubai Client --</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} {c.code ? `(${c.code})` : ""}
-                  </option>
-                ))}
-              </select>
-              {selectedClient && selectedClient.outstanding_balance !== undefined && (
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold mt-1">
-                  Outstanding Balance: AED {Number(selectedClient.outstanding_balance).toFixed(3)}
+
+              {selectedClient && !isClientDropdownOpen ? (
+                <div className="p-2.5 bg-gradient-to-r from-teal-50/80 to-slate-50 dark:from-teal-950/30 dark:to-slate-800/80 border border-teal-300 dark:border-teal-700 rounded-lg shadow-2xs transition-all">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-full bg-teal-700 dark:bg-teal-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                        {selectedClient.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate">
+                            {selectedClient.name}
+                          </span>
+                          {selectedClient.code && (
+                            <span className="text-[10px] font-mono bg-teal-100/80 dark:bg-teal-900/60 text-teal-800 dark:text-teal-200 px-1.5 py-0.2 rounded font-bold">
+                              {selectedClient.code}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-2 mt-0.5">
+                          <span>
+                            Balance:{" "}
+                            <strong className={(selectedClient.outstanding_balance || 0) > 0 ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400 font-bold"}>
+                              {Number(selectedClient.outstanding_balance || 0).toFixed(3)} AED
+                            </strong>
+                          </span>
+                          {selectedClient.default_rate && (
+                            <span className="text-slate-400 dark:text-slate-500">· Rate: {selectedClient.default_rate}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsClientDropdownOpen(true);
+                          setClientSearchQuery("");
+                        }}
+                        className="text-xs font-semibold px-2.5 py-1 text-teal-800 dark:text-teal-200 hover:text-teal-900 bg-white dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-slate-700 rounded-md border border-teal-300 dark:border-teal-700 transition shadow-2xs cursor-pointer flex items-center gap-1"
+                        title="Search another client"
+                      >
+                        <Search className="w-3 h-3 text-teal-600 dark:text-teal-400" />
+                        <span>Change</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomerId("");
+                          setClientSearchQuery("");
+                          setIsClientDropdownOpen(false);
+                        }}
+                        className="p-1 text-slate-400 hover:text-rose-600 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                        title="Clear selection"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative">
+                  <div className="relative">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      placeholder="Type name or code to search client (e.g. MK, SALA, Divan)..."
+                      value={clientSearchQuery}
+                      onChange={(e) => {
+                        setClientSearchQuery(e.target.value);
+                        setIsClientDropdownOpen(true);
+                      }}
+                      onFocus={() => setIsClientDropdownOpen(true)}
+                      className="w-full text-xs font-bold pl-9 pr-8 py-2.5 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs"
+                    />
+                    {clientSearchQuery ? (
+                      <button
+                        type="button"
+                        onClick={() => setClientSearchQuery("")}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    ) : (
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    )}
+                  </div>
+
+                  {isClientDropdownOpen && (
+                    <div className="absolute z-30 left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700">
+                      <div className="px-3 py-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-slate-900/70 sticky top-0 flex items-center justify-between border-b border-slate-200 dark:border-slate-700">
+                        <span>
+                          {filteredClients.length} Client{filteredClients.length !== 1 ? "s" : ""} Available
+                        </span>
+                        {clientSearchQuery && (
+                          <span className="text-teal-700 dark:text-teal-400 font-semibold truncate max-w-[120px]">
+                            &quot;{clientSearchQuery}&quot;
+                          </span>
+                        )}
+                      </div>
+
+                      {filteredClients.length > 0 ? (
+                        filteredClients.map((c) => {
+                          const isSelected = c.id === customerId;
+                          return (
+                            <div
+                              key={c.id}
+                              onClick={() => {
+                                handleClientChange(c.id);
+                                setIsClientDropdownOpen(false);
+                                setClientSearchQuery("");
+                              }}
+                              className={`px-3 py-2 text-xs flex items-center justify-between hover:bg-teal-50 dark:hover:bg-slate-700/60 cursor-pointer transition ${
+                                isSelected ? "bg-teal-50/80 dark:bg-teal-950/40 font-bold text-teal-900 dark:text-teal-200" : "text-slate-800 dark:text-slate-200"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                {isSelected ? (
+                                  <Check className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400 shrink-0" />
+                                ) : (
+                                  <div className="w-3.5 h-3.5 rounded-full bg-slate-200 dark:bg-slate-700 text-[9px] font-bold text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0">
+                                    {c.name.charAt(0).toUpperCase()}
+                                  </div>
+                                )}
+                                <span className="font-bold truncate">{c.name}</span>
+                                {c.code && (
+                                  <span className="text-[10px] font-mono bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1 py-0.2 rounded font-semibold shrink-0">
+                                    {c.code}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-right shrink-0 pl-2">
+                                <span
+                                  className={`text-[10px] font-semibold ${
+                                    (c.outstanding_balance || 0) > 0 ? "text-amber-700 dark:text-amber-400" : "text-slate-500 dark:text-slate-400"
+                                  }`}
+                                >
+                                  {(c.outstanding_balance || 0) > 0
+                                    ? `Due: ${Number(c.outstanding_balance || 0).toFixed(2)} AED`
+                                    : "Cleared"}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="p-4 text-center">
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                            No client found matching &quot;{clientSearchQuery}&quot;
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNewClientName(clientSearchQuery);
+                              setNewClientCode(
+                                clientSearchQuery.toUpperCase().replace(/\s+/g, "_").slice(0, 10)
+                              );
+                              setIsClientDropdownOpen(false);
+                              setShowNewClientModal(true);
+                            }}
+                            className="text-xs font-bold text-teal-700 dark:text-teal-400 hover:text-teal-800 bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/50 px-3 py-1.5 rounded-lg border border-teal-200 dark:border-teal-800 inline-flex items-center gap-1.5 transition cursor-pointer"
+                          >
+                            <UserPlus className="w-3.5 h-3.5" />
+                            <span>+ Create &quot;{clientSearchQuery}&quot; as New Client</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

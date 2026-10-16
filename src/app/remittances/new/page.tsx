@@ -17,6 +17,10 @@ import {
   ShieldCheck,
   Receipt,
   X,
+  Search,
+  User,
+  Check,
+  ChevronDown,
 } from "lucide-react";
 import { numberToIndianWords } from "@/lib/number-to-words";
 import { getTodayDateString } from "@/lib/date-utils";
@@ -138,6 +142,34 @@ export default function NewRemittancePage() {
   const [newCustRate, setNewCustRate] = useState("");
   const [savingNewCust, setSavingNewCust] = useState(false);
   const [newCustError, setNewCustError] = useState<string | null>(null);
+
+  // Searchable Customer Combobox State
+  const [customerSearchQuery, setCustomerSearchQuery] = useState("");
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
+  const customerDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        customerDropdownRef.current &&
+        !customerDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsCustomerDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Filtered customer list by name or code
+  const filteredCustomers = customers.filter((c) => {
+    if (!customerSearchQuery.trim()) return true;
+    const q = customerSearchQuery.toLowerCase().trim();
+    return (
+      c.name.toLowerCase().includes(q) ||
+      (c.code && c.code.toLowerCase().includes(q))
+    );
+  });
 
   // Load customers, distributors, and prior party transfers
   useEffect(() => {
@@ -681,14 +713,24 @@ export default function NewRemittancePage() {
               </div>
             </div>
 
-            <div>
+            <div ref={customerDropdownRef} className="relative">
               <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  Customer
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-teal-700" />
+                  <span>Customer</span>
+                  {selectedCustomer && (
+                    <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded font-semibold normal-case">
+                      Selected
+                    </span>
+                  )}
                 </label>
                 <button
                   type="button"
-                  onClick={() => setShowNewCustModal(true)}
+                  onClick={() => {
+                    setNewCustName(customerSearchQuery);
+                    setNewCustCode(customerSearchQuery ? customerSearchQuery.toUpperCase().replace(/\s+/g, "_").slice(0, 10) : "");
+                    setShowNewCustModal(true);
+                  }}
                   className="text-[11px] font-bold text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded border border-teal-200 flex items-center gap-1 transition-colors cursor-pointer"
                 >
                   <UserPlus className="w-3 h-3" />
@@ -696,24 +738,175 @@ export default function NewRemittancePage() {
                 </button>
               </div>
 
-              <select
-                value={customerId}
-                onChange={(e) => handleCustomerChange(e.target.value)}
-                className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
-              >
-                <option value="">
-                  {customers.length === 0 ? "Select Customer" : `Select Customer (${customers.length})`}
-                </option>
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} {c.code ? `(${c.code})` : ""}
-                  </option>
-                ))}
-              </select>
+              {selectedCustomer && !isCustomerDropdownOpen ? (
+                <div className="p-2.5 bg-gradient-to-r from-teal-50/80 to-slate-50 border border-teal-300 rounded-lg shadow-2xs transition-all">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-full bg-teal-700 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                        {selectedCustomer.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-xs sm:text-sm text-slate-900 truncate">
+                            {selectedCustomer.name}
+                          </span>
+                          {selectedCustomer.code && (
+                            <span className="text-[10px] font-mono bg-teal-100/80 text-teal-800 px-1.5 py-0.2 rounded font-bold">
+                              {selectedCustomer.code}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-600 flex items-center gap-2 mt-0.5">
+                          <span>
+                            Balance:{" "}
+                            <strong className={(selectedCustomer.outstanding_balance || 0) > 0 ? "text-amber-700" : "text-emerald-700 font-bold"}>
+                              {(selectedCustomer.outstanding_balance || 0).toFixed(3)} AED
+                            </strong>
+                          </span>
+                          {selectedCustomer.default_rate && (
+                            <span className="text-slate-400">· Rate: {selectedCustomer.default_rate}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
 
-              {selectedCustomer && (
-                <div className="text-[10px] text-slate-500 font-semibold mt-1">
-                  Balance Due: {(selectedCustomer.outstanding_balance || 0).toFixed(3)} AED
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCustomerDropdownOpen(true);
+                          setCustomerSearchQuery("");
+                        }}
+                        className="text-xs font-semibold px-2.5 py-1 text-teal-800 hover:text-teal-900 bg-white hover:bg-teal-50 rounded-md border border-teal-300 transition shadow-2xs cursor-pointer flex items-center gap-1"
+                        title="Search another customer"
+                      >
+                        <Search className="w-3 h-3 text-teal-600" />
+                        <span>Change</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomerId("");
+                          setCustomerSearchQuery("");
+                          setIsCustomerDropdownOpen(false);
+                        }}
+                        className="p-1 text-slate-400 hover:text-rose-600 rounded-md hover:bg-slate-100 transition cursor-pointer"
+                        title="Clear selection"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative">
+                  <div className="relative">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      placeholder="Type name or code to search old customer (e.g. Divan, Sathik)..."
+                      value={customerSearchQuery}
+                      onChange={(e) => {
+                        setCustomerSearchQuery(e.target.value);
+                        setIsCustomerDropdownOpen(true);
+                      }}
+                      onFocus={() => setIsCustomerDropdownOpen(true)}
+                      className="w-full text-xs font-bold pl-9 pr-8 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs"
+                    />
+                    {customerSearchQuery ? (
+                      <button
+                        type="button"
+                        onClick={() => setCustomerSearchQuery("")}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    ) : (
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    )}
+                  </div>
+
+                  {isCustomerDropdownOpen && (
+                    <div className="absolute z-30 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-64 overflow-y-auto divide-y divide-slate-100">
+                      <div className="px-3 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-slate-50 sticky top-0 flex items-center justify-between border-b border-slate-200">
+                        <span>
+                          {filteredCustomers.length} Customer{filteredCustomers.length !== 1 ? "s" : ""} Available
+                        </span>
+                        {customerSearchQuery && (
+                          <span className="text-teal-700 font-semibold truncate max-w-[120px]">
+                            &quot;{customerSearchQuery}&quot;
+                          </span>
+                        )}
+                      </div>
+
+                      {filteredCustomers.length > 0 ? (
+                        filteredCustomers.map((c) => {
+                          const isSelected = c.id === customerId;
+                          return (
+                            <div
+                              key={c.id}
+                              onClick={() => {
+                                handleCustomerChange(c.id);
+                                setIsCustomerDropdownOpen(false);
+                                setCustomerSearchQuery("");
+                              }}
+                              className={`px-3 py-2 text-xs flex items-center justify-between hover:bg-teal-50 cursor-pointer transition ${
+                                isSelected ? "bg-teal-50/80 font-bold text-teal-900" : "text-slate-800"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                {isSelected ? (
+                                  <Check className="w-3.5 h-3.5 text-teal-700 shrink-0" />
+                                ) : (
+                                  <div className="w-3.5 h-3.5 rounded-full bg-slate-200 text-[9px] font-bold text-slate-600 flex items-center justify-center shrink-0">
+                                    {c.name.charAt(0).toUpperCase()}
+                                  </div>
+                                )}
+                                <span className="font-bold truncate">{c.name}</span>
+                                {c.code && (
+                                  <span className="text-[10px] font-mono bg-slate-100 text-slate-600 px-1 py-0.2 rounded font-semibold shrink-0">
+                                    {c.code}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-right shrink-0 pl-2">
+                                <span
+                                  className={`text-[10px] font-semibold ${
+                                    (c.outstanding_balance || 0) > 0 ? "text-amber-700" : "text-slate-500"
+                                  }`}
+                                >
+                                  {(c.outstanding_balance || 0) > 0
+                                    ? `Due: ${(c.outstanding_balance || 0).toFixed(2)} AED`
+                                    : "Cleared"}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="p-4 text-center">
+                          <p className="text-xs text-slate-500 mb-2">
+                            No customer found matching &quot;{customerSearchQuery}&quot;
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNewCustName(customerSearchQuery);
+                              setNewCustCode(
+                                customerSearchQuery.toUpperCase().replace(/\s+/g, "_").slice(0, 10)
+                              );
+                              setIsCustomerDropdownOpen(false);
+                              setShowNewCustModal(true);
+                            }}
+                            className="text-xs font-bold text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 px-3 py-1.5 rounded-lg border border-teal-200 inline-flex items-center gap-1.5 transition cursor-pointer"
+                          >
+                            <UserPlus className="w-3.5 h-3.5" />
+                            <span>+ Create &quot;{customerSearchQuery}&quot; as New Customer</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

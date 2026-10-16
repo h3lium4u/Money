@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs';
 import { execute, query } from '../src/lib/db.ts';
 
-const EXCEL_PATH = 'C:/Users/F1ZZ4N/.gemini/antigravity/brain/391fc215-7568-43ab-88f4-e1ff253be3eb/.user_uploaded/media_1791904345304_55ab31b3.xlsx';
+const EXCEL_PATH = 'F:/AYYAN JAN.xlsx';
 
 function parseNum(val, defaultVal = 0) {
   if (val === null || val === undefined) return defaultVal;
@@ -31,7 +31,7 @@ function roundTo(val, dec = 3) {
   return Math.round((val + Number.EPSILON) * f) / f;
 }
 
-// Batch insert helper
+// Batch insert helper with resilient retry
 async function batchInsert(tableName, columns, rows, batchSize = 100) {
   if (rows.length === 0) return 0;
   let totalInserted = 0;
@@ -52,7 +52,18 @@ async function batchInsert(tableName, columns, rows, batchSize = 100) {
     }
 
     const sql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES ${valuePlaceholders.join(', ')}`;
-    await execute(sql, params);
+    let success = false;
+    for (let attempt = 1; attempt <= 6; attempt++) {
+      try {
+        await execute(sql, params);
+        success = true;
+        break;
+      } catch (err) {
+        if (attempt === 6) throw err;
+        console.warn(`\n⚠️ Retry ${attempt}/6 for ${tableName} (batch ${i}): ${err?.message || err}`);
+        await new Promise(r => setTimeout(r, 1500 * attempt));
+      }
+    }
     totalInserted += chunk.length;
     process.stdout.write(`\rInserted ${totalInserted}/${rows.length} into ${tableName}...`);
   }
@@ -62,7 +73,7 @@ async function batchInsert(tableName, columns, rows, batchSize = 100) {
 
 async function main() {
   console.log('================================================================');
-  console.log('    IMPORTING EXCEL DATA FOR 5 MASTER PARTIES & CUSTOMERS');
+  console.log('   WIPING ALL DATA & IMPORTING FROM F:\\AYYAN JAN.xlsx');
   console.log('================================================================\n');
 
   // Load workbook
@@ -74,7 +85,16 @@ async function main() {
   const bd = wb.getWorksheet('BANK DISTRIP');
   const id = wb.getWorksheet('INDIA DISTRIBUTION');
 
-  // Verify and ensure the 5 master parties in distributors, bank_distrip_accounts, customers
+  // Step 0: Delete all existing data
+  console.log('Step 0: Deleting all existing data (wiping transactions, payments, splits, bank distrip, and retail customers)...');
+  await execute('DELETE FROM distribution_splits');
+  await execute('DELETE FROM customer_payments');
+  await execute('DELETE FROM transactions');
+  await execute('DELETE FROM bank_distrip_records');
+  await execute("DELETE FROM customers WHERE entity_type = 'CUSTOMER'");
+  console.log('✓ All existing data deleted cleanly.\n');
+
+  // Step 1: Ensure 5 Master Parties in distributors, bank_distrip_accounts, customers
   console.log('Step 1: Ensuring 5 Master Parties...');
   const masterParties = [
     { id: 'dist-mk', custId: 'party-mk', code: 'MK', name: 'MK', groupType: 'IND', partnerType: 'INDIA_DISTRIBUTOR', partyType: 'INDIA' },
@@ -339,7 +359,7 @@ async function main() {
           order_inr: ord,
           commission_inr: com,
           paid_inr: paid,
-          balance_inr: 0, // will compute running balance below
+          balance_inr: 0,
           notes: `Bank Distrip MK Row ${r}`,
         });
       }
@@ -360,7 +380,7 @@ async function main() {
           order_inr: ord,
           commission_inr: com,
           paid_inr: paid,
-          balance_inr: 0, // will compute running balance below
+          balance_inr: 0,
           notes: `Bank Distrip SALA Row ${r}`,
         });
       }
