@@ -50,6 +50,7 @@ function CustomerRemittancesContent() {
   const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "");
   const [fromDate, setFromDate] = useState(searchParams.get("from") || getTodayDateString());
   const [toDate, setToDate] = useState(searchParams.get("to") || getTodayDateString());
+  const [limitFilter, setLimitFilter] = useState("250");
 
   // URL sync
   useEffect(() => {
@@ -160,7 +161,7 @@ function CustomerRemittancesContent() {
 
   useEffect(() => {
     fetchTransactions();
-  }, [timeFilter, selectedCustomer, statusFilter, fromDate, toDate]);
+  }, [timeFilter, selectedCustomer, statusFilter, fromDate, toDate, limitFilter]);
 
   const todayStr = getTodayDateString();
   const yesterdayStr = getYesterdayDateString();
@@ -211,7 +212,7 @@ function CustomerRemittancesContent() {
       if (selectedCustomer) params.set("customerId", selectedCustomer);
       if (statusFilter) params.set("status", statusFilter);
       params.set("entityType", "CUSTOMER");
-      params.set("limit", "250");
+      params.set("limit", limitFilter === "all" ? "2000" : limitFilter);
 
       const res = await fetch(`/api/transactions?${params.toString()}`);
       const data = await res.json();
@@ -710,7 +711,7 @@ function CustomerRemittancesContent() {
               ))}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 pt-2 border-t border-slate-100">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2.5 pt-2 border-t border-slate-100">
               <div className="relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                 <input
@@ -749,6 +750,21 @@ function CustomerRemittancesContent() {
                 </select>
               </div>
 
+              <div>
+                <select
+                  value={limitFilter}
+                  onChange={(e) => setLimitFilter(e.target.value)}
+                  className="w-full text-xs font-medium border border-slate-300 rounded-lg p-2 text-slate-800"
+                  title="Display Limit"
+                >
+                  <option value="100">100 Records</option>
+                  <option value="250">250 Records (Default)</option>
+                  <option value="500">500 Records</option>
+                  <option value="1000">1,000 Records</option>
+                  <option value="all">All Records</option>
+                </select>
+              </div>
+
               {timeFilter === "custom" && (
                 <div className="flex items-center gap-1.5">
                   <input
@@ -769,6 +785,21 @@ function CustomerRemittancesContent() {
             </div>
           </div>
         </FadeIn>
+
+        {transactions.length >= 250 && limitFilter === "250" && (
+          <div className="flex items-center justify-between px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900">
+            <span>
+              Showing <strong>{transactions.length}</strong> most recent records. Older records can be viewed by selecting a wider limit or date range.
+            </span>
+            <button
+              type="button"
+              onClick={() => setLimitFilter("all")}
+              className="font-bold underline text-teal-800 hover:text-teal-950 cursor-pointer"
+            >
+              Load All Records ➔
+            </button>
+          </div>
+        )}
 
         {/* Customer Remittances Table */}
         <FadeIn delay={0.2}>

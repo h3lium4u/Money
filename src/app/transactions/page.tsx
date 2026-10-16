@@ -53,6 +53,7 @@ function DubaiClientTransactionsContent() {
   const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "");
   const [fromDate, setFromDate] = useState(searchParams.get("from") || getTodayDateString());
   const [toDate, setToDate] = useState(searchParams.get("to") || getTodayDateString());
+  const [limitFilter, setLimitFilter] = useState("250");
 
   // URL sync
   useEffect(() => {
@@ -158,7 +159,7 @@ function DubaiClientTransactionsContent() {
 
   useEffect(() => {
     fetchTransactions();
-  }, [timeFilter, selectedCustomer, statusFilter, fromDate, toDate]);
+  }, [timeFilter, selectedCustomer, statusFilter, fromDate, toDate, limitFilter]);
 
   const todayStr = getTodayDateString();
   const yesterdayStr = getYesterdayDateString();
@@ -198,7 +199,7 @@ function DubaiClientTransactionsContent() {
       if (selectedCustomer) params.set("customerId", selectedCustomer);
       if (statusFilter) params.set("status", statusFilter);
       params.set("entityType", "PARTY");
-      params.set("limit", "250");
+      params.set("limit", limitFilter === "all" ? "2000" : limitFilter);
 
       const res = await fetch(`/api/transactions?${params.toString()}`);
       const data = await res.json();
@@ -580,7 +581,7 @@ function DubaiClientTransactionsContent() {
             </div>
 
             {/* Search & Dropdown Filters */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
               <div className="relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                 <input
@@ -619,6 +620,20 @@ function DubaiClientTransactionsContent() {
                 </select>
               </div>
 
+              <div>
+                <select
+                  value={limitFilter}
+                  onChange={(e) => setLimitFilter(e.target.value)}
+                  className="w-full text-xs font-medium border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg p-2 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-teal-500 focus:outline-none"
+                  title="Records display limit"
+                >
+                  <option value="100">100 Records</option>
+                  <option value="250">250 Records (Default)</option>
+                  <option value="500">500 Records</option>
+                  <option value="all">All Records</option>
+                </select>
+              </div>
+
               {timeFilter === "custom" && (
                 <div className="flex items-center gap-1.5">
                   <input
@@ -644,18 +659,18 @@ function DubaiClientTransactionsContent() {
         <FadeIn delay={0.2}>
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
             <div className="w-full overflow-x-auto">
-              <table className="w-full text-left text-xs table-fixed min-w-[1300px]">
+              <table className="w-full text-left text-xs table-fixed min-w-[1380px]">
                 <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800 text-[10px]">
                   <tr>
-                    <th className="px-2.5 py-3 w-[7.5%]">Date</th>
+                    <th className="px-2.5 py-3 w-[8%]">Date</th>
                     <th className="px-2.5 py-3 w-[11%]">Dubai Client</th>
                     <th className="px-2.5 py-3 w-[10%]">Total (INR)</th>
                     <th className="px-2 py-3 w-[6.5%]">Client Rate</th>
                     <th className="px-2 py-3 w-[6.5%]">Wholesale Rate</th>
                     <th className="px-2.5 py-3 w-[9.5%]">In Dhirams</th>
-                    <th className="px-2.5 py-3 w-[9%]">Paid Amount</th>
-                    <th className="px-2.5 py-3 w-[10%]">Balance to Paid</th>
-                    <th className="px-2.5 py-3 w-[13%]">Daily Balance</th>
+                    <th className="px-2.5 py-3 w-[8.5%]">Paid Amount</th>
+                    <th className="px-2.5 py-3 w-[9.5%]">Balance to Paid</th>
+                    <th className="px-2.5 py-3 w-[13.5%]">Daily Balance</th>
                     <th className="px-2.5 py-3 text-right w-[17%]">Actions</th>
                   </tr>
                 </thead>

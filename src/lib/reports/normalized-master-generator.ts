@@ -62,7 +62,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     }
   }
 
-  // Reusable Styling Helpers
+  // Reusable Pre-allocated Styling Helpers (Fast & GC-friendly)
   const headerFont = { bold: true, color: { argb: "FFFFFFFF" }, size: 10, name: "Calibri" };
   const dataFont = { size: 10, name: "Calibri", color: { argb: "FF0F172A" } };
   const totalRowFont = { bold: true, size: 10, name: "Calibri", color: { argb: "FF0F172A" } };
@@ -81,15 +81,26 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     right: { style: "thin", color: { argb: "FFE2E8F0" } },
   };
 
+  const fillZebra: ExcelJS.FillPattern = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFF8FAFC" },
+  };
+
+  const alignCenter: Partial<ExcelJS.Alignment> = { vertical: "middle", horizontal: "center" };
+  const alignRight: Partial<ExcelJS.Alignment> = { vertical: "middle", horizontal: "right" };
+  const alignLeft: Partial<ExcelJS.Alignment> = { vertical: "middle", horizontal: "left" };
+
   function styleHeader(row: ExcelJS.Row, hexColor: string) {
     row.font = headerFont;
     row.height = 26;
+    const fillHeader: ExcelJS.FillPattern = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: hexColor },
+    };
     row.eachCell((cell) => {
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: hexColor },
-      };
+      cell.fill = fillHeader;
       cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
       cell.border = borderThin;
     });
@@ -98,30 +109,34 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   function styleDataRow(row: ExcelJS.Row, isEven = false) {
     row.height = 21;
     row.font = dataFont;
+    const fill = isEven ? fillZebra : undefined;
     row.eachCell((cell) => {
       cell.border = borderThin;
-      cell.alignment = { ...(cell.alignment || {}), vertical: "middle" };
-      if (isEven) {
-        cell.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: "FFF8FAFC" },
-        };
+      if (!cell.alignment) {
+        cell.alignment = alignLeft;
+      } else {
+        cell.alignment.vertical = "middle";
       }
+      if (fill) cell.fill = fill;
     });
   }
 
   function styleTotalRow(row: ExcelJS.Row, fillHex = "FFF1F5F9") {
     row.height = 25;
     row.font = totalRowFont;
+    const fillTotal: ExcelJS.FillPattern = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: fillHex },
+    };
     row.eachCell((cell) => {
       cell.border = borderTotal;
-      cell.alignment = { ...(cell.alignment || {}), vertical: "middle" };
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: fillHex },
-      };
+      if (!cell.alignment) {
+        cell.alignment = alignLeft;
+      } else {
+        cell.alignment.vertical = "middle";
+      }
+      cell.fill = fillTotal;
     });
   }
 
