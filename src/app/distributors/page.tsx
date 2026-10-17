@@ -90,7 +90,7 @@ export default function IndiaDistributionPage() {
   useEffect(() => {
     // 1. Instant hydration from client sessionStorage cache (0ms perceived latency!)
     try {
-      const raw = typeof window !== "undefined" ? sessionStorage.getItem("petti_distributors_cache") : null;
+      const raw = typeof window !== "undefined" ? sessionStorage.getItem("accounts_distributors_cache") : null;
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed?.distributors && parsed?.transactions) {
@@ -260,7 +260,7 @@ export default function IndiaDistributionPage() {
 
       try {
         sessionStorage.setItem(
-          "petti_distributors_cache",
+          "accounts_distributors_cache",
           JSON.stringify({
             distributors: validDists,
             transactions: validTxns,
@@ -540,14 +540,14 @@ export default function IndiaDistributionPage() {
     filterStatus !== "all";
 
   const colorClasses: Record<string, { bg: string; border: string; text: string; badge: string }> = {
-    emerald: { bg: "bg-teal-50", border: "border-teal-200", text: "text-teal-900", badge: "bg-teal-100 text-teal-800 border-teal-300" },
-    blue: { bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-900", badge: "bg-blue-100 text-blue-800 border-blue-300" },
+    emerald: { bg: "bg-indigo-50", border: "border-indigo-200", text: "text-indigo-900", badge: "bg-indigo-100 text-indigo-800 border-indigo-300" },
+    blue: { bg: "bg-indigo-50", border: "border-indigo-200", text: "text-indigo-900", badge: "bg-indigo-100 text-indigo-800 border-indigo-300" },
     violet: { bg: "bg-violet-50", border: "border-violet-200", text: "text-violet-900", badge: "bg-violet-100 text-violet-800 border-violet-300" },
     amber: { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-900", badge: "bg-amber-100 text-amber-800 border-amber-300" },
     rose: { bg: "bg-rose-50", border: "border-rose-200", text: "text-rose-900", badge: "bg-rose-100 text-rose-800 border-rose-300" },
     cyan: { bg: "bg-cyan-50", border: "border-cyan-200", text: "text-cyan-900", badge: "bg-cyan-100 text-cyan-800 border-cyan-300" },
     indigo: { bg: "bg-indigo-50", border: "border-indigo-200", text: "text-indigo-900", badge: "bg-indigo-100 text-indigo-800 border-indigo-300" },
-    teal: { bg: "bg-teal-50", border: "border-teal-200", text: "text-teal-900", badge: "bg-teal-100 text-teal-800 border-teal-300" },
+    teal: { bg: "bg-indigo-50", border: "border-indigo-200", text: "text-indigo-900", badge: "bg-indigo-100 text-indigo-800 border-indigo-300" },
   };
 
   return (
@@ -557,7 +557,7 @@ export default function IndiaDistributionPage() {
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
             <span>India Distribution & Order Splits</span>
-            <span className="text-xs bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 px-2 py-0.5 rounded font-mono font-bold border border-teal-200 dark:border-teal-800">
+            <span className="text-xs bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 px-2 py-0.5 rounded font-mono font-bold border border-indigo-200 dark:border-indigo-800">
               India Allocation
             </span>
           </h2>
@@ -571,13 +571,13 @@ export default function IndiaDistributionPage() {
             href="/bank-distrip"
             className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 shadow-2xs transition-colors"
           >
-            <Landmark className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+            <Landmark className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
             <span>Bank Distribution (IND) ➔</span>
           </Link>
 
           <button
             onClick={handleOpenTopAddModal}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-teal-700 text-white text-xs font-bold rounded-lg hover:bg-teal-800 shadow-sm transition-colors cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-700 text-white text-xs font-bold rounded-lg hover:bg-indigo-800 shadow-sm transition-colors cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             <span>
@@ -595,7 +595,7 @@ export default function IndiaDistributionPage() {
         <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-              <Split className="w-3.5 h-3.5 text-teal-600" />
+              <Split className="w-3.5 h-3.5 text-indigo-600" />
               <span>Customer Orders Pool</span>
             </span>
             <span className="text-[10px] font-mono text-slate-400">
@@ -606,7 +606,7 @@ export default function IndiaDistributionPage() {
             <div className="text-lg font-black text-slate-900 dark:text-slate-100">
               {formatINR(totalOrdersInr)}
             </div>
-            <p className="text-[10px] text-teal-700 dark:text-teal-400 font-semibold leading-tight mt-0.5 break-words">
+            <p className="text-[10px] text-indigo-700 dark:text-indigo-400 font-semibold leading-tight mt-0.5 break-words">
               {integerToIndianWords(totalOrdersInr)}
             </p>
           </div>
@@ -641,14 +641,14 @@ export default function IndiaDistributionPage() {
               key={p.id}
               className={`p-4 rounded-xl border transition-all ${
                 isFiltered
-                  ? "bg-teal-50/80 dark:bg-teal-950/40 border-teal-500 ring-2 ring-teal-500/20 shadow-sm"
+                  ? "bg-indigo-50/80 dark:bg-indigo-950/40 border-indigo-500 ring-2 ring-indigo-500/20 shadow-sm"
                   : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-2xs hover:border-slate-300"
               }`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-black text-slate-900 dark:text-slate-100">{p.name}</span>
-                  <span className="text-[10px] font-extrabold bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 border border-teal-300 dark:border-teal-800 px-1.5 py-0.5 rounded font-mono">
+                  <span className="text-[10px] font-extrabold bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-800 px-1.5 py-0.5 rounded font-mono">
                     IND
                   </span>
                   <span className="text-[10px] text-slate-400 font-mono">({p.code})</span>
@@ -656,7 +656,7 @@ export default function IndiaDistributionPage() {
                 <Link
                   href="/bank-distrip"
                   title={`View ${p.name}'s daily bank running balance & payouts in Bank Distribution`}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 dark:text-teal-400 hover:underline"
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 dark:text-indigo-400 hover:underline"
                 >
                   <Landmark className="w-3 h-3" />
                   <span>Bank Ledger ↗</span>
@@ -669,7 +669,7 @@ export default function IndiaDistributionPage() {
                   <span className="text-base font-extrabold text-slate-900 dark:text-slate-100">
                     {formatINR(totalAllocated)}
                   </span>
-                  <p className="text-[10px] text-teal-700 dark:text-teal-400 font-semibold leading-tight mt-0.5 break-words">
+                  <p className="text-[10px] text-indigo-700 dark:text-indigo-400 font-semibold leading-tight mt-0.5 break-words">
                     {integerToIndianWords(totalAllocated)}
                   </p>
                 </div>
@@ -678,8 +678,8 @@ export default function IndiaDistributionPage() {
                   onClick={() => setFilterDistributor(isFiltered ? "all" : p.id)}
                   className={`shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-md transition-all cursor-pointer ${
                     isFiltered
-                      ? "bg-teal-700 text-white shadow-2xs"
-                      : "bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 text-slate-700 dark:text-slate-300 hover:text-teal-800 border border-slate-200 dark:border-slate-700"
+                      ? "bg-indigo-700 text-white shadow-2xs"
+                      : "bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 text-slate-700 dark:text-slate-300 hover:text-indigo-800 border border-slate-200 dark:border-slate-700"
                   }`}
                 >
                   {isFiltered ? "✓ Filter Active" : `Filter (${distributorSplits.length} splits)`}
@@ -695,12 +695,12 @@ export default function IndiaDistributionPage() {
           {/* ─── TOP PANEL: SELECTED CUSTOMER DETAILS & DISTRIBUTION BREAKDOWN ─── */}
           <div ref={topDetailsRef} className="scroll-mt-24">
             {selectedTxn && (
-              <div className="p-5 bg-white dark:bg-slate-900 border-2 border-teal-500 rounded-2xl shadow-lg space-y-4 animate-in fade-in duration-200">
+              <div className="p-5 bg-white dark:bg-slate-900 border-2 border-indigo-500 rounded-2xl shadow-lg space-y-4 animate-in fade-in duration-200">
                 {/* Header: Customer Name, Code, Txn ID, Date & Actions */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] uppercase tracking-wider font-extrabold text-teal-950 bg-teal-200 px-2.5 py-0.5 rounded-full">
+                      <span className="text-[10px] uppercase tracking-wider font-extrabold text-indigo-950 bg-indigo-200 px-2.5 py-0.5 rounded-full">
                         Selected Customer Breakdown
                       </span>
                       <h3 className="text-lg font-black text-slate-900 dark:text-slate-100">
@@ -711,7 +711,7 @@ export default function IndiaDistributionPage() {
                           {selectedTxn.customer_code}
                         </span>
                       )}
-                      <span className="font-mono text-xs font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-300">
+                      <span className="font-mono text-xs font-bold text-indigo-800 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-300">
                         Txn: {selectedTxn.transaction_number}
                       </span>
                       <span className="text-xs text-slate-500 font-medium">
@@ -726,7 +726,7 @@ export default function IndiaDistributionPage() {
                       <button
                         type="button"
                         onClick={() => openAddModalForTxn(selectedTxn)}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-colors"
                       >
                         <PlusCircle className="w-4 h-4" />
                         <span>+ Add Split ({formatINR(selectedTxn.remaining_inr)})</span>
@@ -754,7 +754,7 @@ export default function IndiaDistributionPage() {
                     <span className="text-base font-extrabold text-slate-900 dark:text-slate-100">
                       {formatINR(selectedTxn.inr_amount)}
                     </span>
-                    <div className="text-[10px] text-teal-700 dark:text-teal-400 font-semibold leading-tight truncate mt-0.5" title={integerToIndianWords(selectedTxn.inr_amount)}>
+                    <div className="text-[10px] text-indigo-700 dark:text-indigo-400 font-semibold leading-tight truncate mt-0.5" title={integerToIndianWords(selectedTxn.inr_amount)}>
                       {integerToIndianWords(selectedTxn.inr_amount)}
                     </div>
                     <div className="text-[10px] text-slate-500 font-mono mt-0.5">
@@ -779,7 +779,7 @@ export default function IndiaDistributionPage() {
                       className={`text-base font-extrabold ${
                         (selectedTxn.remaining_inr || 0) > 0
                           ? "text-amber-800 dark:text-amber-400"
-                          : "text-teal-700 font-bold"
+                          : "text-indigo-700 font-bold"
                       }`}
                     >
                       {formatINR(selectedTxn.remaining_inr)}
@@ -821,7 +821,7 @@ export default function IndiaDistributionPage() {
                         <div className="w-full bg-slate-200 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
                           <div
                             className={`h-full transition-all duration-300 ${
-                              pct >= 100 ? "bg-emerald-500" : "bg-teal-600"
+                              pct >= 100 ? "bg-emerald-500" : "bg-indigo-600"
                             }`}
                             style={{ width: `${pct}%` }}
                           />
@@ -835,14 +835,14 @@ export default function IndiaDistributionPage() {
                 <div className="space-y-2 pt-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                      <Split className="w-4 h-4 text-teal-600" />
+                      <Split className="w-4 h-4 text-indigo-600" />
                       <span>Distributor Splits for this Customer ({baseSplits.length})</span>
                     </span>
                     {(selectedTxn.remaining_inr || 0) > 0 && (
                       <button
                         type="button"
                         onClick={() => openAddModalForTxn(selectedTxn)}
-                        className="text-xs font-bold text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-2.5 py-1 rounded-md transition-colors cursor-pointer"
+                        className="text-xs font-bold text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1 rounded-md transition-colors cursor-pointer"
                       >
                         + Add Another Split
                       </button>
@@ -860,7 +860,7 @@ export default function IndiaDistributionPage() {
                       <button
                         type="button"
                         onClick={() => openAddModalForTxn(selectedTxn)}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer"
                       >
                         <PlusCircle className="w-3.5 h-3.5" />
                         <span>Assign to MK / SALA</span>
@@ -883,7 +883,7 @@ export default function IndiaDistributionPage() {
                           {baseSplits.map((s) => (
                             <tr key={s.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
                               <td className="px-3 py-2.5 whitespace-nowrap">
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded font-extrabold text-xs bg-teal-100 text-teal-800 border border-teal-300 font-mono">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded font-extrabold text-xs bg-indigo-100 text-indigo-800 border border-indigo-300 font-mono">
                                   {s.distributor_name || s.distributor_code}
                                 </span>
                               </td>
@@ -923,7 +923,7 @@ export default function IndiaDistributionPage() {
                                     type="button"
                                     onClick={() => openEditSplit(s)}
                                     title="Edit this split"
-                                    className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 hover:text-teal-700 rounded-md transition-colors cursor-pointer"
+                                    className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 hover:text-indigo-700 rounded-md transition-colors cursor-pointer"
                                   >
                                     <Edit3 className="w-3.5 h-3.5" />
                                   </button>
@@ -953,7 +953,7 @@ export default function IndiaDistributionPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
               <div>
                 <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                  <User className="w-4 h-4 text-teal-700" />
+                  <User className="w-4 h-4 text-indigo-700" />
                   <span>Customer Orders & Remaining Allocation</span>
                   <span className="text-[11px] font-normal text-slate-400 font-mono">({transactions.length} orders)</span>
                 </h3>
@@ -983,7 +983,7 @@ export default function IndiaDistributionPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedTxnId(null)}
-                    className="text-xs font-bold text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-2.5 py-1 rounded-lg transition-all cursor-pointer"
+                    className="text-xs font-bold text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1 rounded-lg transition-all cursor-pointer"
                   >
                     ✕ Clear Selection
                   </button>
@@ -1006,7 +1006,7 @@ export default function IndiaDistributionPage() {
                       onClick={() => handleSelectTxn(t.id)}
                       className={`cursor-pointer p-3 rounded-lg border text-left transition-all ${
                         isSelected
-                          ? "bg-teal-50 border-teal-500 ring-2 ring-teal-500/20 shadow-sm"
+                          ? "bg-indigo-50 border-indigo-500 ring-2 ring-indigo-500/20 shadow-sm"
                           : "bg-slate-50/70 hover:bg-white border-slate-200 hover:border-slate-300"
                       }`}
                     >
@@ -1020,7 +1020,7 @@ export default function IndiaDistributionPage() {
                         <span
                           className={`text-[10px] font-bold px-1.5 py-0.5 rounded border shrink-0 ${
                             isComplete
-                              ? "bg-teal-100 text-teal-800 border-teal-300"
+                              ? "bg-indigo-100 text-indigo-800 border-indigo-300"
                               : "bg-amber-100 text-amber-900 border-amber-300"
                           }`}
                         >
@@ -1031,7 +1031,7 @@ export default function IndiaDistributionPage() {
                         <span>{t.transaction_number}</span>
                         <span className="font-bold text-slate-700">{formatINR(t.inr_amount)}</span>
                       </div>
-                      <div className="text-[10px] text-teal-700 dark:text-teal-400 font-medium truncate mt-0.5" title={integerToIndianWords(t.inr_amount)}>
+                      <div className="text-[10px] text-indigo-700 dark:text-indigo-400 font-medium truncate mt-0.5" title={integerToIndianWords(t.inr_amount)}>
                         {integerToIndianWords(t.inr_amount)}
                       </div>
                       {!isComplete && (
@@ -1043,7 +1043,7 @@ export default function IndiaDistributionPage() {
                               e.stopPropagation();
                               openAddModalForTxn(t);
                             }}
-                            className="text-[10px] font-bold text-white bg-teal-700 hover:bg-teal-800 px-2 py-0.5 rounded shadow-sm cursor-pointer"
+                            className="text-[10px] font-bold text-white bg-indigo-700 hover:bg-indigo-800 px-2 py-0.5 rounded shadow-sm cursor-pointer"
                           >
                             + Split
                           </button>
@@ -1067,7 +1067,7 @@ export default function IndiaDistributionPage() {
                   placeholder="Search customer, distributor, txn…"
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 bg-slate-50"
+                  className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50"
                 />
               </div>
 
@@ -1075,7 +1075,7 @@ export default function IndiaDistributionPage() {
               <select
                 value={filterDistributor}
                 onChange={(e) => setFilterDistributor(e.target.value)}
-                className="px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 bg-slate-50 text-slate-700"
+                className="px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50 text-slate-700"
               >
                 <option value="all">All Distributors</option>
                 {confirmedIndiaParties.map((p) => (
@@ -1087,7 +1087,7 @@ export default function IndiaDistributionPage() {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 bg-slate-50 text-slate-700"
+                className="px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50 text-slate-700"
               >
                 <option value="all">All Statuses</option>
                 <option value="ALLOCATED">Allocated</option>
@@ -1128,7 +1128,7 @@ export default function IndiaDistributionPage() {
                 {" "}{groupByDistributor ? "splits" : "customer transactions"} (<strong className="text-slate-800">{splits.length}</strong> splits total)
               </span>
               {activeFilters && (
-                <span className="bg-teal-100 text-teal-800 border border-teal-300 px-1.5 py-0.5 rounded font-bold">
+                <span className="bg-indigo-100 text-indigo-800 border border-indigo-300 px-1.5 py-0.5 rounded font-bold">
                   Filtered
                 </span>
               )}
@@ -1136,12 +1136,12 @@ export default function IndiaDistributionPage() {
                 <>
                   <span className="text-slate-300">|</span>
                   <span>
-                    Customer: <strong className="text-teal-700">{selectedTxn?.customer_name}</strong>
+                    Customer: <strong className="text-indigo-700">{selectedTxn?.customer_name}</strong>
                   </span>
                   <button
                     type="button"
                     onClick={() => setSelectedTxnId(null)}
-                    className="text-teal-700 font-bold hover:underline"
+                    className="text-indigo-700 font-bold hover:underline"
                   >
                     View all →
                   </button>
@@ -1165,7 +1165,7 @@ export default function IndiaDistributionPage() {
                   </div>
                   <button
                     onClick={handleOpenTopAddModal}
-                    className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 transition"
+                    className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-700 hover:bg-indigo-800 transition"
                   >
                     <PlusCircle className="w-3.5 h-3.5" />
                     Add Split
@@ -1217,7 +1217,7 @@ export default function IndiaDistributionPage() {
                               return (
                                 <tr
                                   key={s.id}
-                                  className={`hover:bg-slate-50/60 transition-colors ${isCustomerSelected ? "bg-teal-50/30" : ""}`}
+                                  className={`hover:bg-slate-50/60 transition-colors ${isCustomerSelected ? "bg-indigo-50/30" : ""}`}
                                 >
                                   <td className="px-3 py-2 whitespace-nowrap">
                                     <div className="font-mono font-bold text-slate-800 text-[11px]">{s.transaction_number}</div>
@@ -1229,8 +1229,8 @@ export default function IndiaDistributionPage() {
                                       onClick={() => handleSelectTxn(rowTxn?.id || s.transaction_id)}
                                       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold transition-all ${
                                         isCustomerSelected
-                                          ? "bg-teal-700 text-white"
-                                          : "text-slate-800 bg-slate-100 hover:bg-teal-100 hover:text-teal-900 border border-slate-200"
+                                          ? "bg-indigo-700 text-white"
+                                          : "text-slate-800 bg-slate-100 hover:bg-indigo-100 hover:text-indigo-900 border border-slate-200"
                                       }`}
                                     >
                                       <User className="w-3 h-3 shrink-0" />
@@ -1263,7 +1263,7 @@ export default function IndiaDistributionPage() {
                                     <div className="flex items-center justify-center gap-1.5">
                                       {rowTxn && (rowTxn.remaining_inr || 0) > 0 && (
                                         <button type="button" onClick={() => openAddModalForTxn(rowTxn)}
-                                          className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-teal-800 bg-teal-100 hover:bg-teal-200 rounded border border-teal-300">
+                                          className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-indigo-800 bg-indigo-100 hover:bg-indigo-200 rounded border border-indigo-300">
                                           <PlusCircle className="w-3 h-3" />+ Split
                                         </button>
                                       )}
@@ -1337,7 +1337,7 @@ export default function IndiaDistributionPage() {
                             </div>
                             <button
                               onClick={handleOpenTopAddModal}
-                              className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 transition"
+                              className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-700 hover:bg-indigo-800 transition"
                             >
                               <PlusCircle className="w-3.5 h-3.5" />
                               Add Split
@@ -1355,9 +1355,9 @@ export default function IndiaDistributionPage() {
                             <tr
                               className={`transition-colors ${
                                 row.is_fully_allocated
-                                  ? "bg-teal-50/20 hover:bg-teal-50/40"
+                                  ? "bg-indigo-50/20 hover:bg-indigo-50/40"
                                   : isCustomerSelected
-                                  ? "bg-teal-50/50 hover:bg-teal-50/70"
+                                  ? "bg-indigo-50/50 hover:bg-indigo-50/70"
                                   : "hover:bg-slate-50/80"
                               }`}
                             >
@@ -1375,8 +1375,8 @@ export default function IndiaDistributionPage() {
                                   title={`Click to select ${row.customer_name} & view remaining split`}
                                   className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-bold transition-all ${
                                     isCustomerSelected
-                                      ? "bg-teal-700 text-white shadow-2xs"
-                                      : "text-slate-800 bg-slate-100 hover:bg-teal-100 hover:text-teal-900 border border-slate-200"
+                                      ? "bg-indigo-700 text-white shadow-2xs"
+                                      : "text-slate-800 bg-slate-100 hover:bg-indigo-100 hover:text-indigo-900 border border-slate-200"
                                   }`}
                                 >
                                   <User className="w-3 h-3 shrink-0" />
@@ -1410,7 +1410,7 @@ export default function IndiaDistributionPage() {
                                         title={`${d.name}: Allocated ${formatINR(d.inr_amount)} (${formatAED(d.aed_equivalent)})`}
                                       >
                                         <span>{d.name}</span>
-                                        <span className="text-[10px] text-teal-700 font-mono font-medium">
+                                        <span className="text-[10px] text-indigo-700 font-mono font-medium">
                                           ({formatINR(d.inr_amount)})
                                         </span>
                                       </span>
@@ -1425,7 +1425,7 @@ export default function IndiaDistributionPage() {
                                 <div className="text-[10px] text-slate-500">
                                   {row.is_fully_allocated ? "100% of " : "of "}{formatINR(row.order_inr)}
                                 </div>
-                                <div className="text-[9px] text-teal-700 dark:text-teal-400 font-medium truncate max-w-[150px]" title={integerToIndianWords(row.total_allocated_inr)}>
+                                <div className="text-[9px] text-indigo-700 dark:text-indigo-400 font-medium truncate max-w-[150px]" title={integerToIndianWords(row.total_allocated_inr)}>
                                   {integerToIndianWords(row.total_allocated_inr)}
                                 </div>
                               </td>
@@ -1469,7 +1469,7 @@ export default function IndiaDistributionPage() {
                                       type="button"
                                       onClick={() => openAddModalForTxn(row.raw_txn)}
                                       title={`Split remaining ${formatINR(row.remaining_inr)} with another distributor`}
-                                      className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-white bg-teal-700 hover:bg-teal-800 rounded shadow-2xs transition-colors"
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-white bg-indigo-700 hover:bg-indigo-800 rounded shadow-2xs transition-colors"
                                     >
                                       <PlusCircle className="w-3 h-3" />
                                       <span>+ Split</span>
@@ -1508,7 +1508,7 @@ export default function IndiaDistributionPage() {
                                         <button
                                           type="button"
                                           onClick={() => openAddModalForTxn(row.raw_txn)}
-                                          className="text-[10px] font-bold text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded border border-teal-200"
+                                          className="text-[10px] font-bold text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded border border-indigo-200"
                                         >
                                           + Add Split ({formatINR(row.remaining_inr)} unallocated)
                                         </button>
@@ -1530,7 +1530,7 @@ export default function IndiaDistributionPage() {
                                           <tr key={s.id} className="hover:bg-slate-50/80">
                                             <td className="px-3 py-2 text-slate-600 whitespace-nowrap">{s.split_date}</td>
                                             <td className="px-3 py-2">
-                                              <span className="font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200 text-[11px]">
+                                              <span className="font-bold text-indigo-800 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 text-[11px]">
                                                 {s.distributor_code || s.distributor_name}
                                               </span>
                                             </td>
@@ -1594,7 +1594,7 @@ export default function IndiaDistributionPage() {
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in duration-150">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Split className="w-5 h-5 text-teal-700" />
+                <Split className="w-5 h-5 text-indigo-700" />
                 <span>Add Distribution Split for {selectedModalTxn.customer_name}</span>
               </h3>
               <button
@@ -1613,23 +1613,23 @@ export default function IndiaDistributionPage() {
             )}
 
             {/* PRE-LOCKED CUSTOMER CONTEXT CARD */}
-            <div className="p-3.5 bg-teal-50/90 rounded-xl border border-teal-200 space-y-2">
+            <div className="p-3.5 bg-indigo-50/90 rounded-xl border border-indigo-200 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <User className="w-4 h-4 text-teal-700" />
+                  <User className="w-4 h-4 text-indigo-700" />
                   <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Customer:</span>
-                  <span className="text-sm font-extrabold text-teal-950">{selectedModalTxn.customer_name}</span>
+                  <span className="text-sm font-extrabold text-indigo-950">{selectedModalTxn.customer_name}</span>
                 </div>
-                <span className="font-mono text-xs font-bold bg-white text-slate-800 px-2 py-0.5 rounded border border-teal-300">
+                <span className="font-mono text-xs font-bold bg-white text-slate-800 px-2 py-0.5 rounded border border-indigo-300">
                   {selectedModalTxn.transaction_number}
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 text-xs pt-1.5 border-t border-teal-200/70">
+              <div className="grid grid-cols-3 gap-2 text-xs pt-1.5 border-t border-indigo-200/70">
                 <div>
                   <span className="text-slate-500 block text-[10px] uppercase font-bold">Total Order</span>
                   <span className="font-extrabold text-slate-900">{formatINR(selectedModalTxn.inr_amount)}</span>
-                  <div className="text-[9px] text-teal-700 font-medium truncate" title={integerToIndianWords(selectedModalTxn.inr_amount)}>
+                  <div className="text-[9px] text-indigo-700 font-medium truncate" title={integerToIndianWords(selectedModalTxn.inr_amount)}>
                     {integerToIndianWords(selectedModalTxn.inr_amount)}
                   </div>
                 </div>
@@ -1653,7 +1653,7 @@ export default function IndiaDistributionPage() {
             {/* Optional Customer Switcher if needed */}
             {transactions.length > 1 && (
               <details className="text-xs text-slate-600 group">
-                <summary className="cursor-pointer text-teal-700 font-semibold hover:underline flex items-center gap-1">
+                <summary className="cursor-pointer text-indigo-700 font-semibold hover:underline flex items-center gap-1">
                   <span>Switch to a different customer order</span>
                 </summary>
                 <div className="mt-2 p-2 bg-slate-50 rounded border border-slate-200">
@@ -1689,7 +1689,7 @@ export default function IndiaDistributionPage() {
                 <select
                   value={modalDistId}
                   onChange={(e) => setModalDistId(e.target.value)}
-                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   {confirmedIndiaParties.map((d) => (
                     <option key={d.id} value={d.id}>
@@ -1724,7 +1724,7 @@ export default function IndiaDistributionPage() {
                       <button
                         type="button"
                         onClick={() => setModalAmount(String(selectedModalTxn.remaining_inr))}
-                        className="text-[10px] font-bold text-teal-700 hover:text-teal-800 underline"
+                        className="text-[10px] font-bold text-indigo-700 hover:text-indigo-800 underline"
                       >
                         Use Max (₹{selectedModalTxn.remaining_inr})
                       </button>
@@ -1739,11 +1739,11 @@ export default function IndiaDistributionPage() {
                       placeholder="Amount"
                       value={modalAmount}
                       onChange={(e) => setModalAmount(e.target.value)}
-                      className="w-full text-xs font-bold pl-6 pr-2 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="w-full text-xs font-bold pl-6 pr-2 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
                   {modalAmount && Number(modalAmount) > 0 && (
-                    <p className="text-[10px] text-teal-700 font-semibold mt-1 leading-tight break-words">
+                    <p className="text-[10px] text-indigo-700 font-semibold mt-1 leading-tight break-words">
                       {integerToIndianWords(modalAmount)}
                     </p>
                   )}
@@ -1752,8 +1752,8 @@ export default function IndiaDistributionPage() {
 
               {/* Words side-by-side */}
               {numberToIndianWords(modalAmount) && (
-                <div className="p-2 bg-teal-50/90 border border-teal-200 rounded-lg flex items-center gap-1.5 text-xs text-teal-950 animate-in fade-in duration-100">
-                  <span className="font-bold text-[10px] tracking-wider uppercase bg-teal-200 text-teal-950 px-1.5 py-0.5 rounded font-mono shrink-0">
+                <div className="p-2 bg-indigo-50/90 border border-indigo-200 rounded-lg flex items-center gap-1.5 text-xs text-indigo-950 animate-in fade-in duration-100">
+                  <span className="font-bold text-[10px] tracking-wider uppercase bg-indigo-200 text-indigo-950 px-1.5 py-0.5 rounded font-mono shrink-0">
                     In Words:
                   </span>
                   <span className="font-semibold">{numberToIndianWords(modalAmount)}</span>
@@ -1802,7 +1802,7 @@ export default function IndiaDistributionPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 bg-teal-700 text-white rounded-lg text-xs font-bold hover:bg-teal-800 disabled:opacity-50 shadow-sm"
+                  className="px-4 py-2 bg-indigo-700 text-white rounded-lg text-xs font-bold hover:bg-indigo-800 disabled:opacity-50 shadow-sm"
                 >
                   {submitting ? "Saving Split..." : `Confirm Split for ${selectedModalTxn.customer_name}`}
                 </button>
@@ -1818,7 +1818,7 @@ export default function IndiaDistributionPage() {
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in duration-150">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Edit3 className="w-5 h-5 text-teal-700" />
+                <Edit3 className="w-5 h-5 text-indigo-700" />
                 <span>Edit Distribution Split for {editSplit.customer_name}</span>
               </h3>
               <button
@@ -1857,7 +1857,7 @@ export default function IndiaDistributionPage() {
                 <select
                   value={editDistId}
                   onChange={(e) => setEditDistId(e.target.value)}
-                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   {confirmedIndiaParties.map((d) => (
                     <option key={d.id} value={d.id}>
@@ -1893,15 +1893,15 @@ export default function IndiaDistributionPage() {
                       required
                       value={editAmount}
                       onChange={(e) => setEditAmount(e.target.value)}
-                      className="w-full text-xs font-bold pl-6 pr-2 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="w-full text-xs font-bold pl-6 pr-2 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
                 </div>
               </div>
 
               {editAmount && Number(editAmount) > 0 && (
-                <div className="p-2 bg-teal-50/90 border border-teal-200 rounded-lg flex items-center gap-1.5 text-xs text-teal-950 animate-in fade-in duration-100">
-                  <span className="font-bold text-[10px] tracking-wider uppercase bg-teal-200 text-teal-950 px-1.5 py-0.5 rounded font-mono shrink-0">
+                <div className="p-2 bg-indigo-50/90 border border-indigo-200 rounded-lg flex items-center gap-1.5 text-xs text-indigo-950 animate-in fade-in duration-100">
+                  <span className="font-bold text-[10px] tracking-wider uppercase bg-indigo-200 text-indigo-950 px-1.5 py-0.5 rounded font-mono shrink-0">
                     In Words:
                   </span>
                   <span className="font-semibold break-words">{integerToIndianWords(editAmount)}</span>
@@ -1946,7 +1946,7 @@ export default function IndiaDistributionPage() {
                 <button
                   type="submit"
                   disabled={editSubmitting}
-                  className="px-4 py-2 bg-teal-700 text-white rounded-lg text-xs font-bold hover:bg-teal-800 disabled:opacity-50 shadow-sm"
+                  className="px-4 py-2 bg-indigo-700 text-white rounded-lg text-xs font-bold hover:bg-indigo-800 disabled:opacity-50 shadow-sm"
                 >
                   {editSubmitting ? "Updating..." : "Save Changes"}
                 </button>
@@ -1985,7 +1985,7 @@ export default function IndiaDistributionPage() {
                   <strong className="text-slate-900">{formatINR(deleteSplitTarget.inr_amount)}</strong> allocated to{" "}
                   <strong className="text-slate-900">{deleteSplitTarget.distributor_code}</strong>?
                 </p>
-                <p className="text-teal-700 bg-teal-50 p-2.5 rounded border border-teal-200">
+                <p className="text-indigo-700 bg-indigo-50 p-2.5 rounded border border-indigo-200">
                   Deleting this will release the allocated amount back to transfer <strong>{deleteSplitTarget.transaction_number}</strong>.
                 </p>
               </div>

@@ -29,14 +29,14 @@ export default function LockScreen() {
     setLoading(false);
 
     if (!result.success) {
-      setErrorMsg(result.error || "Incorrect password. Please try again.");
+      setErrorMsg(result.error ? `${result.error} (Default password is 12345678)` : "Incorrect password. Note: The default master password is 12345678.");
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-50 dark:bg-[#0B0F19] text-slate-900 dark:text-white transition-colors duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#F8FAFC] dark:bg-[#090A0F] text-slate-900 dark:text-white transition-colors duration-200">
       {/* Background ambient decorative glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-teal-500/10 dark:bg-teal-500/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/10 dark:bg-violet-500/15 rounded-full blur-3xl pointer-events-none" />
 
       {/* Top Bar with Theme Toggle */}
       <div className="absolute top-5 right-5 sm:top-7 sm:right-7">
@@ -52,10 +52,10 @@ export default function LockScreen() {
       </div>
 
       {/* Lock Screen Card */}
-      <div className="w-full max-w-sm sm:max-w-md bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-3xl p-7 sm:p-9 shadow-xl relative z-10 animate-in fade-in zoom-in-95 duration-200">
+      <div className="w-full max-w-sm sm:max-w-md bg-white dark:bg-[#141622] border border-slate-200 dark:border-slate-800 rounded-3xl p-7 sm:p-9 shadow-xl relative z-10 animate-in fade-in zoom-in-95 duration-200">
         {/* Brand & Lock Badge */}
         <div className="flex flex-col items-center text-center mb-6">
-          <div className="w-14 h-14 rounded-2xl bg-teal-50 dark:bg-teal-950/70 border border-teal-200 dark:border-teal-800/80 flex items-center justify-center text-teal-700 dark:text-teal-400 mb-4 shadow-xs">
+          <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-800/80 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-4 shadow-xs">
             <Lock className="w-7 h-7" />
           </div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
@@ -89,7 +89,7 @@ export default function LockScreen() {
                   if (errorMsg) setErrorMsg("");
                 }}
                 placeholder="Enter password..."
-                className="w-full px-4 py-3 pr-11 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-600 dark:focus:ring-teal-500 transition-all font-mono shadow-2xs"
+                className="w-full px-4 py-3 pr-11 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600 dark:focus:ring-indigo-500 transition-all font-mono shadow-2xs"
                 required
                 autoFocus
                 disabled={loading}
@@ -104,12 +104,15 @@ export default function LockScreen() {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+            <div className="flex items-center justify-between mt-1.5 px-0.5 text-[11px] text-slate-400 dark:text-slate-500">
+              <span>Default password: <code className="font-mono text-indigo-600 dark:text-indigo-400 font-semibold">12345678</code></span>
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={loading || !password.trim()}
-            className="w-full py-3 px-4 rounded-xl text-sm font-bold bg-teal-700 hover:bg-teal-800 text-white shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-3 px-4 rounded-xl text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             {loading ? (
               <span>Verifying...</span>
@@ -127,7 +130,7 @@ export default function LockScreen() {
           <button
             type="button"
             onClick={openChangePassword}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-700 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-300 hover:underline transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-700 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline transition-colors cursor-pointer"
           >
             <KeyRound className="w-3.5 h-3.5" />
             <span>Change Password</span>

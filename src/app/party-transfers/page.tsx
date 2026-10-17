@@ -755,18 +755,18 @@ function PartyTransfersContent() {
     <PageTransition>
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* Top Banner & Header */}
-      <div className="bg-gradient-to-r from-teal-900 via-teal-800 to-slate-900 text-white rounded-2xl p-6 sm:p-7 shadow-lg relative overflow-hidden border border-teal-700/50">
-        <div className="absolute right-0 top-0 w-96 h-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-teal-500/20 via-transparent to-transparent pointer-events-none" />
+      <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 text-white rounded-2xl p-6 sm:p-7 shadow-lg relative overflow-hidden border border-indigo-700/50">
+        <div className="absolute right-0 top-0 w-96 h-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-500/20 via-transparent to-transparent pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
           <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-teal-500/20 text-teal-200 border border-teal-400/30 text-xs font-bold tracking-wide uppercase">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-200 border border-indigo-400/30 text-xs font-bold tracking-wide uppercase">
               <Handshake className="w-3.5 h-3.5" />
               <span>Settlement Parties Entity</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
               Party Transfers
             </h1>
-            <p className="text-teal-100/80 text-xs sm:text-sm max-w-2xl leading-relaxed">
+            <p className="text-indigo-100/80 text-xs sm:text-sm max-w-2xl leading-relaxed">
               Dedicated financial movement and transfer transactions for Dubai settlement parties (<strong>HAJA</strong>, <strong>SARAB</strong>, <strong>NF2</strong>) and India distribution partners (<strong>MK</strong>, <strong>SALA</strong>).
             </p>
           </div>
@@ -787,7 +787,7 @@ function PartyTransfersContent() {
                 setShowNewModal(true);
                 setNewDate(getTodayDateString());
               }}
-              className="px-4 py-2.5 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+              className="px-4 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95"
             >
               <PlusCircle className="w-4 h-4" />
               <span>+ New Party Transfer</span>
@@ -836,16 +836,16 @@ function PartyTransfersContent() {
         </div>
 
         {/* Card 2: Total Collected / Paid */}
-        <div className="bg-teal-50/50 dark:bg-emerald-950/30 p-4 rounded-xl border border-teal-300 dark:border-teal-700/80 shadow-2xs">
+        <div className="bg-indigo-50/50 dark:bg-emerald-950/30 p-4 rounded-xl border border-indigo-300 dark:border-indigo-700/80 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-teal-900 dark:text-teal-200 uppercase tracking-wider flex items-center gap-1.5">
-              <Coins className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+            <span className="text-[11px] font-bold text-indigo-900 dark:text-indigo-200 uppercase tracking-wider flex items-center gap-1.5">
+              <Coins className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
               {currencyFilter === "AED" ? "Total Collected" : "Total Advance Given"}
             </span>
             {loading ? (
-              <div className="h-4 w-12 rounded bg-teal-200/80 animate-pulse" />
+              <div className="h-4 w-12 rounded bg-indigo-200/80 animate-pulse" />
             ) : (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-200">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200">
                 {currencyFilter === "AED" ? `${totalAedCharged > 0 ? Math.round((totalPaidAedAll / totalAedCharged) * 100) : 0}% paid` : "Pre-paid"}
               </span>
             )}
@@ -854,11 +854,11 @@ function PartyTransfersContent() {
             <div className="h-7 w-28 rounded bg-emerald-200/50 dark:bg-emerald-900/50 animate-pulse mt-2" />
           ) : (
             <>
-              <div className="mt-2 font-mono font-bold text-lg text-teal-900 dark:text-teal-100 truncate">
+              <div className="mt-2 font-mono font-bold text-lg text-indigo-900 dark:text-indigo-100 truncate">
                 {currencyFilter === "AED" ? formatAED(totalPaidAedAll) : formatINR(totalIndiaAdvanceGiven)}
               </div>
               {currencyFilter !== "AED" && (
-                <p className="text-[10px] text-teal-700 dark:text-teal-400 font-semibold leading-tight mt-0.5 break-words">
+                <p className="text-[10px] text-indigo-700 dark:text-indigo-400 font-semibold leading-tight mt-0.5 break-words">
                   {integerToIndianWords(totalIndiaAdvanceGiven)}
                 </p>
               )}
@@ -867,28 +867,28 @@ function PartyTransfersContent() {
           {loading ? (
             <div className="h-3 w-32 rounded bg-emerald-200/50 dark:bg-emerald-900/50 animate-pulse mt-1" />
           ) : (
-            <div className="text-[10px] text-teal-800/80 dark:text-teal-300/80 mt-0.5 font-medium">
+            <div className="text-[10px] text-indigo-800/80 dark:text-indigo-300/80 mt-0.5 font-medium">
               {currencyFilter === "AED" ? `Paid out of ${formatAED(totalAedCharged)}` : totalAdvanceDeductedInSplits > 0 ? `Used in orders: ${formatINR(totalAdvanceDeductedInSplits)}` : "100% advance available"}
             </div>
           )}
         </div>
 
         {/* Card 3: Total Net Profit */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-teal-200 dark:border-emerald-800 shadow-2xs">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-indigo-200 dark:border-emerald-800 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-teal-800 dark:text-teal-300 uppercase tracking-wider">
+            <span className="text-[11px] font-bold text-indigo-800 dark:text-indigo-300 uppercase tracking-wider">
               {currencyFilter === "AED" ? "Net Profit (AED)" : currencyFilter === "INR" ? "Net Profit (INR)" : "Net Profit"}
             </span>
-            <TrendingUp className="w-3.5 h-3.5 text-teal-600 dark:text-emerald-400" />
+            <TrendingUp className="w-3.5 h-3.5 text-indigo-600 dark:text-emerald-400" />
           </div>
           {loading ? (
             <div className="h-7 w-28 rounded bg-slate-200 dark:bg-slate-700 animate-pulse mt-2" />
           ) : (
-            <div className="mt-2 font-mono font-bold text-lg text-teal-900 dark:text-teal-100 truncate">
+            <div className="mt-2 font-mono font-bold text-lg text-indigo-900 dark:text-indigo-100 truncate">
               {currencyFilter === "INR" ? formatINR(totalNetProfitInrAll) : formatAED(totalNetProfitAedAll)}
             </div>
           )}
-          <div className="text-[10px] text-teal-700/80 dark:text-emerald-400/80 mt-0.5">
+          <div className="text-[10px] text-indigo-700/80 dark:text-emerald-400/80 mt-0.5">
             {currencyFilter === "ALL" ? `INR Margin: ${formatINR(totalNetProfitInrAll)}` : "Across confirmed transfers"}
           </div>
         </div>
@@ -909,7 +909,7 @@ function PartyTransfersContent() {
                 {currencyFilter === "AED" ? formatAED(totalAedCharged) : formatINR(totalInrBilledAll)}
               </div>
               {currencyFilter !== "AED" && (
-                <p className="text-[10px] text-teal-700 dark:text-teal-400 font-semibold leading-tight mt-0.5 break-words">
+                <p className="text-[10px] text-indigo-700 dark:text-indigo-400 font-semibold leading-tight mt-0.5 break-words">
                   {integerToIndianWords(totalInrBilledAll)}
                 </p>
               )}
@@ -983,7 +983,7 @@ function PartyTransfersContent() {
               placeholder="Search by TXN ID, Party name (AWAFI, NF2...), amount..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-teal-500"
+              className="w-full pl-9 pr-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
             />
             {search && (
               <button
@@ -1020,8 +1020,8 @@ function PartyTransfersContent() {
                 onClick={() => setCurrencyFilter("AED")}
                 className={`px-2.5 py-1 rounded-md transition flex items-center gap-1 ${
                   currencyFilter === "AED"
-                    ? "bg-teal-700 text-white shadow-2xs font-extrabold"
-                    : "text-slate-600 dark:text-slate-400 hover:text-teal-700"
+                    ? "bg-indigo-700 text-white shadow-2xs font-extrabold"
+                    : "text-slate-600 dark:text-slate-400 hover:text-indigo-700"
                 }`}
               >
                 <span>🇦🇪 Dubai (AED)</span>
@@ -1042,7 +1042,7 @@ function PartyTransfersContent() {
             <select
               value={selectedParty}
               onChange={(e) => setSelectedParty(e.target.value)}
-              className="border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 py-1.5 px-2.5 bg-white dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-teal-500"
+              className="border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 py-1.5 px-2.5 bg-white dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
             >
               <option value="ALL">All Parties ({parties.length})</option>
               <optgroup label="🇦🇪 Dubai Parties (AED)">
@@ -1064,7 +1064,7 @@ function PartyTransfersContent() {
             <select
               value={paymentFilter}
               onChange={(e) => setPaymentFilter(e.target.value)}
-              className="border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 py-1.5 px-2.5 bg-white dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-teal-500"
+              className="border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 py-1.5 px-2.5 bg-white dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
             >
               <option value="ALL">All Payment States</option>
               <option value="PENDING_DUE">Pending Due ({pendingDueTxnsCount})</option>
@@ -1074,7 +1074,7 @@ function PartyTransfersContent() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 py-1.5 px-2.5 bg-white dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-teal-500"
+              className="border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 py-1.5 px-2.5 bg-white dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
             >
               <option value="ALL">All Statuses</option>
               <option value="CONFIRMED">CONFIRMED</option>
@@ -1103,7 +1103,7 @@ function PartyTransfersContent() {
                 }}
                 className={`px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer ${
                   dateFilter === p.id && !customFrom && !customTo
-                    ? "bg-teal-700 text-white shadow-2xs"
+                    ? "bg-indigo-700 text-white shadow-2xs"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >
@@ -1157,11 +1157,11 @@ function PartyTransfersContent() {
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs overflow-hidden">
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/60 dark:bg-slate-800/40">
           <div className="flex items-center gap-2">
-            <ArrowRightLeft className="w-4 h-4 text-teal-600 dark:text-emerald-400" />
+            <ArrowRightLeft className="w-4 h-4 text-indigo-600 dark:text-emerald-400" />
             <h2 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">
               Party Transfers Registry
             </h2>
-            <span className="text-[11px] font-bold text-teal-800 dark:text-teal-300 bg-teal-100 dark:bg-emerald-950/70 border border-teal-200/50 dark:border-emerald-800/60 px-2 py-0.5 rounded-full">
+            <span className="text-[11px] font-bold text-indigo-800 dark:text-indigo-300 bg-indigo-100 dark:bg-emerald-950/70 border border-indigo-200/50 dark:border-emerald-800/60 px-2 py-0.5 rounded-full">
               {filteredTransfers.length} records
             </span>
           </div>
@@ -1188,7 +1188,7 @@ function PartyTransfersContent() {
               {loading ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-400 dark:text-slate-500">
-                    <RefreshCw className="w-6 h-6 animate-spin mx-auto text-teal-600 mb-2" />
+                    <RefreshCw className="w-6 h-6 animate-spin mx-auto text-indigo-600 mb-2" />
                     <span>Loading party transfers...</span>
                   </td>
                 </tr>
@@ -1208,7 +1208,7 @@ function PartyTransfersContent() {
                           setShowNewModal(true);
                           setNewDate(getTodayDateString());
                         }}
-                        className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 transition"
+                        className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-700 hover:bg-indigo-800 transition"
                       >
                         <PlusCircle className="w-3.5 h-3.5" />
                         New Party Transfer
@@ -1244,7 +1244,7 @@ function PartyTransfersContent() {
                   return (
                     <tr
                       key={t.id}
-                      className={`hover:bg-teal-50/30 dark:hover:bg-slate-800/40 transition-colors ${
+                      className={`hover:bg-indigo-50/30 dark:hover:bg-slate-800/40 transition-colors ${
                         isVoided ? "bg-slate-50/80 dark:bg-slate-900/40 opacity-70" : ""
                       }`}
                     >
@@ -1269,9 +1269,9 @@ function PartyTransfersContent() {
                         <div className="flex items-center gap-1.5">
                           <Link
                             href={`/parties/${t.customer_id}`}
-                            className="font-bold text-teal-700 dark:text-emerald-400 hover:text-teal-600 dark:hover:text-teal-300 hover:underline flex items-center gap-1 text-xs"
+                            className="font-bold text-indigo-700 dark:text-emerald-400 hover:text-indigo-600 dark:hover:text-indigo-300 hover:underline flex items-center gap-1 text-xs"
                           >
-                            <Handshake className="w-3.5 h-3.5 text-teal-600 dark:text-emerald-400 shrink-0" />
+                            <Handshake className="w-3.5 h-3.5 text-indigo-600 dark:text-emerald-400 shrink-0" />
                             <span className="truncate max-w-[110px]">{t.customer_name}</span>
                           </Link>
                         </div>
@@ -1279,7 +1279,7 @@ function PartyTransfersContent() {
                           <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold border ${
                             isInd
                               ? "bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800"
-                              : "bg-teal-50 dark:bg-emerald-950 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-emerald-800"
+                              : "bg-indigo-50 dark:bg-emerald-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-emerald-800"
                           }`}>
                             {isInd ? "🇮🇳 IND (INR)" : "🇦🇪 Dubai (AED)"}
                           </span>
@@ -1327,7 +1327,7 @@ function PartyTransfersContent() {
                       <td className="px-3 py-2.5 font-mono whitespace-nowrap">
                         <div className={`font-bold text-xs ${
                           (isInd ? getTransferNetProfitInr(t) : (t.net_profit_aed || 0)) >= 0
-                            ? "text-teal-700 dark:text-emerald-400"
+                            ? "text-indigo-700 dark:text-emerald-400"
                             : "text-rose-600 dark:text-rose-400"
                         }`}>
                           {isInd ? formatINR(getTransferNetProfitInr(t)) : formatAED(t.net_profit_aed)}
@@ -1381,7 +1381,7 @@ function PartyTransfersContent() {
                                       ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
                                       : isPartiallyPaid
                                       ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
-                                      : "bg-teal-50 dark:bg-emerald-950/40 text-teal-700 dark:text-emerald-400 border border-teal-200 dark:border-emerald-800"
+                                      : "bg-indigo-50 dark:bg-emerald-950/40 text-indigo-700 dark:text-emerald-400 border border-indigo-200 dark:border-emerald-800"
                                     : "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800"
                                 }`}
                               >
@@ -1430,10 +1430,10 @@ function PartyTransfersContent() {
                             isInd ? (
                               <button
                                 onClick={() => handleOpenEdit(t)}
-                                className="px-2.5 py-1 rounded-lg font-bold text-[10px] flex items-center gap-1 cursor-pointer transition shadow-2xs bg-teal-50 hover:bg-teal-100 dark:bg-emerald-950 dark:hover:bg-teal-900 text-teal-800 dark:text-emerald-200 border border-teal-300 dark:border-teal-700"
+                                className="px-2.5 py-1 rounded-lg font-bold text-[10px] flex items-center gap-1 cursor-pointer transition shadow-2xs bg-indigo-50 hover:bg-indigo-100 dark:bg-emerald-950 dark:hover:bg-indigo-900 text-indigo-800 dark:text-emerald-200 border border-indigo-300 dark:border-indigo-700"
                                 title="Edit advance amount, rates, or date if entered wrongly"
                               >
-                                <Edit2 className="w-3 h-3 text-teal-600 dark:text-emerald-400" />
+                                <Edit2 className="w-3 h-3 text-indigo-600 dark:text-emerald-400" />
                                 <span>Edit Advance</span>
                               </button>
                             ) : (
@@ -1444,7 +1444,7 @@ function PartyTransfersContent() {
                                     ? "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-700"
                                     : isPartiallyPaid
                                     ? "bg-amber-100 hover:bg-amber-200 dark:bg-amber-950 dark:hover:bg-amber-900 text-amber-900 dark:text-amber-100 border border-amber-300 dark:border-amber-700"
-                                    : "bg-teal-50 hover:bg-teal-100 dark:bg-emerald-950 dark:hover:bg-teal-900 text-teal-800 dark:text-emerald-200 border border-teal-300 dark:border-teal-700"
+                                    : "bg-indigo-50 hover:bg-indigo-100 dark:bg-emerald-950 dark:hover:bg-indigo-900 text-indigo-800 dark:text-emerald-200 border border-indigo-300 dark:border-indigo-700"
                                 }`}
                                 title={
                                   isFullySettled
@@ -1452,7 +1452,7 @@ function PartyTransfersContent() {
                                     : `Record payment (Remaining Due: ${formatAED(pendingDue)})`
                                 }
                               >
-                                <CreditCard className={`w-3 h-3 ${isFullySettled ? "text-slate-500" : isPartiallyPaid ? "text-amber-600" : "text-teal-600"}`} />
+                                <CreditCard className={`w-3 h-3 ${isFullySettled ? "text-slate-500" : isPartiallyPaid ? "text-amber-600" : "text-indigo-600"}`} />
                                 <span>{isFullySettled ? "Settled" : `+ Pay`}</span>
                               </button>
                             )
@@ -1471,7 +1471,7 @@ function PartyTransfersContent() {
                           {!isVoided && !isInd && (
                             <button
                               onClick={() => handleOpenEdit(t)}
-                              className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 rounded transition cursor-pointer"
+                              className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-slate-800 rounded transition cursor-pointer"
                               title="Edit Transfer Rates/Amounts"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
@@ -1524,7 +1524,7 @@ function PartyTransfersContent() {
           <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-6 space-y-5 border border-slate-200 animate-in fade-in zoom-in duration-150 my-8">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-teal-100 text-teal-800 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-800 flex items-center justify-center">
                   <Handshake className="w-4 h-4" />
                 </div>
                 <div>
@@ -1560,7 +1560,7 @@ function PartyTransfersContent() {
                     required
                     value={newDate}
                     onChange={(e) => setNewDate(e.target.value)}
-                    className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-teal-500"
+                    className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-indigo-500"
                   />
                   <span className="text-[10px] text-slate-400 mt-0.5 block">Defaults to today</span>
                 </div>
@@ -1573,7 +1573,7 @@ function PartyTransfersContent() {
                     <button
                       type="button"
                       onClick={() => setShowAddPartyField(!showAddPartyField)}
-                      className="text-[11px] text-teal-700 hover:underline font-bold cursor-pointer"
+                      className="text-[11px] text-indigo-700 hover:underline font-bold cursor-pointer"
                     >
                       {showAddPartyField ? "Cancel Extra" : "+ Create New Party"}
                     </button>
@@ -1583,7 +1583,7 @@ function PartyTransfersContent() {
                     <select
                       value={newPartyId}
                       onChange={(e) => handlePartySelect(e.target.value)}
-                      className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-teal-500"
+                      className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-indigo-500"
                     >
                       <option value="" disabled>Select Party...</option>
                       <optgroup label="🇦🇪 Dubai Parties (AED)">
@@ -1602,14 +1602,14 @@ function PartyTransfersContent() {
                       </optgroup>
                     </select>
                   ) : (
-                    <div className="p-2.5 bg-teal-50/70 border border-teal-200 rounded-lg space-y-2">
+                    <div className="p-2.5 bg-indigo-50/70 border border-indigo-200 rounded-lg space-y-2">
                       <div className="flex gap-2">
                         <button
                           type="button"
                           onClick={() => setExtraPartyType("DUBAI")}
                           className={`flex-1 py-1 rounded text-xs font-bold border transition cursor-pointer ${
                             extraPartyType === "DUBAI"
-                              ? "bg-teal-700 text-white border-teal-700"
+                              ? "bg-indigo-700 text-white border-indigo-700"
                               : "bg-white text-slate-700 border-slate-300"
                           }`}
                         >
@@ -1632,7 +1632,7 @@ function PartyTransfersContent() {
                         placeholder={extraPartyType === "DUBAI" ? "Party Name (e.g. HAJA, SARAB, NF2...)" : "Party Name (e.g. MK, SALA...)"}
                         value={extraPartyName}
                         onChange={(e) => setExtraPartyName(e.target.value)}
-                        className="w-full text-xs border border-teal-300 rounded p-1.5 text-slate-900 bg-white"
+                        className="w-full text-xs border border-indigo-300 rounded p-1.5 text-slate-900 bg-white"
                       />
                       <div className="flex gap-2">
                         <input
@@ -1640,13 +1640,13 @@ function PartyTransfersContent() {
                           placeholder="Code (Optional)"
                           value={extraPartyCode}
                           onChange={(e) => setExtraPartyCode(e.target.value)}
-                          className="w-1/2 text-xs border border-teal-300 rounded p-1.5 text-slate-900 bg-white"
+                          className="w-1/2 text-xs border border-indigo-300 rounded p-1.5 text-slate-900 bg-white"
                         />
                         <button
                           type="button"
                           onClick={handleCreateExtraParty}
                           disabled={savingExtraParty}
-                          className="w-1/2 bg-teal-700 text-white rounded text-xs font-bold py-1.5 hover:bg-teal-800 disabled:opacity-50 cursor-pointer"
+                          className="w-1/2 bg-indigo-700 text-white rounded text-xs font-bold py-1.5 hover:bg-indigo-800 disabled:opacity-50 cursor-pointer"
                         >
                           {savingExtraParty ? "Saving..." : "Save Party"}
                         </button>
@@ -1664,7 +1664,7 @@ function PartyTransfersContent() {
                       <span>{effectiveCurrency === "AED" ? "AED Order Amount (AED)" : "INR Order Amount (₹)"}</span>
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider font-mono border ${
                         effectiveCurrency === "AED"
-                          ? "bg-teal-50 text-teal-800 border-teal-300"
+                          ? "bg-indigo-50 text-indigo-800 border-indigo-300"
                           : "bg-orange-50 text-orange-800 border-orange-300"
                       }`}>
                         {effectiveCurrency === "AED" ? "🇦🇪 AED Transfer" : "🇮🇳 INR Transfer"}
@@ -1684,7 +1684,7 @@ function PartyTransfersContent() {
                           onClick={() => setNewCurrencyMode("AED")}
                           className={`px-2 py-0.5 rounded transition cursor-pointer ${
                             newCurrencyMode === "AED"
-                              ? "bg-teal-700 text-white shadow-2xs font-bold"
+                              ? "bg-indigo-700 text-white shadow-2xs font-bold"
                               : "text-slate-600 hover:text-slate-900"
                           }`}
                         >
@@ -1706,9 +1706,9 @@ function PartyTransfersContent() {
                     <button
                       type="button"
                       onClick={handleAddInrAmount}
-                      className="px-2.5 py-1 bg-teal-50 text-teal-800 hover:bg-teal-100 border border-teal-300 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                      className="px-2.5 py-1 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 border border-indigo-300 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition shadow-2xs"
                     >
-                      <PlusCircle className="w-3 h-3 text-teal-700" />
+                      <PlusCircle className="w-3 h-3 text-indigo-700" />
                       <span>+ Add Field</span>
                     </button>
                   </div>
@@ -1723,7 +1723,7 @@ function PartyTransfersContent() {
                       <div className="relative flex-1">
                         <span className={`absolute left-2.5 top-1/2 -translate-y-1/2 font-bold font-mono text-xs ${
                           effectiveCurrency === "AED"
-                            ? "text-teal-800 bg-teal-100/90 px-1.5 py-0.5 rounded text-[10px] border border-teal-300 font-bold"
+                            ? "text-indigo-800 bg-indigo-100/90 px-1.5 py-0.5 rounded text-[10px] border border-indigo-300 font-bold"
                             : "text-slate-400"
                         }`}>
                           {effectiveCurrency === "AED" ? "AED" : "₹"}
@@ -1734,7 +1734,7 @@ function PartyTransfersContent() {
                           placeholder={effectiveCurrency === "AED" ? `Enter AED amount ${idx + 1}...` : `Enter INR amount ${idx + 1}...`}
                           value={amt}
                           onChange={(e) => handleInrAmountChange(idx, e.target.value)}
-                          className={`w-full ${effectiveCurrency === "AED" ? "pl-14" : "pl-7"} pr-3 py-2 border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-900 bg-white focus:ring-2 focus:ring-teal-500`}
+                          className={`w-full ${effectiveCurrency === "AED" ? "pl-14" : "pl-7"} pr-3 py-2 border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-900 bg-white focus:ring-2 focus:ring-indigo-500`}
                         />
                       </div>
                       {newInrAmounts.length > 1 && (
@@ -1756,17 +1756,17 @@ function PartyTransfersContent() {
                   <span className="font-bold text-slate-600">
                     {effectiveCurrency === "AED" ? "Total AED Order:" : "Total INR Order:"}
                   </span>
-                  <span className="font-mono font-bold text-base text-teal-900">
+                  <span className="font-mono font-bold text-base text-indigo-900">
                     {effectiveCurrency === "AED" ? formatAED(totalNewAed) : formatINR(totalNewInr)}
                   </span>
                 </div>
                 {effectiveCurrency === "INR" && totalNewInr > 0 && (
-                  <p className="text-[11px] text-teal-700 italic">
+                  <p className="text-[11px] text-indigo-700 italic">
                     {numberToIndianWords(totalNewInr)} Rupees Only
                   </p>
                 )}
                 {effectiveCurrency === "AED" && totalNewAed > 0 && totalNewInr > 0 && (
-                  <p className="text-[11px] text-teal-700 italic font-mono">
+                  <p className="text-[11px] text-indigo-700 italic font-mono">
                     ≈ {formatINR(totalNewInr)} Volume ({numberToIndianWords(Math.round(totalNewInr))} Rupees)
                   </p>
                 )}
@@ -1789,7 +1789,7 @@ function PartyTransfersContent() {
                         setNewCustomerRate(clean);
                       }
                     }}
-                    className="w-full text-xs font-bold font-mono border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-teal-500"
+                    className="w-full text-xs font-bold font-mono border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-indigo-500"
                   />
                   <span className="text-[10px] text-slate-400 mt-0.5 block">Party billing rate (e.g. 38.25)</span>
                 </div>
@@ -1809,14 +1809,14 @@ function PartyTransfersContent() {
                         setNewBaseRate(clean);
                       }
                     }}
-                    className="w-full text-xs font-bold font-mono border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-teal-500"
+                    className="w-full text-xs font-bold font-mono border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-indigo-500"
                   />
                   <span className="text-[10px] text-slate-400 mt-0.5 block">Cost rate to India payout (e.g. 30.00)</span>
                 </div>
               </div>
 
               {/* Live Preview Box */}
-              <div className="p-3 bg-teal-50/50 border border-teal-200 rounded-xl space-y-1.5 text-xs">
+              <div className="p-3 bg-indigo-50/50 border border-indigo-200 rounded-xl space-y-1.5 text-xs">
                 {effectiveCurrency === "AED" ? (
                   <>
                     <div className="flex justify-between">
@@ -1831,9 +1831,9 @@ function PartyTransfersContent() {
                         {formatAED(calculatedCostAed)}
                       </span>
                     </div>
-                    <div className="flex justify-between pt-1 border-t border-teal-200">
-                      <span className="font-bold text-teal-900">Net Profit (AED):</span>
-                      <span className={`font-mono font-bold ${calculatedNetProfitAed >= 0 ? "text-teal-700" : "text-rose-600"}`}>
+                    <div className="flex justify-between pt-1 border-t border-indigo-200">
+                      <span className="font-bold text-indigo-900">Net Profit (AED):</span>
+                      <span className={`font-mono font-bold ${calculatedNetProfitAed >= 0 ? "text-indigo-700" : "text-rose-600"}`}>
                         {formatAED(calculatedNetProfitAed)}
                       </span>
                     </div>
@@ -1852,9 +1852,9 @@ function PartyTransfersContent() {
                         {formatINR(calculatedCostInr)}
                       </span>
                     </div>
-                    <div className="flex justify-between pt-1 border-t border-teal-200">
-                      <span className="font-bold text-teal-900">Net Profit (INR):</span>
-                      <span className={`font-mono font-bold ${calculatedNetProfitInr >= 0 ? "text-teal-700" : "text-rose-600"}`}>
+                    <div className="flex justify-between pt-1 border-t border-indigo-200">
+                      <span className="font-bold text-indigo-900">Net Profit (INR):</span>
+                      <span className={`font-mono font-bold ${calculatedNetProfitInr >= 0 ? "text-indigo-700" : "text-rose-600"}`}>
                         {formatINR(calculatedNetProfitInr)}
                       </span>
                     </div>
@@ -1873,7 +1873,7 @@ function PartyTransfersContent() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-teal-700 text-white rounded-lg text-xs font-bold hover:bg-teal-800 transition shadow-sm cursor-pointer"
+                  className="px-5 py-2.5 bg-indigo-700 text-white rounded-lg text-xs font-bold hover:bg-indigo-800 transition shadow-sm cursor-pointer"
                 >
                   Review & Confirm Transfer →
                 </button>
@@ -1888,10 +1888,10 @@ function PartyTransfersContent() {
       {/* ========================================================================= */}
       {showConfirmNew && (
         <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4 border border-teal-200 animate-in fade-in zoom-in duration-150">
-            <div className="flex items-center gap-3 text-teal-800">
-              <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
-                <ShieldCheck className="w-6 h-6 text-teal-700" />
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4 border border-indigo-200 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center gap-3 text-indigo-800">
+              <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-6 h-6 text-indigo-700" />
               </div>
               <div>
                 <h3 className="text-base font-extrabold text-slate-900">Confirm Party Transfer Details</h3>
@@ -1906,11 +1906,11 @@ function PartyTransfersContent() {
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Party:</span>
-                <span className="font-bold text-teal-900 flex items-center gap-1.5">
+                <span className="font-bold text-indigo-900 flex items-center gap-1.5">
                   <span>{parties.find((p) => p.id === newPartyId)?.name || "Selected Party"}</span>
                   <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${
                     effectiveCurrency === "AED"
-                      ? "bg-teal-50 text-teal-700 border-teal-200"
+                      ? "bg-indigo-50 text-indigo-700 border-indigo-200"
                       : "bg-orange-50 text-orange-700 border-orange-200"
                   }`}>
                     {effectiveCurrency === "AED" ? "🇦🇪 Dubai (AED)" : "🇮🇳 IND (INR)"}
@@ -1926,7 +1926,7 @@ function PartyTransfersContent() {
                 </span>
               </div>
               {validNewAmounts.length > 1 && (
-                <div className="text-[10px] text-slate-500 pl-2 border-l-2 border-teal-300">
+                <div className="text-[10px] text-slate-500 pl-2 border-l-2 border-indigo-300">
                   Breakdown: {validNewAmounts.map((a) => (effectiveCurrency === "AED" ? formatAED(a) : formatINR(a))).join(" + ")}
                 </div>
               )}
@@ -1940,7 +1940,7 @@ function PartyTransfersContent() {
               </div>
               {effectiveCurrency === "AED" ? (
                 <>
-                  <div className="flex justify-between pt-1 border-t border-slate-200 text-teal-950 font-bold">
+                  <div className="flex justify-between pt-1 border-t border-slate-200 text-indigo-950 font-bold">
                     <span>AED Charged:</span>
                     <span className="font-mono">{formatAED(calculatedAedCharged)}</span>
                   </div>
@@ -1948,14 +1948,14 @@ function PartyTransfersContent() {
                     <span>AED Cost:</span>
                     <span className="font-mono">{formatAED(calculatedCostAed)}</span>
                   </div>
-                  <div className={`flex justify-between font-bold ${calculatedNetProfitAed >= 0 ? "text-teal-700" : "text-rose-600"}`}>
+                  <div className={`flex justify-between font-bold ${calculatedNetProfitAed >= 0 ? "text-indigo-700" : "text-rose-600"}`}>
                     <span>Net Profit (AED):</span>
                     <span className="font-mono">{formatAED(calculatedNetProfitAed)}</span>
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="flex justify-between pt-1 border-t border-slate-200 text-teal-950 font-bold">
+                  <div className="flex justify-between pt-1 border-t border-slate-200 text-indigo-950 font-bold">
                     <span>INR Charged:</span>
                     <span className="font-mono">{formatINR(calculatedInrCharged)}</span>
                   </div>
@@ -1963,7 +1963,7 @@ function PartyTransfersContent() {
                     <span>INR Cost:</span>
                     <span className="font-mono">{formatINR(calculatedCostInr)}</span>
                   </div>
-                  <div className={`flex justify-between font-bold ${calculatedNetProfitInr >= 0 ? "text-teal-700" : "text-rose-600"}`}>
+                  <div className={`flex justify-between font-bold ${calculatedNetProfitInr >= 0 ? "text-indigo-700" : "text-rose-600"}`}>
                     <span>Net Profit (INR):</span>
                     <span className="font-mono">{formatINR(calculatedNetProfitInr)}</span>
                   </div>
@@ -1984,7 +1984,7 @@ function PartyTransfersContent() {
                 type="button"
                 onClick={handleConfirmSaveTransfer}
                 disabled={savingNew}
-                className="px-5 py-2.5 bg-teal-700 text-white rounded-lg text-xs font-bold hover:bg-teal-800 transition shadow-sm disabled:opacity-50 cursor-pointer"
+                className="px-5 py-2.5 bg-indigo-700 text-white rounded-lg text-xs font-bold hover:bg-indigo-800 transition shadow-sm disabled:opacity-50 cursor-pointer"
               >
                 {savingNew ? "Saving Record..." : "Confirm & Save Transfer"}
               </button>
@@ -2012,7 +2012,7 @@ function PartyTransfersContent() {
             <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in duration-150">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-teal-700" />
+                  <CreditCard className="w-5 h-5 text-indigo-700" />
                   <span>Record Party Settlement ({isInd ? "INR - ₹" : "AED"})</span>
                 </h3>
                 <button
@@ -2040,7 +2040,7 @@ function PartyTransfersContent() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">{isInd ? "Indian Party:" : "Dubai Party:"}</span>
-                    <span className="font-bold text-teal-900">{payingTxn.customer_name}</span>
+                    <span className="font-bold text-indigo-900">{payingTxn.customer_name}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Total Billed:</span>
@@ -2048,7 +2048,7 @@ function PartyTransfersContent() {
                       {isInd ? formatINR(totalBilled) : formatAED(totalBilled)}
                     </span>
                   </div>
-                  <div className="flex justify-between text-teal-700">
+                  <div className="flex justify-between text-indigo-700">
                     <span>Already Paid:</span>
                     <span className="font-semibold">
                       {isInd ? formatINR(paidAmt) : formatAED(paidAmt)}
@@ -2110,7 +2110,7 @@ function PartyTransfersContent() {
                           setPayAmount(clean);
                         }
                       }}
-                      className={`w-full text-sm font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-teal-500 font-mono ${
+                      className={`w-full text-sm font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:ring-2 focus:ring-indigo-500 font-mono ${
                         isInd ? "pl-7" : "pl-12"
                       }`}
                     />
@@ -2141,7 +2141,7 @@ function PartyTransfersContent() {
                 <button
                   type="submit"
                   disabled={payLoading}
-                  className="px-4 py-2 bg-teal-700 text-white rounded-lg text-xs font-bold hover:bg-teal-800 disabled:opacity-50 cursor-pointer"
+                  className="px-4 py-2 bg-indigo-700 text-white rounded-lg text-xs font-bold hover:bg-indigo-800 disabled:opacity-50 cursor-pointer"
                 >
                   {payLoading ? "Recording..." : "Save Payment Receipt"}
                 </button>
@@ -2160,7 +2160,7 @@ function PartyTransfersContent() {
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Edit2 className="w-4 h-4 text-teal-700" />
+                <Edit2 className="w-4 h-4 text-indigo-700" />
                 <span>{editCurrencyMode === "AED" ? "Edit Dubai Party Transfer" : "Edit Advance Transfer (Pre-paid Credit)"}</span>
               </h3>
               <button
@@ -2227,7 +2227,7 @@ function PartyTransfersContent() {
                   <span>{editCurrencyMode === "AED" ? "AED Order Amount (AED)" : "Advance Transfer Amount (₹)"}</span>
                   <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${
                     editCurrencyMode === "AED"
-                      ? "bg-teal-50 text-teal-700 border-teal-200"
+                      ? "bg-indigo-50 text-indigo-700 border-indigo-200"
                       : "bg-orange-50 text-orange-700 border-orange-200"
                   }`}>
                     {editCurrencyMode === "AED" ? "🇦🇪 AED" : "🇮🇳 INR"}
@@ -2236,7 +2236,7 @@ function PartyTransfersContent() {
                 <div className="relative">
                   <span className={`absolute left-2.5 top-1/2 -translate-y-1/2 font-bold font-mono text-xs ${
                     editCurrencyMode === "AED"
-                      ? "text-teal-800 bg-teal-100/90 px-1.5 py-0.5 rounded text-[10px] border border-teal-300 font-bold"
+                      ? "text-indigo-800 bg-indigo-100/90 px-1.5 py-0.5 rounded text-[10px] border border-indigo-300 font-bold"
                       : "text-slate-400"
                   }`}>
                     {editCurrencyMode === "AED" ? "AED" : "₹"}
@@ -2311,7 +2311,7 @@ function PartyTransfersContent() {
                   const editNetProfitAed = editAedCharged - editCostAed;
                   const editInrVol = editCr1000 > 0 ? (editAedCharged / editCr1000) * 1000 : 0;
                   return (
-                    <div className="p-3 bg-teal-50/50 border border-teal-200 rounded-xl space-y-1.5 text-xs">
+                    <div className="p-3 bg-indigo-50/50 border border-indigo-200 rounded-xl space-y-1.5 text-xs">
                       <div className="flex justify-between">
                         <span className="text-slate-600">AED Amount Charged:</span>
                         <span className="font-mono font-bold text-slate-900">{formatAED(editAedCharged)}</span>
@@ -2320,13 +2320,13 @@ function PartyTransfersContent() {
                         <span className="text-slate-600">AED Cost:</span>
                         <span className="font-mono font-bold text-slate-700">{formatAED(editCostAed)}</span>
                       </div>
-                      <div className="flex justify-between pt-1 border-t border-teal-200">
-                        <span className="font-bold text-teal-900">Net Profit (AED):</span>
-                        <span className={`font-mono font-bold ${editNetProfitAed >= 0 ? "text-teal-700" : "text-rose-600"}`}>
+                      <div className="flex justify-between pt-1 border-t border-indigo-200">
+                        <span className="font-bold text-indigo-900">Net Profit (AED):</span>
+                        <span className={`font-mono font-bold ${editNetProfitAed >= 0 ? "text-indigo-700" : "text-rose-600"}`}>
                           {formatAED(editNetProfitAed)}
                         </span>
                       </div>
-                      <div className="text-[10px] text-teal-700/80 pt-0.5">
+                      <div className="text-[10px] text-indigo-700/80 pt-0.5">
                         ≈ {formatINR(editInrVol)} INR Volume
                       </div>
                     </div>
@@ -2336,7 +2336,7 @@ function PartyTransfersContent() {
                   const editCostInr = editCr1000 > 0 ? (editInrNum * editBr1000) / editCr1000 : 0;
                   const editNetProfitInr = editInrNum - editCostInr;
                   return (
-                    <div className="p-3 bg-teal-50/50 border border-teal-200 rounded-xl space-y-1.5 text-xs">
+                    <div className="p-3 bg-indigo-50/50 border border-indigo-200 rounded-xl space-y-1.5 text-xs">
                       <div className="flex justify-between">
                         <span className="text-slate-600">Advance Pre-payment Given:</span>
                         <span className="font-mono font-bold text-slate-900">{formatINR(editInrNum)}</span>
@@ -2345,9 +2345,9 @@ function PartyTransfersContent() {
                         <span className="text-slate-600">Party Payout Cost:</span>
                         <span className="font-mono font-bold text-slate-700">{formatINR(editCostInr)}</span>
                       </div>
-                      <div className="flex justify-between pt-1 border-t border-teal-200">
-                        <span className="font-bold text-teal-900">Expected Margin (INR):</span>
-                        <span className={`font-mono font-bold ${editNetProfitInr >= 0 ? "text-teal-700" : "text-rose-600"}`}>
+                      <div className="flex justify-between pt-1 border-t border-indigo-200">
+                        <span className="font-bold text-indigo-900">Expected Margin (INR):</span>
+                        <span className={`font-mono font-bold ${editNetProfitInr >= 0 ? "text-indigo-700" : "text-rose-600"}`}>
                           {formatINR(editNetProfitInr)}
                         </span>
                       </div>
@@ -2378,7 +2378,7 @@ function PartyTransfersContent() {
                 <button
                   type="submit"
                   disabled={isUpdating}
-                  className="px-4 py-2 bg-teal-700 text-white rounded-lg text-xs font-bold hover:bg-teal-800 disabled:opacity-50 cursor-pointer"
+                  className="px-4 py-2 bg-indigo-700 text-white rounded-lg text-xs font-bold hover:bg-indigo-800 disabled:opacity-50 cursor-pointer"
                 >
                   {isUpdating ? "Saving..." : "Save Changes"}
                 </button>

@@ -43,6 +43,7 @@ export default function ReportsPage() {
   const [showConfirmSchedule, setShowConfirmSchedule] = useState(false);
   const [wipeScope, setWipeScope] = useState<"all" | "week" | "month" | "year">("all");
   const [wipePassword, setWipePassword] = useState("");
+  const [wipePasswordError, setWipePasswordError] = useState("");
 
   const fromDateRef = useRef<HTMLInputElement>(null);
   const toDateRef = useRef<HTMLInputElement>(null);
@@ -124,14 +125,31 @@ export default function ReportsPage() {
   }, [wipeStatus?.isScheduled, wipeStatus?.executeAt]);
 
   async function handleScheduleWipe() {
+    setWipePasswordError("");
     if (!wipePassword.trim()) {
+      setWipePasswordError("Master password is required.");
       toast.error("Master password is required to authorize wiping data.");
       return;
     }
     setWipeLoading(true);
     try {
-      // 1. Trigger instantaneous pre-wipe backup download cleanly via blob with password authentication
-      await downloadMasterExcel({
+      // 1. Pre-verify master password cleanly before initiating backup generation or scheduling
+      const verifyRes = await fetch("/api/auth/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: wipePassword.trim() }),
+      });
+      const verifyData = await verifyRes.json().catch(() => ({}));
+
+      if (!verifyRes.ok || !verifyData.success) {
+        setWipePasswordError("Incorrect master password. Authorization denied.");
+        toast.error("Incorrect master password. Authorization denied.");
+        setWipeLoading(false);
+        return;
+      }
+
+      // 2. Trigger instantaneous pre-wipe backup download cleanly with verified password
+      const downloadSuccess = await downloadMasterExcel({
         url: `/api/system/scheduled-wipe/download-backup?schedule=true&minutes=10&scope=${wipeScope}`,
         headers: {
           "x-wipe-password": wipePassword.trim(),
@@ -139,7 +157,12 @@ export default function ReportsPage() {
         filename: `Accounts_Backup_${wipeScope}_${getDayMonthYearString()}.xlsx`,
       });
 
-      // 2. Fetch updated scheduled status
+      if (!downloadSuccess) {
+        toast.error("Failed to generate and download pre-wipe backup.");
+        return;
+      }
+
+      // 3. Fetch updated scheduled status
       const res = await fetch("/api/system/scheduled-wipe");
       const data = await res.json();
       setWipeStatus(data);
@@ -150,9 +173,10 @@ export default function ReportsPage() {
         duration: 8000,
       });
       setWipePassword("");
+      setWipePasswordError("");
       setShowConfirmSchedule(false);
     } catch (err: any) {
-      toast.error(err?.message || "Failed to schedule clear. Invalid password or server error.");
+      toast.error(err?.message || "Failed to schedule clear. Server error.");
     } finally {
       setWipeLoading(false);
     }
@@ -259,7 +283,7 @@ export default function ReportsPage() {
           <button
             type="button"
             onClick={() => downloadMasterExcel(fromDate && toDate ? { from: fromDate, to: toDate } : undefined)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-teal-700 text-white hover:bg-teal-800 shadow-sm transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-indigo-700 text-white hover:bg-indigo-800 shadow-sm transition-all cursor-pointer"
             title="Download complete Master Excel Workbook containing all sheets, customer IDs, and financial breakdowns"
           >
             <FileSpreadsheet className="w-4 h-4" />
@@ -489,7 +513,7 @@ export default function ReportsPage() {
 
             <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3.5 space-y-2 text-xs text-slate-700 dark:text-slate-300 border border-slate-100 dark:border-slate-800">
               <p className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-teal-600 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
                 Current latest Excel file will be downloaded immediately as backup.
               </p>
               <p className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
@@ -514,16 +538,28 @@ export default function ReportsPage() {
               <input
                 type="password"
                 value={wipePassword}
-                onChange={(e) => setWipePassword(e.target.value)}
+                onChange={(e) => {
+                  setWipePassword(e.target.value);
+                  if (wipePasswordError) setWipePasswordError("");
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && wipePassword.trim() && !wipeLoading) {
                     handleScheduleWipe();
                   }
                 }}
                 placeholder="Enter master password..."
-                className="w-full px-3.5 py-2.5 rounded-lg text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                className={`w-full px-3.5 py-2.5 rounded-lg text-xs border ${
+                  wipePasswordError
+                    ? "border-rose-500 ring-1 ring-rose-500 bg-rose-50/20"
+                    : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                } text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500`}
                 autoFocus
               />
+              {wipePasswordError && (
+                <p className="text-[11px] font-medium text-rose-600 dark:text-rose-400 mt-1">
+                  {wipePasswordError}
+                </p>
+              )}
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-2">
@@ -532,6 +568,7 @@ export default function ReportsPage() {
                 onClick={() => {
                   setShowConfirmSchedule(false);
                   setWipePassword("");
+                  setWipePasswordError("");
                 }}
                 className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
               >
@@ -555,7 +592,7 @@ export default function ReportsPage() {
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 no-print">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-xs font-bold text-slate-700 uppercase tracking-wider mr-2 flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5 text-teal-700" /> Period:
+            <Clock className="w-3.5 h-3.5 text-indigo-700" /> Period:
           </span>
           {[
             { id: "all", label: "All Time" },
@@ -570,7 +607,7 @@ export default function ReportsPage() {
               onClick={() => setPeriod(item.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 period === item.id
-                  ? "bg-teal-700 text-white shadow-sm"
+                  ? "bg-indigo-700 text-white shadow-sm"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
@@ -583,11 +620,11 @@ export default function ReportsPage() {
           <div className="flex items-center gap-2 shrink-0 flex-nowrap">
             <div
               onClick={() => openDatePicker(fromDateRef)}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-teal-500 dark:hover:border-teal-400 focus-within:border-teal-600 dark:focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-500/20 transition-all shadow-2xs cursor-pointer group"
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-indigo-500 dark:hover:border-indigo-400 focus-within:border-indigo-600 dark:focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all shadow-2xs cursor-pointer group"
               title="Click anywhere to choose Start Date"
             >
               <Calendar
-                className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 cursor-pointer group-hover:scale-110 transition-transform"
+                className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 cursor-pointer group-hover:scale-110 transition-transform"
                 onClick={(e) => {
                   e.stopPropagation();
                   openDatePicker(fromDateRef);
@@ -605,11 +642,11 @@ export default function ReportsPage() {
             <span className="text-[13px] text-slate-400 font-medium px-0.5">➔</span>
             <div
               onClick={() => openDatePicker(toDateRef)}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-teal-500 dark:hover:border-teal-400 focus-within:border-teal-600 dark:focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-500/20 transition-all shadow-2xs cursor-pointer group"
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-indigo-500 dark:hover:border-indigo-400 focus-within:border-indigo-600 dark:focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all shadow-2xs cursor-pointer group"
               title="Click anywhere to choose End Date"
             >
               <Calendar
-                className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 cursor-pointer group-hover:scale-110 transition-transform"
+                className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 cursor-pointer group-hover:scale-110 transition-transform"
                 onClick={(e) => {
                   e.stopPropagation();
                   openDatePicker(toDateRef);
@@ -643,7 +680,7 @@ export default function ReportsPage() {
             ) : (
               <div>
                 <p className="text-xl font-bold text-slate-900">{formatINR(kpis?.totalInrProcessed)}</p>
-                <p className="text-[10px] text-teal-700 font-semibold leading-tight mt-0.5 break-words">
+                <p className="text-[10px] text-indigo-700 font-semibold leading-tight mt-0.5 break-words">
                   {integerToIndianWords(kpis?.totalInrProcessed)}
                 </p>
               </div>
@@ -665,7 +702,7 @@ export default function ReportsPage() {
             {loading ? (
               <div className="h-3.5 w-24 bg-slate-200 animate-pulse rounded" />
             ) : (
-              <p className="text-[11px] text-teal-700 font-semibold">Collected: {formatAED(kpis?.totalAedCollected)}</p>
+              <p className="text-[11px] text-indigo-700 font-semibold">Collected: {formatAED(kpis?.totalAedCollected)}</p>
             )}
           </div>
 
@@ -684,7 +721,7 @@ export default function ReportsPage() {
             {loading ? (
               <div className="h-7 w-28 bg-slate-200 animate-pulse rounded my-1" />
             ) : (
-              <p className={`text-xl font-bold ${kpis?.netProfitAed >= 0 ? "text-teal-700" : "text-rose-600"}`}>
+              <p className={`text-xl font-bold ${kpis?.netProfitAed >= 0 ? "text-indigo-700" : "text-rose-600"}`}>
                 {formatAED(kpis?.netProfitAed)}
               </p>
             )}
@@ -724,7 +761,7 @@ export default function ReportsPage() {
                   <td className="py-2.5 px-3 text-right font-medium text-slate-900 whitespace-nowrap">{formatAED(r.aedVolume)}</td>
                   <td
                     className={`py-2.5 px-3 text-right font-bold whitespace-nowrap ${
-                      r.netProfit >= 0 ? "text-teal-700" : "text-rose-600"
+                      r.netProfit >= 0 ? "text-indigo-700" : "text-rose-600"
                     }`}
                   >
                     {formatAED(r.netProfit)}

@@ -609,7 +609,7 @@ export default function NewRemittancePage() {
       {/* Header */}
       <div>
         <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-          <Receipt className="w-5 h-5 text-teal-700" />
+          <Receipt className="w-5 h-5 text-indigo-700" />
           <span>New Money Transfer (Dubai ➔ India)</span>
         </h2>
         <p className="text-xs text-slate-500 mt-0.5">
@@ -619,7 +619,7 @@ export default function NewRemittancePage() {
 
       {/* Success Banner */}
       {successTxn && (
-        <div className="bg-teal-50 border-2 border-teal-500 rounded-xl p-5 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="bg-indigo-50 border-2 border-indigo-500 rounded-xl p-5 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
               <CheckCircle2 className="w-6 h-6" />
@@ -646,7 +646,7 @@ export default function NewRemittancePage() {
                 setNotes("");
                 setDate(getTodayDateString());
               }}
-              className="px-3.5 py-1.5 bg-teal-700 text-white text-xs font-bold rounded-lg hover:bg-teal-800 shadow-sm cursor-pointer"
+              className="px-3.5 py-1.5 bg-indigo-700 text-white text-xs font-bold rounded-lg hover:bg-indigo-800 shadow-sm cursor-pointer"
             >
               + Another Transfer
             </button>
@@ -693,12 +693,12 @@ export default function NewRemittancePage() {
                   required
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full text-xs font-medium border border-slate-300 rounded-lg p-2.5 pr-10 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
+                  className="w-full text-xs font-medium border border-slate-300 rounded-lg p-2.5 pr-10 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                 />
                 <button
                   type="button"
                   onClick={openDatePicker}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-teal-600 p-1 cursor-pointer transition-colors"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 p-1 cursor-pointer transition-colors"
                   title="Choose from calendar"
                 >
                   <Calendar className="w-4 h-4" />
@@ -709,7 +709,7 @@ export default function NewRemittancePage() {
             <div ref={customerDropdownRef} className="relative">
               <div className="flex items-center justify-between mb-1">
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-teal-700" />
+                  <User className="w-3.5 h-3.5 text-indigo-700" />
                   <span>Customer</span>
                   {selectedCustomer && (
                     <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-semibold normal-case">
@@ -724,7 +724,7 @@ export default function NewRemittancePage() {
                     setNewCustCode(customerSearchQuery ? customerSearchQuery.toUpperCase().replace(/\s+/g, "_").slice(0, 10) : "");
                     setShowNewCustModal(true);
                   }}
-                  className="text-[11px] font-bold text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded border border-teal-200 flex items-center gap-1 transition-colors cursor-pointer"
+                  className="text-[11px] font-bold text-indigo-700 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded border border-indigo-200 flex items-center gap-1 transition-colors cursor-pointer"
                 >
                   <UserPlus className="w-3 h-3" />
                   <span>+ New Customer</span>
@@ -732,10 +732,10 @@ export default function NewRemittancePage() {
               </div>
 
               {selectedCustomer && !isCustomerDropdownOpen ? (
-                <div className="p-2.5 bg-gradient-to-r from-teal-50/80 to-slate-50 border border-teal-300 rounded-lg shadow-2xs transition-all">
+                <div className="p-2.5 bg-gradient-to-r from-indigo-50/80 to-slate-50 border border-indigo-300 rounded-lg shadow-2xs transition-all">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-8 h-8 rounded-full bg-teal-700 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                      <div className="w-8 h-8 rounded-full bg-indigo-700 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
                         {selectedCustomer.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0">
@@ -744,7 +744,7 @@ export default function NewRemittancePage() {
                             {selectedCustomer.name}
                           </span>
                           {selectedCustomer.code && (
-                            <span className="text-[10px] font-mono bg-teal-100/80 text-teal-800 px-1.5 py-0.5 rounded font-bold">
+                            <span className="text-[10px] font-mono bg-indigo-100/80 text-indigo-800 px-1.5 py-0.5 rounded font-bold">
                               {selectedCustomer.code}
                             </span>
                           )}
@@ -770,10 +770,10 @@ export default function NewRemittancePage() {
                           setIsCustomerDropdownOpen(true);
                           setCustomerSearchQuery("");
                         }}
-                        className="text-xs font-semibold px-2.5 py-1 text-teal-800 hover:text-teal-900 bg-white hover:bg-teal-50 rounded-md border border-teal-300 transition shadow-2xs cursor-pointer flex items-center gap-1"
+                        className="text-xs font-semibold px-2.5 py-1 text-indigo-800 hover:text-indigo-900 bg-white hover:bg-indigo-50 rounded-md border border-indigo-300 transition shadow-2xs cursor-pointer flex items-center gap-1"
                         title="Search another customer"
                       >
-                        <Search className="w-3 h-3 text-teal-600" />
+                        <Search className="w-3 h-3 text-indigo-600" />
                         <span>Change</span>
                       </button>
                       <button
@@ -804,7 +804,7 @@ export default function NewRemittancePage() {
                         setIsCustomerDropdownOpen(true);
                       }}
                       onFocus={() => setIsCustomerDropdownOpen(true)}
-                      className="w-full text-xs font-bold pl-9 pr-8 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs"
+                      className="w-full text-xs font-bold pl-9 pr-8 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs"
                     />
                     {customerSearchQuery ? (
                       <button
@@ -826,7 +826,7 @@ export default function NewRemittancePage() {
                           {filteredCustomers.length} Customer{filteredCustomers.length !== 1 ? "s" : ""} Available
                         </span>
                         {customerSearchQuery && (
-                          <span className="text-teal-700 font-semibold truncate max-w-[120px]">
+                          <span className="text-indigo-700 font-semibold truncate max-w-[120px]">
                             &quot;{customerSearchQuery}&quot;
                           </span>
                         )}
@@ -843,13 +843,13 @@ export default function NewRemittancePage() {
                                 setIsCustomerDropdownOpen(false);
                                 setCustomerSearchQuery("");
                               }}
-                              className={`px-3 py-2 text-xs flex items-center justify-between hover:bg-teal-50 cursor-pointer transition ${
-                                isSelected ? "bg-teal-50/80 font-bold text-teal-900" : "text-slate-800"
+                              className={`px-3 py-2 text-xs flex items-center justify-between hover:bg-indigo-50 cursor-pointer transition ${
+                                isSelected ? "bg-indigo-50/80 font-bold text-indigo-900" : "text-slate-800"
                               }`}
                             >
                               <div className="flex items-center gap-2 min-w-0">
                                 {isSelected ? (
-                                  <Check className="w-3.5 h-3.5 text-teal-700 shrink-0" />
+                                  <Check className="w-3.5 h-3.5 text-indigo-700 shrink-0" />
                                 ) : (
                                   <div className="w-3.5 h-3.5 rounded-full bg-slate-200 text-[9px] font-bold text-slate-600 flex items-center justify-center shrink-0">
                                     {c.name.charAt(0).toUpperCase()}
@@ -891,7 +891,7 @@ export default function NewRemittancePage() {
                               setIsCustomerDropdownOpen(false);
                               setShowNewCustModal(true);
                             }}
-                            className="text-xs font-bold text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 px-3 py-1.5 rounded-lg border border-teal-200 inline-flex items-center gap-1.5 transition cursor-pointer"
+                            className="text-xs font-bold text-indigo-700 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg border border-indigo-200 inline-flex items-center gap-1.5 transition cursor-pointer"
                           >
                             <UserPlus className="w-3.5 h-3.5" />
                             <span>+ Create &quot;{customerSearchQuery}&quot; as New Customer</span>
@@ -919,7 +919,7 @@ export default function NewRemittancePage() {
               <button
                 type="button"
                 onClick={handleAddAmount}
-                className="text-xs font-bold text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 px-2.5 py-1 rounded border border-teal-200 flex items-center gap-1 transition-colors cursor-pointer"
+                className="text-xs font-bold text-indigo-700 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded border border-indigo-200 flex items-center gap-1 transition-colors cursor-pointer"
               >
                 <PlusCircle className="w-3.5 h-3.5" />
                 <span>+ Add Amount</span>
@@ -941,7 +941,7 @@ export default function NewRemittancePage() {
                       placeholder={idx === 0 ? "e.g. 500000" : idx === 1 ? "e.g. 300000" : "e.g. 200000"}
                       value={amount}
                       onChange={(e) => handleAmountChange(idx, e.target.value)}
-                      className="w-full text-sm font-bold pl-16 pr-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-2xs font-mono"
+                      className="w-full text-sm font-bold pl-16 pr-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs font-mono"
                     />
                   </div>
                   {inrAmounts.length > 1 && (
@@ -960,24 +960,24 @@ export default function NewRemittancePage() {
 
             {/* Total and Words Summary */}
             {totalOrderInr > 0 ? (
-              <div className="mt-2 p-3 bg-teal-50/90 border border-teal-200/90 rounded-lg space-y-1.5 animate-in fade-in duration-100">
+              <div className="mt-2 p-3 bg-indigo-50/90 border border-indigo-200/90 rounded-lg space-y-1.5 animate-in fade-in duration-100">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-teal-900 uppercase tracking-wider">
+                  <span className="text-xs font-bold text-indigo-900 uppercase tracking-wider">
                     Total Order INR:
                   </span>
-                  <span className="text-base font-extrabold text-teal-800 font-mono">
+                  <span className="text-base font-extrabold text-indigo-800 font-mono">
                     {formatINR(totalOrderInr)}
                   </span>
                 </div>
                 {inrWords && (
-                  <div className="flex items-center gap-2 text-xs text-teal-900 border-t border-teal-200/50 pt-1.5">
-                    <span className="font-bold text-[10px] tracking-wider uppercase bg-teal-200 text-teal-950 px-1.5 py-0.5 rounded font-mono shrink-0">
+                  <div className="flex items-center gap-2 text-xs text-indigo-900 border-t border-indigo-200/50 pt-1.5">
+                    <span className="font-bold text-[10px] tracking-wider uppercase bg-indigo-200 text-indigo-950 px-1.5 py-0.5 rounded font-mono shrink-0">
                       In Words:
                     </span>
                     <span className="font-semibold">{inrWords}</span>
                   </div>
                 )}
-                <div className="text-[10px] text-teal-700 italic">
+                <div className="text-[10px] text-indigo-700 italic">
                   * Empty fields are automatically excluded from calculations and Excel reports.
                 </div>
               </div>
@@ -995,7 +995,7 @@ export default function NewRemittancePage() {
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                   Daily Rate (Customer)
                 </label>
-                <span className="text-[10px] text-teal-700 font-bold bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200">
+                <span className="text-[10px] text-indigo-700 font-bold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">
                   AED / 1k
                 </span>
               </div>
@@ -1011,7 +1011,7 @@ export default function NewRemittancePage() {
                     setCustomerRate(clean);
                   }
                 }}
-                className="w-full text-xs font-bold font-mono border border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full text-xs font-bold font-mono border border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
 
@@ -1020,7 +1020,7 @@ export default function NewRemittancePage() {
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                   My Rate (Base Cost)
                 </label>
-                <span className="text-[10px] text-blue-700 font-bold bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                <span className="text-[10px] text-indigo-700 font-bold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">
                   AED / 1k
                 </span>
               </div>
@@ -1036,7 +1036,7 @@ export default function NewRemittancePage() {
                     setBaseRate(clean);
                   }
                 }}
-                className="w-full text-xs font-bold font-mono border border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full text-xs font-bold font-mono border border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
           </div>
@@ -1053,7 +1053,7 @@ export default function NewRemittancePage() {
                     type="button"
                     onClick={() => setDeliveryMode("AED")}
                     className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
-                      deliveryMode === "AED" ? "bg-teal-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
+                      deliveryMode === "AED" ? "bg-indigo-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
                     AED
@@ -1062,7 +1062,7 @@ export default function NewRemittancePage() {
                     type="button"
                     onClick={() => setDeliveryMode("PCT")}
                     className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
-                      deliveryMode === "PCT" ? "bg-teal-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
+                      deliveryMode === "PCT" ? "bg-indigo-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
                     %
@@ -1080,7 +1080,7 @@ export default function NewRemittancePage() {
                     setDeliveryValue(clean);
                   }
                 }}
-                className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500 font-mono"
+                className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
               />
             </div>
 
@@ -1093,7 +1093,7 @@ export default function NewRemittancePage() {
                 placeholder="e.g. Bill #123, Reference or instructions..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full text-xs font-medium border border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full text-xs font-medium border border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
           </div>
@@ -1103,7 +1103,7 @@ export default function NewRemittancePage() {
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                  <Split className="w-3.5 h-3.5 text-teal-600" />
+                  <Split className="w-3.5 h-3.5 text-indigo-600" />
                   <span>India Distribution Split</span>
                   <span className="text-[10px] font-extrabold text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded uppercase">
                     Mandatory
@@ -1121,7 +1121,7 @@ export default function NewRemittancePage() {
                     setTargetSplitId(null);
                     setShowNewPartyModal(true);
                   }}
-                  className="text-xs font-bold text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 px-2.5 py-1 rounded border border-teal-200 flex items-center gap-1 transition-colors cursor-pointer"
+                  className="text-xs font-bold text-indigo-700 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded border border-indigo-200 flex items-center gap-1 transition-colors cursor-pointer"
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                   <span>+ New Party</span>
@@ -1129,7 +1129,7 @@ export default function NewRemittancePage() {
                 <button
                   type="button"
                   onClick={addSplit}
-                  className="text-xs font-bold text-teal-700 hover:text-teal-800 bg-teal-50 px-2.5 py-1 rounded border border-teal-200 flex items-center gap-1 cursor-pointer"
+                  className="text-xs font-bold text-indigo-700 hover:text-indigo-800 bg-indigo-50 px-2.5 py-1 rounded border border-indigo-200 flex items-center gap-1 cursor-pointer"
                 >
                   <PlusCircle className="w-3.5 h-3.5" />
                   <span>+ Split Order</span>
@@ -1196,7 +1196,7 @@ export default function NewRemittancePage() {
                           const nextVal = Math.round((cur + remainingInr + Number.EPSILON) * 1000) / 1000;
                           updateSplit(s.id, "inr_amount", String(nextVal));
                         }}
-                        className="text-teal-700 hover:underline cursor-pointer text-[10px]"
+                        className="text-indigo-700 hover:underline cursor-pointer text-[10px]"
                       >
                         Fill Remaining (+₹{remainingInr.toLocaleString("en-IN")})
                       </button>
@@ -1225,7 +1225,7 @@ export default function NewRemittancePage() {
                           setTargetSplitId(s.id);
                           setShowNewPartyModal(true);
                         }}
-                        className="text-[10px] font-bold text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 px-1.5 py-0.5 rounded border border-teal-200 flex items-center gap-1 transition-colors cursor-pointer"
+                        className="text-[10px] font-bold text-indigo-700 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-1.5 py-0.5 rounded border border-indigo-200 flex items-center gap-1 transition-colors cursor-pointer"
                       >
                         <UserPlus className="w-2.5 h-2.5" />
                         <span>+ New Party</span>
@@ -1250,7 +1250,7 @@ export default function NewRemittancePage() {
                           {d.name} {d.code ? `(${d.code})` : ""}
                         </option>
                       ))}
-                      <option value="__NEW__" className="font-bold text-teal-700">
+                      <option value="__NEW__" className="font-bold text-indigo-700">
                         + Create New India Party...
                       </option>
                     </select>
@@ -1318,7 +1318,7 @@ export default function NewRemittancePage() {
                   const isExactMatch = isSplitEntered && Math.abs(splitInr - priorAvailable) < 0.01;
 
                   return (
-                    <div className="mt-2.5 p-3 rounded-lg border bg-gradient-to-r from-amber-50/90 to-teal-50/60 border-amber-300/80 text-xs space-y-2.5 shadow-xs">
+                    <div className="mt-2.5 p-3 rounded-lg border bg-gradient-to-r from-amber-50/90 to-indigo-50/60 border-amber-300/80 text-xs space-y-2.5 shadow-xs">
                       {/* Top banner: Prior advance details */}
                       <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-amber-200/80 pb-2">
                         <div className="flex items-center gap-2">
@@ -1349,7 +1349,7 @@ export default function NewRemittancePage() {
                             onClick={() => updateSplit(s.id, "deduct_prior", true)}
                             className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                               isDeducting
-                                ? "bg-[#0F766E] text-white shadow-xs"
+                                ? "bg-[#6366F1] text-white shadow-xs"
                                 : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                             }`}
                           >
@@ -1444,7 +1444,7 @@ export default function NewRemittancePage() {
           <button
             type="submit"
             disabled={saving || calculating}
-            className="w-full py-3 bg-[#0F766E] hover:bg-[#0D9488] text-white rounded-lg text-sm font-bold disabled:opacity-50 transition-all shadow-sm cursor-pointer"
+            className="w-full py-3 bg-[#6366F1] hover:bg-[#4F46E5] text-white rounded-lg text-sm font-bold disabled:opacity-50 transition-all shadow-sm cursor-pointer"
           >
             Review & Confirm Transfer
           </button>
@@ -1454,7 +1454,7 @@ export default function NewRemittancePage() {
         <div className="lg:col-span-5 space-y-4">
           <div className="bg-white text-slate-900 p-6 rounded-xl shadow-sm border border-slate-200 space-y-5">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <span className="text-xs font-bold text-teal-700 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider flex items-center gap-1.5">
                 <Calculator className="w-3.5 h-3.5" />
                 Backend Calculation Preview
               </span>
@@ -1469,7 +1469,7 @@ export default function NewRemittancePage() {
                   <div className="text-3xl font-mono font-bold text-slate-900 mt-1">
                     {preview.aedAmount.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED
                   </div>
-                  <span className="text-[10px] text-teal-700 font-mono">
+                  <span className="text-[10px] text-indigo-700 font-mono">
                     {preview.customerRateConvention === "AED_PER_1000"
                       ? `= (${formatINR(preview.inrAmount)} / 1000) × ${preview.customerRate.toFixed(3)}`
                       : `= ${formatINR(preview.inrAmount)} / ${preview.customerRate.toFixed(3)}`}
@@ -1486,7 +1486,7 @@ export default function NewRemittancePage() {
 
                   <div className="flex justify-between text-slate-600">
                     <span className="text-slate-500">Gross Margin:</span>
-                    <span className="font-mono font-bold text-teal-700">
+                    <span className="font-mono font-bold text-indigo-700">
                       +{preview.grossProfitAed.toFixed(3)} AED
                     </span>
                   </div>
@@ -1500,9 +1500,9 @@ export default function NewRemittancePage() {
                     </span>
                   </div>
 
-                  <div className="flex justify-between items-center p-3 rounded-lg bg-teal-50 border border-teal-200/80 mt-3">
-                    <span className="font-bold text-teal-900">Net Business Profit:</span>
-                    <span className="font-mono font-bold text-teal-700 text-lg">
+                  <div className="flex justify-between items-center p-3 rounded-lg bg-indigo-50 border border-indigo-200/80 mt-3">
+                    <span className="font-bold text-indigo-900">Net Business Profit:</span>
+                    <span className="font-mono font-bold text-indigo-700 text-lg">
                       {preview.netProfitAed.toFixed(3)} AED
                     </span>
                   </div>
@@ -1519,7 +1519,7 @@ export default function NewRemittancePage() {
           <div className="p-4 bg-white rounded-xl border border-slate-200 text-xs text-slate-600 space-y-2 shadow-sm">
             <span className="font-bold text-slate-900 block">Customer Workflow</span>
             <p className="text-slate-500 text-[11px] leading-relaxed">
-              If the customer is new, click <strong className="text-teal-700">"+ New Customer"</strong> to create them on the spot. Once created, they will be saved to your database and ready for selection on all future transfers.
+              If the customer is new, click <strong className="text-indigo-700">"+ New Customer"</strong> to create them on the spot. Once created, they will be saved to your database and ready for selection on all future transfers.
             </p>
           </div>
         </div>
@@ -1531,7 +1531,7 @@ export default function NewRemittancePage() {
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in duration-150">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-teal-700" />
+                <UserPlus className="w-5 h-5 text-indigo-700" />
                 <span>Create New Customer</span>
               </h3>
               <button
@@ -1561,7 +1561,7 @@ export default function NewRemittancePage() {
                   placeholder="e.g. DIVAN or AHMAD"
                   value={newCustName}
                   onChange={(e) => setNewCustName(e.target.value)}
-                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -1623,7 +1623,7 @@ export default function NewRemittancePage() {
                 <button
                   type="submit"
                   disabled={savingNewCust}
-                  className="px-4 py-2 bg-[#0F766E] hover:bg-[#0D9488] text-white rounded-lg text-xs font-bold disabled:opacity-50 shadow-sm cursor-pointer"
+                  className="px-4 py-2 bg-[#6366F1] hover:bg-[#4F46E5] text-white rounded-lg text-xs font-bold disabled:opacity-50 shadow-sm cursor-pointer"
                 >
                   {savingNewCust ? "Saving..." : "Create & Select"}
                 </button>
@@ -1639,7 +1639,7 @@ export default function NewRemittancePage() {
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in duration-150">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-teal-700" />
+                <UserPlus className="w-5 h-5 text-indigo-700" />
                 <span>Create New India Party</span>
               </h3>
               <button
@@ -1672,7 +1672,7 @@ export default function NewRemittancePage() {
                   placeholder="e.g. MK, SALA, or RAJA"
                   value={newPartyName}
                   onChange={(e) => setNewPartyName(e.target.value)}
-                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -1706,7 +1706,7 @@ export default function NewRemittancePage() {
                 <button
                   type="submit"
                   disabled={savingNewParty}
-                  className="px-4 py-2 bg-[#0F766E] hover:bg-[#0D9488] text-white rounded-lg text-xs font-bold disabled:opacity-50 shadow-sm cursor-pointer"
+                  className="px-4 py-2 bg-[#6366F1] hover:bg-[#4F46E5] text-white rounded-lg text-xs font-bold disabled:opacity-50 shadow-sm cursor-pointer"
                 >
                   {savingNewParty ? "Saving..." : "Create & Select"}
                 </button>
@@ -1721,18 +1721,18 @@ export default function NewRemittancePage() {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden animate-in fade-in zoom-in duration-150 my-8">
             {/* Header */}
-            <div className="bg-gradient-to-r from-teal-700 to-teal-800 px-6 py-4 text-white flex items-center justify-between">
+            <div className="bg-gradient-to-r from-indigo-700 to-indigo-800 px-6 py-4 text-white flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <ShieldCheck className="w-6 h-6 text-teal-200 shrink-0" />
+                <ShieldCheck className="w-6 h-6 text-indigo-200 shrink-0" />
                 <div>
                   <h3 className="text-base font-bold">Confirm Remittance Details</h3>
-                  <p className="text-[11px] text-teal-100">Please review all entered values before saving</p>
+                  <p className="text-[11px] text-indigo-100">Please review all entered values before saving</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setShowConfirmModal(false)}
-                className="text-teal-200 hover:text-white text-lg font-bold p-1 rounded transition-colors cursor-pointer"
+                className="text-indigo-200 hover:text-white text-lg font-bold p-1 rounded transition-colors cursor-pointer"
               >
                 ✕
               </button>
@@ -1748,7 +1748,7 @@ export default function NewRemittancePage() {
                     {selectedCustomer?.name || "-"}
                   </p>
                   {selectedCustomer?.code && (
-                    <span className="text-[10px] text-teal-700 font-mono">
+                    <span className="text-[10px] text-indigo-700 font-mono">
                       Code: {selectedCustomer.code}
                     </span>
                   )}
@@ -1767,7 +1767,7 @@ export default function NewRemittancePage() {
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                     INR Order Amounts ({validAmounts.length} entered)
                   </span>
-                  <span className="text-[10px] text-teal-700 font-medium">
+                  <span className="text-[10px] text-indigo-700 font-medium">
                     Empty fields excluded
                   </span>
                 </div>
@@ -1783,12 +1783,12 @@ export default function NewRemittancePage() {
 
                 <div className="border-t border-slate-200 pt-2 flex justify-between items-center">
                   <span className="font-bold text-slate-900">Total INR Order:</span>
-                  <span className="text-base font-extrabold text-teal-700 font-mono">
+                  <span className="text-base font-extrabold text-indigo-700 font-mono">
                     {formatINR(totalOrderInr)}
                   </span>
                 </div>
                 {inrWords && (
-                  <p className="text-[11px] text-teal-800 italic font-medium">
+                  <p className="text-[11px] text-indigo-800 italic font-medium">
                     ({inrWords})
                   </p>
                 )}
@@ -1809,9 +1809,9 @@ export default function NewRemittancePage() {
 
                 {preview && (
                   <div className="space-y-1.5 pt-1">
-                    <div className="flex justify-between items-center text-sm font-bold p-2 bg-teal-50 rounded-lg border border-teal-200/70">
-                      <span className="text-teal-900">Customer Pays:</span>
-                      <span className="text-base font-mono text-teal-800">
+                    <div className="flex justify-between items-center text-sm font-bold p-2 bg-indigo-50 rounded-lg border border-indigo-200/70">
+                      <span className="text-indigo-900">Customer Pays:</span>
+                      <span className="text-base font-mono text-indigo-800">
                         {preview.aedAmount.toFixed(3)} AED
                       </span>
                     </div>
@@ -1823,7 +1823,7 @@ export default function NewRemittancePage() {
 
                     <div className="flex justify-between text-slate-600">
                       <span>Gross Margin:</span>
-                      <span className="font-mono font-semibold text-teal-700">
+                      <span className="font-mono font-semibold text-indigo-700">
                         +{preview.grossProfitAed.toFixed(3)} AED
                       </span>
                     </div>
@@ -1835,7 +1835,7 @@ export default function NewRemittancePage() {
                       </span>
                     </div>
 
-                    <div className="flex justify-between font-bold text-teal-700 pt-1.5 border-t border-slate-200">
+                    <div className="flex justify-between font-bold text-indigo-700 pt-1.5 border-t border-slate-200">
                       <span>Net Business Profit:</span>
                       <span className="font-mono text-sm">{preview.netProfitAed.toFixed(3)} AED</span>
                     </div>
@@ -1847,7 +1847,7 @@ export default function NewRemittancePage() {
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
                 <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   <span>India Distribution Splits ({splits.length})</span>
-                  <span className="text-teal-700 font-mono font-bold">✓ 100% Allocated</span>
+                  <span className="text-indigo-700 font-mono font-bold">✓ 100% Allocated</span>
                 </div>
                 {splits.map((s, idx) => {
                   const d = distributors.find((dist) => dist.id === s.distributor_id);
@@ -1919,7 +1919,7 @@ export default function NewRemittancePage() {
                 type="button"
                 onClick={handleFinalSave}
                 disabled={saving}
-                className="px-5 py-2 text-xs font-bold bg-[#0F766E] hover:bg-[#0D9488] text-white rounded-lg transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="px-5 py-2 text-xs font-bold bg-[#6366F1] hover:bg-[#4F46E5] text-white rounded-lg transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 {saving ? (
                   <>

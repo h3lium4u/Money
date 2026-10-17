@@ -4,21 +4,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  PlusCircle,
-  Zap,
-  ArrowLeftRight,
-  Users,
-  Handshake,
+  Receipt,
+  Building2,
   ArrowRightLeft,
+  Handshake,
+  Split,
   Landmark,
   Wallet,
   FileSpreadsheet,
-  Split,
+  Bot,
   Settings,
   X,
-  Bot,
-  Building2,
-  Receipt,
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -85,48 +81,62 @@ export default function Sidebar() {
       }`}
       style={{
         width: 250,
-        background: isDark ? "#0F172A" : "#FFFFFF",
-        borderRight: `1px solid ${isDark ? "#1E293B" : "#D9D9D9"}`,
+        background: isDark ? "#090A0F" : "#FFFFFF",
+        borderRight: `1px solid ${isDark ? "#1F2333" : "#E2E8F0"}`,
       }}
     >
-      {/* Brand — Fresh Teal header */}
+      {/* Brand Header — Cyber Iris & Violet Gradient */}
       <div
         style={{
           height: 64,
-          background: "#0F766E",
+          background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           padding: "0 18px",
           flexShrink: 0,
+          boxShadow: "0 2px 8px rgba(99, 102, 241, 0.25)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-          {/* Logo mark */}
+          {/* Logo Option 3 — Dual Chevrons Remittance Bridge */}
           <div
             style={{
-              width: 34,
-              height: 34,
-              borderRadius: 6,
-              background: "#FFFFFF",
+              width: 36,
+              height: 36,
+              borderRadius: 8,
+              background: "rgba(255, 255, 255, 0.15)",
+              border: "1px solid rgba(255, 255, 255, 0.25)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              boxShadow: "0 2px 4px rgba(0, 0, 0, 0.15)",
             }}
           >
-            <span
-              style={{
-                fontFamily: '"Helvetica Neue", Arial, sans-serif',
-                fontWeight: 700,
-                fontSize: 16,
-                color: "#0F766E",
-                lineHeight: 1,
-              }}
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 100 100"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-label="Accounts Dual Chevrons Logo"
             >
-              A
-            </span>
+              <path
+                d="M26 40L48 22L48 35L70 35"
+                stroke="#38BDF8"
+                strokeWidth="8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M74 60L52 78L52 65L30 65"
+                stroke="#A78BFA"
+                strokeWidth="8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </div>
 
           <div>
@@ -148,7 +158,7 @@ export default function Sidebar() {
                 fontFamily: "var(--font-body)",
                 fontWeight: 500,
                 fontSize: 12,
-                color: "#CCFBF1",
+                color: "#C7D2FE",
                 marginTop: 3,
                 letterSpacing: "0.04em",
               }}
@@ -162,13 +172,14 @@ export default function Sidebar() {
         <button
           type="button"
           onClick={closeMobileMenu}
-          className="p-1 rounded-md text-white/80 hover:text-white hover:bg-teal-800/50 md:hidden"
+          className="p-1 rounded-md text-white/80 hover:text-white hover:bg-indigo-900/50 md:hidden"
           aria-label="Close Sidebar"
         >
           <X className="w-5 h-5" />
         </button>
       </div>
 
+      {/* Navigation List — Clean Original Icons with Option D Colors */}
       <nav style={{ flex: 1, padding: "0 12px 16px", overflowY: "auto" }}>
         {navigationGroups.map((group, groupIndex) => (
           <div key={group.label}>
@@ -180,7 +191,7 @@ export default function Sidebar() {
                 fontWeight: 700,
                 letterSpacing: "0.1em",
                 textTransform: "uppercase" as const,
-                color: isDark ? "#475569" : "#A1A1AA",
+                color: isDark ? "#475569" : "#94A3B8",
                 userSelect: "none" as const,
               }}
             >
@@ -210,22 +221,22 @@ export default function Sidebar() {
                     fontWeight: isActive ? 600 : 400,
                     textDecoration: "none",
                     color: isActive
-                      ? isDark ? "#2DD4BF" : "#0F766E"
-                      : isDark ? "#94A3B8" : "#666666",
+                      ? isDark ? "#A78BFA" : "#6366F1"
+                      : isDark ? "#94A3B8" : "#64748B",
                     background: isActive
-                      ? isDark ? "rgba(20, 184, 166, 0.14)" : "#F0FDFA"
+                      ? isDark ? "rgba(139, 92, 246, 0.16)" : "#EEF2FF"
                       : "transparent",
                     borderLeft: `3px solid ${
                       isActive
-                        ? isDark ? "#2DD4BF" : "#0F766E"
+                        ? isDark ? "#8B5CF6" : "#6366F1"
                         : "transparent"
                     }`,
                     transition: "color 0.12s, background 0.12s",
                   }}
                   onMouseEnter={(e) => {
                     if (!isActive) {
-                      (e.currentTarget as HTMLElement).style.color = isDark ? "#F8FAFC" : "#1A1A1A";
-                      (e.currentTarget as HTMLElement).style.background = isDark ? "#1E293B" : "#F5F5F5";
+                      (e.currentTarget as HTMLElement).style.color = isDark ? "#F8FAFC" : "#0F172A";
+                      (e.currentTarget as HTMLElement).style.background = isDark ? "#141622" : "#F8FAFC";
                     }
                     if (item.href === "/party-transfers") {
                       fetch("/api/party-transfers").catch(() => {});
@@ -233,7 +244,7 @@ export default function Sidebar() {
                   }}
                   onMouseLeave={(e) => {
                     if (!isActive) {
-                      (e.currentTarget as HTMLElement).style.color = isDark ? "#94A3B8" : "#666666";
+                      (e.currentTarget as HTMLElement).style.color = isDark ? "#94A3B8" : "#64748B";
                       (e.currentTarget as HTMLElement).style.background = "transparent";
                     }
                   }}
@@ -244,8 +255,8 @@ export default function Sidebar() {
                       height: 16,
                       flexShrink: 0,
                       color: isActive
-                        ? isDark ? "#2DD4BF" : "#0F766E"
-                        : isDark ? "#64748B" : "#999999",
+                        ? isDark ? "#A78BFA" : "#6366F1"
+                        : isDark ? "#64748B" : "#94A3B8",
                     }}
                   />
                   <span>{item.name}</span>
@@ -258,7 +269,7 @@ export default function Sidebar() {
                         width: 6,
                         height: 6,
                         borderRadius: "50%",
-                        background: isDark ? "#2DD4BF" : "#0F766E",
+                        background: isDark ? "#8B5CF6" : "#6366F1",
                       }}
                     />
                   )}
@@ -269,11 +280,11 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* Footer */}
+      {/* Footer User & Security Badge */}
       <div
         style={{
           padding: "16px 20px",
-          borderTop: `1px solid ${isDark ? "#1E293B" : "#D9D9D9"}`,
+          borderTop: `1px solid ${isDark ? "#1F2333" : "#E2E8F0"}`,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -282,11 +293,12 @@ export default function Sidebar() {
               width: 34,
               height: 34,
               borderRadius: "50%",
-              background: "#0F766E",
+              background: "#6366F1",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
+              boxShadow: "0 1px 3px rgba(99, 102, 241, 0.3)",
             }}
           >
             <span
@@ -296,7 +308,7 @@ export default function Sidebar() {
                 color: "#FFFFFF",
               }}
             >
-              R
+              A
             </span>
           </div>
           <div>
@@ -304,10 +316,10 @@ export default function Sidebar() {
               style={{
                 fontSize: 14,
                 fontWeight: 600,
-                color: isDark ? "#F8FAFC" : "#1A1A1A",
+                color: isDark ? "#F8FAFC" : "#0F172A",
               }}
             >
-              Admin
+              Accounts Admin
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 1 }}>
               <span
@@ -319,8 +331,8 @@ export default function Sidebar() {
                   display: "inline-block",
                 }}
               />
-              <span style={{ fontSize: 12, color: isDark ? "#64748B" : "#999999" }}>
-                Online
+              <span style={{ fontSize: 12, color: isDark ? "#64748B" : "#94A3B8" }}>
+                Connected
               </span>
             </div>
           </div>

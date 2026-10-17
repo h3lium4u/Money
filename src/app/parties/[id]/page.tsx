@@ -189,7 +189,7 @@ export default function PartyDetailPage() {
     return (
       <div className="max-w-6xl mx-auto py-12 text-center space-y-4">
         <p className="text-slate-500 text-sm">Party account not found.</p>
-        <Link href="/parties" className="text-xs text-teal-600 font-bold hover:underline">
+        <Link href="/parties" className="text-xs text-indigo-600 font-bold hover:underline">
           &larr; Back to Parties
         </Link>
       </div>
@@ -220,13 +220,13 @@ export default function PartyDetailPage() {
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
                 {party.name}
               </h2>
-              <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+              <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
                 {party.code}
               </span>
               <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
                 party.party_type === "INDIA"
                   ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800"
-                  : "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950 dark:text-teal-300 dark:border-teal-800"
+                  : "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800"
               }`}>
                 {party.party_type === "INDIA" ? "🇮🇳 Indian Party" : "🇦🇪 Dubai Party"}
               </span>
@@ -273,7 +273,7 @@ export default function PartyDetailPage() {
               setPayDate(getTodayDateString());
               setShowPayModal(true);
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-teal-700 text-white hover:bg-teal-800 shadow-sm cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-indigo-700 text-white hover:bg-indigo-800 shadow-sm cursor-pointer"
           >
             <CreditCard className="w-3.5 h-3.5" />
             <span>Record Settlement</span>
@@ -310,7 +310,7 @@ export default function PartyDetailPage() {
           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
             Total Settlements Paid (AED)
           </span>
-          <p className="text-xl font-mono font-bold text-teal-700 dark:text-teal-400 mt-1">
+          <p className="text-xl font-mono font-bold text-indigo-700 dark:text-indigo-400 mt-1">
             {Number(party.total_paid || 0).toFixed(3)} AED
           </p>
         </div>
@@ -364,8 +364,8 @@ export default function PartyDetailPage() {
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                             isTxn
-                              ? "bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950 dark:text-blue-300"
-                              : "bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-950 dark:text-teal-300"
+                              ? "bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300"
+                              : "bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300"
                           }`}
                         >
                           {isTxn ? "TRANSFER" : "SETTLEMENT"}
@@ -388,7 +388,7 @@ export default function PartyDetailPage() {
                       <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">
                         {e.debit_aed ? Number(e.debit_aed).toFixed(3) : "-"}
                       </td>
-                      <td className="py-3 px-4 font-mono font-bold text-teal-700 dark:text-teal-400">
+                      <td className="py-3 px-4 font-mono font-bold text-indigo-700 dark:text-indigo-400">
                         {e.credit_aed ? Number(e.credit_aed).toFixed(3) : "-"}
                       </td>
                       <td className="py-3 px-4 font-mono font-bold text-rose-700 dark:text-rose-400">
@@ -420,7 +420,7 @@ export default function PartyDetailPage() {
           <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-teal-700" />
+                <CreditCard className="w-5 h-5 text-indigo-700" />
                 <span>Record Party Settlement</span>
               </h3>
               <button
@@ -451,7 +451,7 @@ export default function PartyDetailPage() {
                     required
                     value={payDate}
                     onChange={(e) => setPayDate(e.target.value)}
-                    className="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
 
@@ -462,7 +462,7 @@ export default function PartyDetailPage() {
                     value={payMethod}
                     onChange={(e) => setPayMethod(e.target.value)}
                     placeholder="Payment Method"
-                    className="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full text-xs border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
               </div>
@@ -476,7 +476,7 @@ export default function PartyDetailPage() {
                   placeholder="0.00"
                   value={payAmount}
                   onChange={(e) => setPayAmount(e.target.value)}
-                  className="w-full text-sm font-mono font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full text-sm font-mono font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -502,7 +502,7 @@ export default function PartyDetailPage() {
                 <button
                   type="submit"
                   disabled={isSubmittingPay}
-                  className="px-5 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2 bg-indigo-700 hover:bg-indigo-800 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors cursor-pointer disabled:opacity-50"
                 >
                   {isSubmittingPay ? "Saving..." : "Record Settlement"}
                 </button>
@@ -518,7 +518,7 @@ export default function PartyDetailPage() {
           <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <Edit3 className="w-5 h-5 text-blue-600" />
+                <Edit3 className="w-5 h-5 text-indigo-600" />
                 <span>Edit Party Profile</span>
               </h3>
               <button
@@ -547,7 +547,7 @@ export default function PartyDetailPage() {
                   required
                   value={editPartyName}
                   onChange={(e) => setEditPartyName(e.target.value)}
-                  className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full text-xs font-bold border border-slate-300 dark:border-slate-700 rounded-lg p-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -601,7 +601,7 @@ export default function PartyDetailPage() {
                 <button
                   type="submit"
                   disabled={isSubmittingPartyEdit}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors cursor-pointer disabled:opacity-50"
                 >
                   {isSubmittingPartyEdit ? "Saving..." : "Update Profile"}
                 </button>

@@ -83,7 +83,9 @@ export async function downloadMasterExcel(options?: DownloadExcelOptions): Promi
     toast.success("Excel workbook downloaded successfully!", { id: toastId });
     return true;
   } catch (error: any) {
-    console.error("Excel download error:", error);
+    if (!error?.message?.includes("authorization denied") && !error?.message?.includes("Incorrect")) {
+      console.error("Excel download error:", error);
+    }
     toast.error("Failed to download Excel: " + (error?.message || "Unknown error"), { id: toastId });
     return false;
   } finally {

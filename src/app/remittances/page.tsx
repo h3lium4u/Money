@@ -562,7 +562,7 @@ function CustomerRemittancesContent() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
           <div>
             <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <Users className="w-5 h-5 text-teal-700" />
+              <Users className="w-5 h-5 text-indigo-700" />
               <span>Customer Remittances</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -582,7 +582,7 @@ function CustomerRemittancesContent() {
             </button>
             <Link
               href="/remittances/new"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-teal-700 text-white text-xs font-bold rounded-lg hover:bg-teal-800 shadow-sm transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-700 text-white text-xs font-bold rounded-lg hover:bg-indigo-800 shadow-sm transition-colors"
             >
               <PlusCircle className="w-4 h-4" />
               <span>+ New Customer Remittance</span>
@@ -591,7 +591,7 @@ function CustomerRemittancesContent() {
               href="/receivables"
               className="inline-flex items-center gap-2 px-3 py-2 bg-white text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg hover:bg-slate-50 shadow-2xs transition-colors"
             >
-              <Users className="w-4 h-4 text-teal-700" />
+              <Users className="w-4 h-4 text-indigo-700" />
               <span>Receivables & Dues</span>
             </Link>
           </div>
@@ -600,7 +600,7 @@ function CustomerRemittancesContent() {
         {/* Module Separation Banner */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-50 border border-slate-200/80 p-3 rounded-xl shadow-2xs">
           <div className="flex items-center gap-2 text-xs text-slate-700">
-            <Users className="w-4 h-4 text-teal-700 shrink-0" />
+            <Users className="w-4 h-4 text-indigo-700 shrink-0" />
             <span className="font-semibold text-slate-900">
               Customer Remittances Module
             </span>
@@ -612,7 +612,7 @@ function CustomerRemittancesContent() {
           <div className="flex items-center gap-3">
             <Link
               href="/transactions"
-              className="text-xs font-semibold text-teal-700 hover:text-teal-900 hover:underline inline-flex items-center gap-1"
+              className="text-xs font-semibold text-indigo-700 hover:text-indigo-900 hover:underline inline-flex items-center gap-1"
             >
               <span>Dubai Client Transfers</span>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -620,7 +620,7 @@ function CustomerRemittancesContent() {
             <span className="text-slate-300">|</span>
             <Link
               href="/party-transfers"
-              className="text-xs font-semibold text-teal-700 hover:text-teal-900 hover:underline inline-flex items-center gap-1"
+              className="text-xs font-semibold text-indigo-700 hover:text-indigo-900 hover:underline inline-flex items-center gap-1"
             >
               <span>Party Transfers (IND)</span>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -637,7 +637,7 @@ function CustomerRemittancesContent() {
             <div className="text-base sm:text-lg font-black text-slate-900 font-mono tracking-tight">
               {formatINR(totalVolumeInr)}
             </div>
-            <p className="text-[10px] text-teal-700 dark:text-teal-400 font-semibold leading-tight break-words">
+            <p className="text-[10px] text-indigo-700 dark:text-indigo-400 font-semibold leading-tight break-words">
               {integerToIndianWords(totalVolumeInr)}
             </p>
             <span className="text-[10px] text-slate-400 block font-medium">
@@ -645,14 +645,14 @@ function CustomerRemittancesContent() {
             </span>
           </div>
 
-          <div className="bg-white p-3.5 rounded-xl border border-teal-200/90 shadow-2xs space-y-1 bg-teal-50/20">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-teal-800 block">
+          <div className="bg-white p-3.5 rounded-xl border border-indigo-200/90 shadow-2xs space-y-1 bg-indigo-50/20">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-800 block">
               Total Invoiced (AED)
             </span>
-            <div className="text-base sm:text-lg font-black text-teal-900 font-mono tracking-tight">
+            <div className="text-base sm:text-lg font-black text-indigo-900 font-mono tracking-tight">
               {formatAED(totalInvoicedAed)}
             </div>
-            <span className="text-[10px] text-teal-600 block font-medium">
+            <span className="text-[10px] text-indigo-600 block font-medium">
               Charged to Retail Customers
             </span>
           </div>
@@ -689,7 +689,7 @@ function CustomerRemittancesContent() {
           <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs space-y-3">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-xs font-bold text-slate-700 uppercase tracking-wider mr-2 flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-teal-700" /> Date:
+                <Clock className="w-3.5 h-3.5 text-indigo-700" /> Date:
               </span>
               {[
                 { id: "all", label: "All Time" },
@@ -796,7 +796,7 @@ function CustomerRemittancesContent() {
             <button
               type="button"
               onClick={() => setLimitFilter("all")}
-              className="font-bold underline text-teal-800 hover:text-teal-950 cursor-pointer"
+              className="font-bold underline text-indigo-800 hover:text-indigo-950 cursor-pointer"
             >
               Load All Records ➔
             </button>
@@ -823,7 +823,7 @@ function CustomerRemittancesContent() {
                   {loading ? (
                     <tr>
                       <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
-                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-teal-700 dark:text-teal-400" />
+                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-indigo-700 dark:text-indigo-400" />
                         <span>Loading customer remittances...</span>
                       </td>
                     </tr>
@@ -835,7 +835,7 @@ function CustomerRemittancesContent() {
                           <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">No customer remittances recorded</p>
                           <Link
                             href="/remittances/new"
-                            className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 transition"
+                            className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-700 hover:bg-indigo-800 transition"
                           >
                             <PlusCircle className="w-3.5 h-3.5" />
                             + New Remittance
@@ -862,7 +862,7 @@ function CustomerRemittancesContent() {
 
                         <td className="px-3.5 py-2.5">
                           <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1 text-xs truncate">
-                            <Users className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400 shrink-0" />
+                            <Users className="w-3.5 h-3.5 text-indigo-700 dark:text-indigo-400 shrink-0" />
                             <Link
                               href={`/customers/${t.customer_id}`}
                               className="hover:underline truncate"
@@ -882,15 +882,15 @@ function CustomerRemittancesContent() {
                           <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">
                             {formatINR(t.inr_amount)}
                           </div>
-                          <div className="text-[9px] text-teal-700 dark:text-teal-400 font-medium truncate max-w-[150px]" title={integerToIndianWords(t.inr_amount)}>
+                          <div className="text-[9px] text-indigo-700 dark:text-indigo-400 font-medium truncate max-w-[150px]" title={integerToIndianWords(t.inr_amount)}>
                             {integerToIndianWords(t.inr_amount)}
                           </div>
                           {t.distributor_split_details && t.distributor_split_details !== "-" ? (
                             <div
-                              className="text-[10px] text-teal-700 dark:text-teal-400 font-semibold font-sans mt-0.5 truncate flex items-center gap-1"
+                              className="text-[10px] text-indigo-700 dark:text-indigo-400 font-semibold font-sans mt-0.5 truncate flex items-center gap-1"
                               title={t.distributor_split_details}
                             >
-                              <Split className="w-2.5 h-2.5 text-teal-600 dark:text-teal-400 shrink-0" />
+                              <Split className="w-2.5 h-2.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
                               <span className="truncate max-w-[160px]">{t.distributor_split_details}</span>
                             </div>
                           ) : (
@@ -947,7 +947,7 @@ function CustomerRemittancesContent() {
                               <button
                                 onClick={() => handleOpenPayModal(t)}
                                 title="Record Payment"
-                                className="flex items-center gap-1 text-[10px] font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-300 px-2 py-1 rounded shadow-2xs transition-colors"
+                                className="flex items-center gap-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-300 px-2 py-1 rounded shadow-2xs transition-colors"
                               >
                                 <CreditCard className="w-3 h-3" />
                                 <span>+ Pay</span>
@@ -965,7 +965,7 @@ function CustomerRemittancesContent() {
                             <button
                               onClick={() => handleOpenEdit(t)}
                               title="Edit Transfer"
-                              className="p-1 rounded text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                              className="p-1 rounded text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
@@ -1010,7 +1010,7 @@ function CustomerRemittancesContent() {
             <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4 border border-slate-200">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <Edit2 className="w-4 h-4 text-teal-700" />
+                  <Edit2 className="w-4 h-4 text-indigo-700" />
                   <span>Edit Customer Remittance</span>
                 </h3>
                 <button onClick={() => setEditingTxn(null)} className="text-slate-400 hover:text-slate-600">
@@ -1075,7 +1075,7 @@ function CustomerRemittancesContent() {
                           type="button"
                           onClick={() => setEditCustRateConvention("AED_PER_1000")}
                           className={`px-1.5 py-0.5 rounded cursor-pointer transition-colors ${
-                            editCustRateConvention === "AED_PER_1000" ? "bg-teal-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
+                            editCustRateConvention === "AED_PER_1000" ? "bg-indigo-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
                           }`}
                         >
                           AED / 1k
@@ -1084,7 +1084,7 @@ function CustomerRemittancesContent() {
                           type="button"
                           onClick={() => setEditCustRateConvention("INR_PER_AED")}
                           className={`px-1.5 py-0.5 rounded cursor-pointer transition-colors ${
-                            editCustRateConvention === "INR_PER_AED" ? "bg-teal-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
+                            editCustRateConvention === "INR_PER_AED" ? "bg-indigo-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
                           }`}
                         >
                           INR / AED
@@ -1128,7 +1128,7 @@ function CustomerRemittancesContent() {
                   <div className="flex items-center justify-between">
                     <div>
                       <label className="block text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
-                        <Split className="w-3.5 h-3.5 text-teal-700" />
+                        <Split className="w-3.5 h-3.5 text-indigo-700" />
                         <span>India Party Splits</span>
                         <span className="text-rose-600 font-extrabold text-[10px]">* (MANDATORY)</span>
                       </label>
@@ -1139,7 +1139,7 @@ function CustomerRemittancesContent() {
                     <button
                       type="button"
                       onClick={handleAddEditSplit}
-                      className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-2 py-1 rounded shadow-2xs transition cursor-pointer"
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-1 rounded shadow-2xs transition cursor-pointer"
                     >
                       <PlusCircle className="w-3 h-3" />
                       <span>+ Add Split</span>
@@ -1148,7 +1148,7 @@ function CustomerRemittancesContent() {
 
                   {loadingEditSplits ? (
                     <div className="p-3 text-center text-xs text-slate-400 bg-slate-50 rounded-lg">
-                      <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-1 text-teal-700" />
+                      <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-1 text-indigo-700" />
                       <span>Loading party splits...</span>
                     </div>
                   ) : (
@@ -1164,7 +1164,7 @@ function CustomerRemittancesContent() {
                               <button
                                 type="button"
                                 onClick={() => handleAllocateEditRemaining(idx)}
-                                className="text-teal-700 hover:underline cursor-pointer"
+                                className="text-indigo-700 hover:underline cursor-pointer"
                               >
                                 Fill Remaining
                               </button>
@@ -1260,7 +1260,7 @@ function CustomerRemittancesContent() {
                             const isExactMatch = isSplitEntered && Math.abs(splitInr - priorAvailable) < 0.01;
 
                             return (
-                              <div className="p-2.5 rounded-lg bg-gradient-to-r from-amber-50/90 to-teal-50/60 border border-amber-300 text-[11px] space-y-2">
+                              <div className="p-2.5 rounded-lg bg-gradient-to-r from-amber-50/90 to-indigo-50/60 border border-amber-300 text-[11px] space-y-2">
                                 <div className="flex justify-between items-center text-amber-900 font-bold border-b border-amber-200/80 pb-1.5">
                                   <span>Prior Advance Available: ₹{priorAvailable.toLocaleString("en-IN")}</span>
                                   <span className="text-[10px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-mono">
@@ -1277,7 +1277,7 @@ function CustomerRemittancesContent() {
                                       onClick={() => handleEditSplitDeductPrior(idx, true)}
                                       className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                                         isDeducting
-                                          ? "bg-[#0F766E] text-white shadow-xs"
+                                          ? "bg-[#6366F1] text-white shadow-xs"
                                           : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                                       }`}
                                     >
@@ -1404,7 +1404,7 @@ function CustomerRemittancesContent() {
                   <button
                     type="submit"
                     disabled={isUpdating}
-                    className="px-4 py-2 text-xs font-bold bg-teal-700 hover:bg-teal-800 text-white rounded-lg shadow-sm disabled:opacity-50"
+                    className="px-4 py-2 text-xs font-bold bg-indigo-700 hover:bg-indigo-800 text-white rounded-lg shadow-sm disabled:opacity-50"
                   >
                     {isUpdating ? "Saving..." : "Save Changes"}
                   </button>
@@ -1420,7 +1420,7 @@ function CustomerRemittancesContent() {
             <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <CreditCard className="w-4 h-4 text-teal-700" />
+                  <CreditCard className="w-4 h-4 text-indigo-700" />
                   <span>Record Customer Payment</span>
                 </h3>
                 <button onClick={() => setPayingTxn(null)} className="text-slate-400 hover:text-slate-600">
@@ -1466,7 +1466,7 @@ function CustomerRemittancesContent() {
                   <button
                     type="submit"
                     disabled={payLoading}
-                    className="px-4 py-2 text-xs font-bold bg-teal-700 hover:bg-teal-800 text-white rounded-lg shadow-sm disabled:opacity-50"
+                    className="px-4 py-2 text-xs font-bold bg-indigo-700 hover:bg-indigo-800 text-white rounded-lg shadow-sm disabled:opacity-50"
                   >
                     {payLoading ? "Recording..." : "Record Payment"}
                   </button>

@@ -7,24 +7,24 @@
 ───────────────────────────────────────────────────────────────────────── */
 
 :root {
-  /* Light Theme tokens (Default White Mode) */
-  --bg:           #FFFFFF;
+  /* Option D — Cyber Iris & Electric Violet (Light Mode) */
+  --bg:           #F8FAFC;
   --bg-surface:   #FFFFFF;
-  --bg-muted:     #F8FAFC;
-  --bg-hover:     #F1F5F9;
-  --fg:           #121827;
-  --fg-heading:   #121827;
+  --bg-muted:     #EEF2FF;
+  --bg-hover:     #E0E7FF;
+  --fg:           #0F172A;
+  --fg-heading:   #0F172A;
   --fg-body:      #1E293B;
   --fg-muted:     #64748B;
   --fg-faint:     #94A3B8;
-  --border:       #D9D9D9;
-  --border-strong: #CBD5E1;
+  --border:       #E2E8F0;
+  --border-strong: #C7D2FE;
 
-  /* Fresh Teal Accent */
-  --accent:       #0F766E;
-  --accent-hover: #0D9488;
-  --accent-soft:  #F0FDFA;
-  --accent-border: #CCFBF1;
+  /* Iris Indigo Accent */
+  --accent:       #6366F1;
+  --accent-hover: #4F46E5;
+  --accent-soft:  #EEF2FF;
+  --accent-border: #C7D2FE;
 
   /* Typography */
   --font-display: "Helvetica Neue", "Helvetica Now Display", Arial, sans-serif;
@@ -38,24 +38,24 @@
   --r-full: 100px;
 }
 
-/* ── Dark Theme Tokens ── */
+/* Option D — Space Carbon & Electric Violet (Dark Theme Tokens) */
 html.dark, :root[data-theme="dark"] {
-  --bg:           #0B0F19;
-  --bg-surface:   #111827;
-  --bg-muted:     #1E293B;
-  --bg-hover:     #1E293B;
+  --bg:           #090A0F;
+  --bg-surface:   #141622;
+  --bg-muted:     #1E2235;
+  --bg-hover:     #252A42;
   --fg:           #F8FAFC;
   --fg-heading:   #F8FAFC;
   --fg-body:      #E2E8F0;
   --fg-muted:     #94A3B8;
   --fg-faint:     #64748B;
-  --border:       #1E293B;
-  --border-strong: #334155;
+  --border:       #1F2333;
+  --border-strong: #2E334D;
 
-  --accent:       #14B8A6;
-  --accent-hover: #2DD4BF;
-  --accent-soft:  rgba(20, 184, 166, 0.14);
-  --accent-border: rgba(20, 184, 166, 0.28);
+  --accent:       #8B5CF6;
+  --accent-hover: #A78BFA;
+  --accent-soft:  rgba(139, 92, 246, 0.16);
+  --accent-border: rgba(139, 92, 246, 0.32);
 }
 
 /* ── Reset & Core ── */
@@ -184,7 +184,7 @@ html.dark [class*="bg-slate-100"] {
 }
 
 html.dark tr.hover\:bg-slate-50\/80:hover,
-html.dark tr.hover\:bg-teal-50\/30:hover {
+html.dark tr.hover\:bg-blue-50\/30:hover {
   background-color: rgba(255, 255, 255, 0.04) !important;
 }
 

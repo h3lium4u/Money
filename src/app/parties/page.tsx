@@ -355,7 +355,7 @@ export default function PartiesPage() {
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
               Parties & Distribution Settlement
             </h2>
-            <span className="px-2.5 py-0.5 text-[11px] font-bold rounded-full bg-teal-100 dark:bg-teal-950/80 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+            <span className="px-2.5 py-0.5 text-[11px] font-bold rounded-full bg-indigo-100 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
               Dubai & India Partners
             </span>
           </div>
@@ -367,14 +367,14 @@ export default function PartiesPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/transactions/new"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-lg shadow-sm transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold rounded-lg shadow-sm transition-colors cursor-pointer"
           >
             <span>+ New Transfer</span>
           </Link>
 
           <button
             onClick={() => setShowModal(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#0F766E] hover:bg-[#0D9488] text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#6366F1] hover:bg-[#4F46E5] text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-colors"
           >
             <UserPlus className="w-4 h-4" />
             <span>+ Add New Party</span>
@@ -390,13 +390,13 @@ export default function PartiesPage() {
           onClick={() => setSelectedPeriod("today")}
           className={`p-3.5 rounded-xl border transition-all cursor-pointer shadow-xs ${
             selectedPeriod === "today"
-              ? "bg-teal-50 dark:bg-teal-950/60 border-teal-500 ring-2 ring-teal-500/20"
-              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-teal-300"
+              ? "bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500 ring-2 ring-indigo-500/20"
+              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-indigo-300"
           }`}
         >
           <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             <span>Today's Total</span>
-            <span className="w-2 h-2 rounded-full bg-teal-500"></span>
+            <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
           </div>
           {loadingSummary ? (
             <div className="h-6 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded mt-1.5" />
@@ -415,8 +415,8 @@ export default function PartiesPage() {
           onClick={() => setSelectedPeriod("yesterday")}
           className={`p-3.5 rounded-xl border transition-all cursor-pointer shadow-xs ${
             selectedPeriod === "yesterday"
-              ? "bg-teal-50 dark:bg-teal-950/60 border-teal-500 ring-2 ring-teal-500/20"
-              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-teal-300"
+              ? "bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500 ring-2 ring-indigo-500/20"
+              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-indigo-300"
           }`}
         >
           <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -440,18 +440,18 @@ export default function PartiesPage() {
           onClick={() => setSelectedPeriod("week")}
           className={`p-3.5 rounded-xl border transition-all cursor-pointer shadow-xs ${
             selectedPeriod === "week"
-              ? "bg-teal-50 dark:bg-teal-950/60 border-teal-500 ring-2 ring-teal-500/20"
-              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-teal-300"
+              ? "bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500 ring-2 ring-indigo-500/20"
+              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-indigo-300"
           }`}
         >
           <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             <span>This Week</span>
-            <Calendar className="w-3.5 h-3.5 text-teal-600" />
+            <Calendar className="w-3.5 h-3.5 text-indigo-600" />
           </div>
           {loadingSummary ? (
             <div className="h-6 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded mt-1.5" />
           ) : (
-            <p className="text-lg sm:text-xl font-mono font-bold text-teal-700 dark:text-teal-400 mt-1">
+            <p className="text-lg sm:text-xl font-mono font-bold text-indigo-700 dark:text-indigo-400 mt-1">
               {formatINR(grandTotals.week)}
             </p>
           )}
@@ -465,18 +465,18 @@ export default function PartiesPage() {
           onClick={() => setSelectedPeriod("month")}
           className={`p-3.5 rounded-xl border transition-all cursor-pointer shadow-xs ${
             selectedPeriod === "month"
-              ? "bg-teal-50 dark:bg-teal-950/60 border-teal-500 ring-2 ring-teal-500/20"
-              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-teal-300"
+              ? "bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500 ring-2 ring-indigo-500/20"
+              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-indigo-300"
           }`}
         >
           <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             <span>This Month</span>
-            <Layers className="w-3.5 h-3.5 text-blue-600" />
+            <Layers className="w-3.5 h-3.5 text-indigo-600" />
           </div>
           {loadingSummary ? (
             <div className="h-6 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded mt-1.5" />
           ) : (
-            <p className="text-lg sm:text-xl font-mono font-bold text-blue-700 dark:text-blue-400 mt-1">
+            <p className="text-lg sm:text-xl font-mono font-bold text-indigo-700 dark:text-indigo-400 mt-1">
               {formatINR(grandTotals.month)}
             </p>
           )}
@@ -490,8 +490,8 @@ export default function PartiesPage() {
           onClick={() => setSelectedPeriod("year")}
           className={`p-3.5 rounded-xl border transition-all cursor-pointer shadow-xs col-span-2 sm:col-span-1 ${
             selectedPeriod === "year"
-              ? "bg-teal-50 dark:bg-teal-950/60 border-teal-500 ring-2 ring-teal-500/20"
-              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-teal-300"
+              ? "bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500 ring-2 ring-indigo-500/20"
+              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-indigo-300"
           }`}
         >
           <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -524,7 +524,7 @@ export default function PartiesPage() {
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800"
             }`}
           >
-            <Table className="w-3.5 h-3.5 text-teal-400" />
+            <Table className="w-3.5 h-3.5 text-indigo-400" />
             <span>Comparison Matrix</span>
           </button>
 
@@ -533,12 +533,12 @@ export default function PartiesPage() {
             onClick={() => setSelectedPeriod("today")}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               selectedPeriod === "today"
-                ? "bg-[#0F766E] text-white shadow-xs"
+                ? "bg-[#6366F1] text-white shadow-xs"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800"
             }`}
           >
             <span>Today</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-mono bg-teal-800 text-teal-100">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-mono bg-indigo-800 text-indigo-100">
               {formatINR(grandTotals.today)}
             </span>
           </button>
@@ -548,7 +548,7 @@ export default function PartiesPage() {
             onClick={() => setSelectedPeriod("yesterday")}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               selectedPeriod === "yesterday"
-                ? "bg-[#0F766E] text-white shadow-xs"
+                ? "bg-[#6366F1] text-white shadow-xs"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800"
             }`}
           >
@@ -563,7 +563,7 @@ export default function PartiesPage() {
             onClick={() => setSelectedPeriod("week")}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               selectedPeriod === "week"
-                ? "bg-[#0F766E] text-white shadow-xs"
+                ? "bg-[#6366F1] text-white shadow-xs"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800"
             }`}
           >
@@ -578,7 +578,7 @@ export default function PartiesPage() {
             onClick={() => setSelectedPeriod("month")}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               selectedPeriod === "month"
-                ? "bg-[#0F766E] text-white shadow-xs"
+                ? "bg-[#6366F1] text-white shadow-xs"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800"
             }`}
           >
@@ -593,7 +593,7 @@ export default function PartiesPage() {
             onClick={() => setSelectedPeriod("year")}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               selectedPeriod === "year"
-                ? "bg-[#0F766E] text-white shadow-xs"
+                ? "bg-[#6366F1] text-white shadow-xs"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800"
             }`}
           >
@@ -612,7 +612,7 @@ export default function PartiesPage() {
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800"
             }`}
           >
-            <FileText className="w-3.5 h-3.5 text-teal-400" />
+            <FileText className="w-3.5 h-3.5 text-indigo-400" />
             <span>Customer Splits</span>
             <span className="text-[10px] px-1.5 py-0.5 rounded-full font-mono bg-slate-700 text-slate-200">
               {allAssignments.length}
@@ -638,7 +638,7 @@ export default function PartiesPage() {
 
         <Link
           href="/distributors"
-          className="inline-flex items-center gap-1 text-xs font-semibold text-teal-700 dark:text-teal-400 hover:underline px-2 py-1 shrink-0"
+          className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 dark:text-indigo-400 hover:underline px-2 py-1 shrink-0"
         >
           <span>India Distribution Module</span>
           <ArrowUpRight className="w-3.5 h-3.5" />
@@ -651,7 +651,7 @@ export default function PartiesPage() {
           <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <Table className="w-4 h-4 text-teal-600" />
+                <Table className="w-4 h-4 text-indigo-600" />
                 <span>INR Parties Split Allocation Matrix</span>
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -700,9 +700,9 @@ export default function PartiesPage() {
                       <td className="py-2.5 px-2.5 font-bold text-slate-900 dark:text-slate-100">
                         <Link
                           href={`/parties/${party.party_id}`}
-                          className="hover:text-teal-600 hover:underline flex items-center gap-1.5"
+                          className="hover:text-indigo-600 hover:underline flex items-center gap-1.5"
                         >
-                          <Handshake className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                          <Handshake className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                           <span className="truncate max-w-[120px]">{party.party_name}</span>
                           {party.party_code && (
                             <span className="text-[10px] text-slate-400 font-mono font-normal">
@@ -713,7 +713,7 @@ export default function PartiesPage() {
                       </td>
                       <td className="py-2.5 px-2 text-right font-mono font-semibold text-slate-900 dark:text-slate-100 whitespace-nowrap">
                         {party.today_inr > 0 ? (
-                          <span className="text-teal-700 dark:text-teal-400 font-bold">
+                          <span className="text-indigo-700 dark:text-indigo-400 font-bold">
                             {formatINR(party.today_inr)}
                           </span>
                         ) : (
@@ -727,14 +727,14 @@ export default function PartiesPage() {
                           <span className="text-slate-400">₹ 0.00</span>
                         )}
                       </td>
-                      <td className="py-2.5 px-2 text-right font-mono font-semibold text-teal-700 dark:text-teal-400 whitespace-nowrap">
+                      <td className="py-2.5 px-2 text-right font-mono font-semibold text-indigo-700 dark:text-indigo-400 whitespace-nowrap">
                         {party.week_inr > 0 ? (
                           <span>{formatINR(party.week_inr)}</span>
                         ) : (
                           <span className="text-slate-400">₹ 0.00</span>
                         )}
                       </td>
-                      <td className="py-2.5 px-2 text-right font-mono font-semibold text-blue-700 dark:text-blue-400 whitespace-nowrap">
+                      <td className="py-2.5 px-2 text-right font-mono font-semibold text-indigo-700 dark:text-indigo-400 whitespace-nowrap">
                         {party.month_inr > 0 ? (
                           <span>{formatINR(party.month_inr)}</span>
                         ) : (
@@ -760,7 +760,7 @@ export default function PartiesPage() {
                         <div className="flex items-center justify-end gap-1">
                           <Link
                             href={`/parties/${party.party_id}`}
-                            className="p-1 text-slate-500 hover:text-teal-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
+                            className="p-1 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
                             title="View Statement & History"
                           >
                             <FileText className="w-3.5 h-3.5" />
@@ -771,7 +771,7 @@ export default function PartiesPage() {
                               setPartyFilter(party.party_id);
                               setSelectedPeriod("splits");
                             }}
-                            className="p-1 text-slate-500 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors cursor-pointer"
+                            className="p-1 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors cursor-pointer"
                             title="View Customer Splits for this party"
                           >
                             <ArrowRight className="w-3.5 h-3.5" />
@@ -790,16 +790,16 @@ export default function PartiesPage() {
                     <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                     <span>GRAND TOTAL</span>
                   </td>
-                  <td className="py-3 px-2 text-right font-mono text-xs text-teal-400 font-bold whitespace-nowrap">
+                  <td className="py-3 px-2 text-right font-mono text-xs text-indigo-400 font-bold whitespace-nowrap">
                     {formatINR(grandTotals.today)}
                   </td>
                   <td className="py-3 px-2 text-right font-mono text-xs text-slate-200 font-bold whitespace-nowrap">
                     {formatINR(grandTotals.yesterday)}
                   </td>
-                  <td className="py-3 px-2 text-right font-mono text-xs text-teal-300 font-bold whitespace-nowrap">
+                  <td className="py-3 px-2 text-right font-mono text-xs text-indigo-300 font-bold whitespace-nowrap">
                     {formatINR(grandTotals.week)}
                   </td>
-                  <td className="py-3 px-2 text-right font-mono text-xs text-blue-300 font-bold whitespace-nowrap">
+                  <td className="py-3 px-2 text-right font-mono text-xs text-indigo-300 font-bold whitespace-nowrap">
                     {formatINR(grandTotals.month)}
                   </td>
                   <td className="py-3 px-2 text-right font-mono text-xs text-amber-300 font-bold whitespace-nowrap">
@@ -823,9 +823,9 @@ export default function PartiesPage() {
       {["today", "yesterday", "week", "month", "year"].includes(selectedPeriod) && (
         <div className="space-y-4">
           {/* Period Header Card */}
-          <div className="bg-gradient-to-r from-teal-900 to-slate-900 text-white p-5 rounded-xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="bg-gradient-to-r from-indigo-900 to-slate-900 text-white p-5 rounded-xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-teal-300">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-300">
                 {selectedPeriod === "today"
                   ? "Today's Split Allocation"
                   : selectedPeriod === "yesterday"
@@ -849,7 +849,7 @@ export default function PartiesPage() {
                     : grandTotals.year
                 )}
               </h3>
-              <p className="text-[10px] text-teal-200 font-semibold leading-tight mt-0.5 break-words">
+              <p className="text-[10px] text-indigo-200 font-semibold leading-tight mt-0.5 break-words">
                 {integerToIndianWords(
                   selectedPeriod === "today"
                     ? grandTotals.today
@@ -862,7 +862,7 @@ export default function PartiesPage() {
                     : grandTotals.year
                 )}
               </p>
-              <p className="text-xs text-teal-200/80 mt-1">
+              <p className="text-xs text-indigo-200/80 mt-1">
                 Grand total of all customer transfer amounts assigned across all India parties for this period.
               </p>
             </div>
@@ -909,7 +909,7 @@ export default function PartiesPage() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-xs text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                      <Handshake className="w-3.5 h-3.5 text-teal-600" />
+                      <Handshake className="w-3.5 h-3.5 text-indigo-600" />
                       <span>{p.party_name}</span>
                     </span>
                     <span className="text-[10px] text-slate-400 font-mono">{pct}%</span>
@@ -921,7 +921,7 @@ export default function PartiesPage() {
 
                   <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
                     <div
-                      className="bg-teal-600 h-full rounded-full transition-all duration-300"
+                      className="bg-indigo-600 h-full rounded-full transition-all duration-300"
                       style={{ width: `${Math.min(parseFloat(pct), 100)}%` }}
                     />
                   </div>
@@ -930,7 +930,7 @@ export default function PartiesPage() {
                     <span>Code: {p.party_code}</span>
                     <Link
                       href={`/parties/${p.party_id}`}
-                      className="text-teal-600 hover:underline font-semibold"
+                      className="text-indigo-600 hover:underline font-semibold"
                     >
                       Statement ➔
                     </Link>
@@ -944,7 +944,7 @@ export default function PartiesPage() {
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
             <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-teal-600" />
+                <FileText className="w-3.5 h-3.5 text-indigo-600" />
                 <span>Customer Distribution Splits in this Period</span>
               </h4>
               <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
@@ -984,8 +984,8 @@ export default function PartiesPage() {
                         <td className="py-3 px-4 font-mono font-bold text-slate-800 dark:text-slate-200">
                           {a.transaction_number}
                         </td>
-                        <td className="py-3 px-4 font-bold text-teal-700 dark:text-teal-400 flex items-center gap-1">
-                          <Handshake className="w-3 h-3 text-teal-600" />
+                        <td className="py-3 px-4 font-bold text-indigo-700 dark:text-indigo-400 flex items-center gap-1">
+                          <Handshake className="w-3 h-3 text-indigo-600" />
                           <span>{a.distributor_name}</span>
                         </td>
                         <td className="py-3 px-4 text-right font-mono font-bold text-slate-900 dark:text-slate-100">
@@ -1018,7 +1018,7 @@ export default function PartiesPage() {
                 placeholder="Search by customer, txn ID, party, notes..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full text-xs font-medium pl-9 pr-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full text-xs font-medium pl-9 pr-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
 
@@ -1044,7 +1044,7 @@ export default function PartiesPage() {
             <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <div>
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                  <FileText className="w-3.5 h-3.5 text-teal-600" />
+                  <FileText className="w-3.5 h-3.5 text-indigo-600" />
                   <span>Customer Transfers Assigned to INR Parties</span>
                 </h3>
                 <p className="text-[11px] text-slate-400 mt-0.5">
@@ -1052,7 +1052,7 @@ export default function PartiesPage() {
                 </p>
               </div>
               <div className="font-mono text-xs font-bold text-slate-900 dark:text-slate-100">
-                Filtered Total: <span className="text-teal-600 font-extrabold">{formatINR(totalFilteredSplitInr)}</span>
+                Filtered Total: <span className="text-indigo-600 font-extrabold">{formatINR(totalFilteredSplitInr)}</span>
               </div>
             </div>
 
@@ -1083,7 +1083,7 @@ export default function PartiesPage() {
                         <td className="py-2.5 px-3">
                           <Link
                             href={`/customers/${a.customer_id}`}
-                            className="font-bold text-slate-900 dark:text-slate-100 hover:text-teal-700 hover:underline"
+                            className="font-bold text-slate-900 dark:text-slate-100 hover:text-indigo-700 hover:underline"
                           >
                             {a.customer_name}
                           </Link>
@@ -1093,12 +1093,12 @@ export default function PartiesPage() {
                             </div>
                           )}
                         </td>
-                        <td className="py-2.5 px-3 font-bold text-teal-700 dark:text-teal-400">
+                        <td className="py-2.5 px-3 font-bold text-indigo-700 dark:text-indigo-400">
                           <Link
                             href={`/parties/${a.distributor_id}`}
                             className="hover:underline flex items-center gap-1"
                           >
-                            <Handshake className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                            <Handshake className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                             <span>{a.distributor_name}</span>
                           </Link>
                         </td>
@@ -1118,7 +1118,7 @@ export default function PartiesPage() {
                         <td className="py-2.5 px-3 text-right whitespace-nowrap">
                           <Link
                             href={`/parties/${a.distributor_id}`}
-                            className="p-1.5 text-slate-500 hover:text-teal-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors inline-block"
+                            className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors inline-block"
                             title="View Party Statement"
                           >
                             <FileText className="w-3.5 h-3.5" />
@@ -1132,7 +1132,7 @@ export default function PartiesPage() {
                       <td colSpan={3} className="py-2.5 px-3 uppercase text-[10px]">
                         Filtered Splits Total
                       </td>
-                      <td className="py-2.5 px-3 text-right font-mono text-xs font-black text-teal-700 dark:text-teal-400 whitespace-nowrap">
+                      <td className="py-2.5 px-3 text-right font-mono text-xs font-black text-indigo-700 dark:text-indigo-400 whitespace-nowrap">
                         {formatINR(totalFilteredSplitInr)}
                       </td>
                       <td colSpan={2}></td>
@@ -1157,7 +1157,7 @@ export default function PartiesPage() {
                 placeholder="Search party by name or code..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full text-xs font-medium pl-9 pr-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full text-xs font-medium pl-9 pr-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
 
@@ -1180,7 +1180,7 @@ export default function PartiesPage() {
                   onClick={() => setRegionFilter("DUBAI")}
                   className={`px-2.5 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                     regionFilter === "DUBAI"
-                      ? "bg-teal-600 text-white shadow-xs"
+                      ? "bg-indigo-600 text-white shadow-xs"
                       : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
                   }`}
                 >
@@ -1260,16 +1260,16 @@ export default function PartiesPage() {
                           <td className="py-2.5 px-3">
                             <Link
                               href={`/parties/${party.id}`}
-                              className="font-bold text-slate-900 dark:text-slate-100 hover:text-teal-600 dark:hover:text-teal-400 flex items-center gap-1.5"
+                              className="font-bold text-slate-900 dark:text-slate-100 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1.5"
                             >
-                              <Handshake className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                              <Handshake className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                               <span>{party.name}</span>
                             </Link>
                             <div className="flex items-center gap-1.5 mt-0.5">
                               <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold border ${
                                 party.party_type === "INDIA"
                                   ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/70 dark:text-orange-300 dark:border-orange-800"
-                                  : "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/70 dark:text-teal-300 dark:border-teal-800"
+                                  : "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/70 dark:text-indigo-300 dark:border-indigo-800"
                               }`}>
                                 {party.party_type === "INDIA" ? "🇮🇳 India" : "🇦🇪 Dubai"}
                               </span>
@@ -1290,7 +1290,7 @@ export default function PartiesPage() {
                             <div className="font-mono font-semibold text-slate-900 dark:text-slate-100">
                               {Number(party.total_aed || 0).toFixed(3)} AED
                             </div>
-                            <div className="text-[10px] font-mono text-teal-700 dark:text-teal-400">
+                            <div className="text-[10px] font-mono text-indigo-700 dark:text-indigo-400">
                               Paid: {Number(party.total_paid || 0).toFixed(3)} AED
                             </div>
                           </td>
@@ -1300,7 +1300,7 @@ export default function PartiesPage() {
                                 {Number(party.outstanding_balance).toFixed(3)} AED
                               </span>
                             ) : (
-                              <span className="text-teal-700 dark:text-teal-400 font-medium">
+                              <span className="text-indigo-700 dark:text-indigo-400 font-medium">
                                 0.000 AED
                               </span>
                             )}
@@ -1310,7 +1310,7 @@ export default function PartiesPage() {
                               {hasDue && (
                                 <button
                                   onClick={() => handleOpenPayModal(party)}
-                                  className="p-1.5 text-slate-500 hover:text-teal-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors cursor-pointer"
+                                  className="p-1.5 text-slate-500 hover:text-indigo-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors cursor-pointer"
                                   title="Record Settlement / Payment"
                                 >
                                   <CreditCard className="w-3.5 h-3.5" />
@@ -1319,7 +1319,7 @@ export default function PartiesPage() {
 
                               <button
                                 onClick={() => openEditModal(party)}
-                                className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors cursor-pointer"
+                                className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors cursor-pointer"
                                 title="Edit Party"
                               >
                                 <Edit3 className="w-3.5 h-3.5" />
@@ -1335,7 +1335,7 @@ export default function PartiesPage() {
 
                               <Link
                                 href={`/parties/${party.id}`}
-                                className="p-1.5 text-teal-600 hover:text-teal-700 hover:bg-teal-50 dark:hover:bg-teal-950/40 rounded transition-colors"
+                                className="p-1.5 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded transition-colors"
                                 title="View Statement / Ledger"
                               >
                                 <ArrowRight className="w-3.5 h-3.5" />
@@ -1359,7 +1359,7 @@ export default function PartiesPage() {
           <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <Handshake className="w-5 h-5 text-teal-600" />
+                <Handshake className="w-5 h-5 text-indigo-600" />
                 <span>Register New Party</span>
               </h3>
               <button
@@ -1389,7 +1389,7 @@ export default function PartiesPage() {
                     onClick={() => setNewPartyType("DUBAI")}
                     className={`p-2.5 rounded-lg border text-left text-xs font-bold transition-all cursor-pointer ${
                       newPartyType === "DUBAI"
-                        ? "bg-teal-50 dark:bg-teal-950/70 border-teal-500 text-teal-900 dark:text-teal-200 ring-2 ring-teal-500/20"
+                        ? "bg-indigo-50 dark:bg-indigo-950/70 border-indigo-500 text-indigo-900 dark:text-indigo-200 ring-2 ring-indigo-500/20"
                         : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50"
                     }`}
                   >
@@ -1484,7 +1484,7 @@ export default function PartiesPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 bg-[#0F766E] hover:bg-[#0D9488] text-white rounded-lg text-xs font-bold shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2 bg-[#6366F1] hover:bg-[#4F46E5] text-white rounded-lg text-xs font-bold shadow-sm transition-colors cursor-pointer disabled:opacity-50"
                 >
                   {submitting ? "Registering..." : "Register Party"}
                 </button>
@@ -1500,7 +1500,7 @@ export default function PartiesPage() {
           <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <Edit3 className="w-5 h-5 text-blue-600" />
+                <Edit3 className="w-5 h-5 text-indigo-600" />
                 <span>Edit Party Profile</span>
               </h3>
               <button
@@ -1530,7 +1530,7 @@ export default function PartiesPage() {
                     onClick={() => setEditPartyType("DUBAI")}
                     className={`p-2.5 rounded-lg border text-left text-xs font-bold transition-all cursor-pointer ${
                       editPartyType === "DUBAI"
-                        ? "bg-teal-50 dark:bg-teal-950/70 border-teal-500 text-teal-900 dark:text-teal-200 ring-2 ring-teal-500/20"
+                        ? "bg-indigo-50 dark:bg-indigo-950/70 border-indigo-500 text-indigo-900 dark:text-indigo-200 ring-2 ring-indigo-500/20"
                         : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50"
                     }`}
                   >
@@ -1618,7 +1618,7 @@ export default function PartiesPage() {
                 <button
                   type="submit"
                   disabled={editSubmitting}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors cursor-pointer disabled:opacity-50"
                 >
                   {editSubmitting ? "Saving..." : "Update Profile"}
                 </button>
@@ -1679,7 +1679,7 @@ export default function PartiesPage() {
           <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-teal-700" />
+                <CreditCard className="w-5 h-5 text-indigo-700" />
                 <span>Record Party Settlement Payment</span>
               </h3>
               <button
@@ -1777,7 +1777,7 @@ export default function PartiesPage() {
                 <button
                   type="submit"
                   disabled={paySubmitting}
-                  className="px-5 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-xs font-bold shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2 bg-indigo-700 hover:bg-indigo-800 text-white rounded-lg text-xs font-bold shadow-sm transition-colors cursor-pointer disabled:opacity-50"
                 >
                   {paySubmitting ? "Recording..." : "Save Settlement"}
                 </button>

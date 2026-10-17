@@ -21,7 +21,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F19] text-[#1a1a1a] dark:text-[#F8FAFC]">
+      <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#090A0F] text-[#0F172A] dark:text-[#F8FAFC]">
         <Toaster position="top-right" richColors closeButton duration={3000} toastOptions={{ className: 'font-sans' }} />
         <LockScreen />
         <ChangePasswordModal />
@@ -30,7 +30,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden antialiased bg-white dark:bg-[#0B0F19] text-[#1a1a1a] dark:text-[#F8FAFC] transition-colors duration-200">
+    <div className="flex h-screen overflow-hidden antialiased bg-[#F8FAFC] dark:bg-[#090A0F] text-[#0F172A] dark:text-[#F8FAFC] transition-colors duration-200">
       {/* Mobile Backdrop */}
       {isMobileMenuOpen && (
         <div

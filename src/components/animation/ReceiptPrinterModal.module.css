@@ -243,7 +243,7 @@
 
 .printNowBtn {
   padding: 6px 14px;
-  background-color: #0f766e;
+  background-color: #6366F1;
   color: #ffffff;
   font-weight: 700;
   border-radius: 0.5rem;
@@ -263,8 +263,8 @@
 .printAgainBtn {
   padding: 8px 16px;
   background-color: #ffffff;
-  color: #0f766e;
-  border: 1px solid #0f766e;
+  color: #6366F1;
+  border: 1px solid #6366F1;
   font-weight: 700;
   border-radius: 0.5rem;
   font-size: 12px;

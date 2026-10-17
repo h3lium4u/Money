@@ -418,7 +418,7 @@ function DubaiClientTransactionsContent() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
           <div>
             <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <Coins className="w-5 h-5 text-teal-700" />
+              <Coins className="w-5 h-5 text-indigo-700" />
               <span>Dubai Client</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -429,7 +429,7 @@ function DubaiClientTransactionsContent() {
           <div className="flex items-center gap-2">
             <Link
               href="/transactions/new"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-teal-700 text-white text-xs font-bold rounded-lg hover:bg-teal-800 shadow-sm transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-700 text-white text-xs font-bold rounded-lg hover:bg-indigo-800 shadow-sm transition-colors"
             >
               <PlusCircle className="w-4 h-4" />
               <span>+ New Dubai Client Transfer</span>
@@ -449,7 +449,7 @@ function DubaiClientTransactionsContent() {
         {/* Module Separation Banner */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-3 rounded-xl shadow-2xs">
           <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
-            <Building2 className="w-4 h-4 text-teal-700 dark:text-teal-400 shrink-0" />
+            <Building2 className="w-4 h-4 text-indigo-700 dark:text-indigo-400 shrink-0" />
             <span className="font-semibold text-slate-900 dark:text-slate-100">
               Dubai Client Transfers
             </span>
@@ -461,7 +461,7 @@ function DubaiClientTransactionsContent() {
           <div className="flex items-center gap-3">
             <Link
               href="/remittances"
-              className="text-xs font-semibold text-teal-700 dark:text-teal-400 hover:text-teal-900 hover:underline inline-flex items-center gap-1"
+              className="text-xs font-semibold text-indigo-700 dark:text-indigo-400 hover:text-indigo-900 hover:underline inline-flex items-center gap-1"
             >
               <span>Customer Remittances</span>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -469,7 +469,7 @@ function DubaiClientTransactionsContent() {
             <span className="text-slate-300 dark:text-slate-700">|</span>
             <Link
               href="/party-transfers"
-              className="text-xs font-semibold text-teal-700 dark:text-teal-400 hover:text-teal-900 hover:underline inline-flex items-center gap-1"
+              className="text-xs font-semibold text-indigo-700 dark:text-indigo-400 hover:text-indigo-900 hover:underline inline-flex items-center gap-1"
             >
               <span>Party Transfers (IND)</span>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -487,7 +487,7 @@ function DubaiClientTransactionsContent() {
             <div className="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 font-mono tracking-tight">
               {formatINR(totalVolumeInr)}
             </div>
-            <p className="text-[10px] text-teal-700 dark:text-teal-400 font-semibold leading-tight break-words">
+            <p className="text-[10px] text-indigo-700 dark:text-indigo-400 font-semibold leading-tight break-words">
               {integerToIndianWords(totalVolumeInr)}
             </p>
             <span className="text-[10px] text-slate-400 dark:text-slate-500 block font-medium">
@@ -496,14 +496,14 @@ function DubaiClientTransactionsContent() {
           </div>
 
           {/* Card 2: Total In Dhirams */}
-          <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-teal-200/90 dark:border-teal-800 shadow-2xs space-y-1 bg-teal-50/20 dark:bg-teal-950/20">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-teal-800 dark:text-teal-300 block">
+          <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-indigo-200/90 dark:border-indigo-800 shadow-2xs space-y-1 bg-indigo-50/20 dark:bg-indigo-950/20">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-800 dark:text-indigo-300 block">
               Total In Dhirams (AED)
             </span>
-            <div className="text-base sm:text-lg font-black text-teal-900 dark:text-teal-100 font-mono tracking-tight">
+            <div className="text-base sm:text-lg font-black text-indigo-900 dark:text-indigo-100 font-mono tracking-tight">
               {formatAED(totalInDhirams)}
             </div>
-            <span className="text-[10px] text-teal-600 dark:text-teal-400 block font-medium">
+            <span className="text-[10px] text-indigo-600 dark:text-indigo-400 block font-medium">
               = Total / Wholesale Rate
             </span>
           </div>
@@ -537,16 +537,16 @@ function DubaiClientTransactionsContent() {
           </div>
 
           {/* Card 5: Daily Balance (Cumulative) */}
-          <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-blue-200/90 dark:border-blue-800 shadow-2xs space-y-1 bg-blue-50/20 dark:bg-blue-950/20 col-span-2 sm:col-span-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-800 dark:text-blue-300 block">
+          <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-indigo-200/90 dark:border-indigo-800 shadow-2xs space-y-1 bg-indigo-50/20 dark:bg-indigo-950/20 col-span-2 sm:col-span-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-800 dark:text-indigo-300 block">
               Daily Balance (AED)
             </span>
             <div className={`text-base sm:text-lg font-black font-mono tracking-tight ${
-              totalClosingDailyBalance > 0 ? "text-blue-900 dark:text-blue-200" : totalClosingDailyBalance < 0 ? "text-rose-700 dark:text-rose-400" : "text-emerald-700 dark:text-emerald-400"
+              totalClosingDailyBalance > 0 ? "text-indigo-900 dark:text-indigo-200" : totalClosingDailyBalance < 0 ? "text-rose-700 dark:text-rose-400" : "text-emerald-700 dark:text-emerald-400"
             }`}>
               {formatAED(totalClosingDailyBalance)}
             </div>
-            <span className="text-[10px] text-blue-600 dark:text-blue-400 block font-medium">
+            <span className="text-[10px] text-indigo-600 dark:text-indigo-400 block font-medium">
               = +Today + Prev Bal
             </span>
           </div>
@@ -558,7 +558,7 @@ function DubaiClientTransactionsContent() {
             {/* Quick Time Presets */}
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mr-2 flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400" /> Date:
+                <Clock className="w-3.5 h-3.5 text-indigo-700 dark:text-indigo-400" /> Date:
               </span>
               {[
                 { id: "all", label: "All Time" },
@@ -573,7 +573,7 @@ function DubaiClientTransactionsContent() {
                   onClick={() => setTimeFilter(item.id)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     timeFilter === item.id
-                      ? "bg-[#0F766E] text-white shadow-2xs"
+                      ? "bg-[#6366F1] text-white shadow-2xs"
                       : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
                   }`}
                 >
@@ -591,7 +591,7 @@ function DubaiClientTransactionsContent() {
                   placeholder="Search ID, client, notes..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:ring-1 focus:ring-teal-500 focus:outline-none"
+                  className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
                 />
               </div>
 
@@ -599,7 +599,7 @@ function DubaiClientTransactionsContent() {
                 <select
                   value={selectedCustomer}
                   onChange={(e) => setSelectedCustomer(e.target.value)}
-                  className="w-full text-xs font-medium border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg p-2 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-teal-500 focus:outline-none"
+                  className="w-full text-xs font-medium border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg p-2 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
                 >
                   <option value="">All Dubai Clients ({clients.length})</option>
                   {clients.map((c) => (
@@ -614,7 +614,7 @@ function DubaiClientTransactionsContent() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full text-xs font-medium border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg p-2 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-teal-500 focus:outline-none"
+                  className="w-full text-xs font-medium border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg p-2 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
                 >
                   <option value="">All Statuses</option>
                   <option value="CONFIRMED">CONFIRMED</option>
@@ -626,7 +626,7 @@ function DubaiClientTransactionsContent() {
                 <select
                   value={limitFilter}
                   onChange={(e) => setLimitFilter(e.target.value)}
-                  className="w-full text-xs font-medium border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg p-2 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-teal-500 focus:outline-none"
+                  className="w-full text-xs font-medium border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg p-2 text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
                   title="Records display limit"
                 >
                   <option value="100">100 Records</option>
@@ -680,7 +680,7 @@ function DubaiClientTransactionsContent() {
                   {loading ? (
                     <tr>
                       <td colSpan={10} className="px-4 py-8 text-center text-slate-400">
-                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-teal-700" />
+                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-indigo-700" />
                         <span>Loading Dubai Client transfers...</span>
                       </td>
                     </tr>
@@ -692,7 +692,7 @@ function DubaiClientTransactionsContent() {
                           <p className="text-sm font-semibold text-slate-600">No Dubai Client transfers found</p>
                           <Link
                             href="/transactions/new"
-                            className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 transition"
+                            className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-700 hover:bg-indigo-800 transition"
                           >
                             <PlusCircle className="w-3.5 h-3.5" />
                             + New Transfer
@@ -740,7 +740,7 @@ function DubaiClientTransactionsContent() {
                           {/* 2. Dubai Client */}
                           <td className="px-2.5 py-2.5">
                             <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1 text-xs truncate">
-                              <Building2 className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400 shrink-0" />
+                              <Building2 className="w-3.5 h-3.5 text-indigo-700 dark:text-indigo-400 shrink-0" />
                               <span className="truncate" title={t.customer_name}>
                                 {t.customer_name}
                               </span>
@@ -759,7 +759,7 @@ function DubaiClientTransactionsContent() {
                             <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">
                               {formatINR(totalVal)}
                             </div>
-                            <div className="text-[9px] text-teal-700 dark:text-teal-400 font-medium truncate max-w-[140px]" title={integerToIndianWords(totalVal)}>
+                            <div className="text-[9px] text-indigo-700 dark:text-indigo-400 font-medium truncate max-w-[140px]" title={integerToIndianWords(totalVal)}>
                               {integerToIndianWords(totalVal)}
                             </div>
                           </td>
@@ -783,7 +783,7 @@ function DubaiClientTransactionsContent() {
 
                           {/* 5. Whole Sale Rate */}
                           <td className="px-2.5 py-2.5 font-mono whitespace-nowrap">
-                            <div className="font-bold text-teal-700 dark:text-teal-400 text-xs">
+                            <div className="font-bold text-indigo-700 dark:text-indigo-400 text-xs">
                               {Number(wholesaleRateVal).toFixed(3)}
                             </div>
                             <span className="text-[9px] text-slate-400 dark:text-slate-500">= 1000/Rate</span>
@@ -816,11 +816,11 @@ function DubaiClientTransactionsContent() {
                           {/* 9. Daily Balance */}
                           <td className="px-3 py-2.5 font-mono whitespace-nowrap">
                             <div className={`font-bold text-xs ${
-                              dailyBalanceVal > 0 ? "text-blue-900 dark:text-blue-300 font-extrabold" : dailyBalanceVal < 0 ? "text-rose-700 dark:text-rose-400 font-extrabold" : "text-emerald-700 dark:text-emerald-400 font-bold"
+                              dailyBalanceVal > 0 ? "text-indigo-900 dark:text-indigo-300 font-extrabold" : dailyBalanceVal < 0 ? "text-rose-700 dark:text-rose-400 font-extrabold" : "text-emerald-700 dark:text-emerald-400 font-bold"
                             }`}>
                               {formatAED(dailyBalanceVal)}
                             </div>
-                            <span className="text-[9px] text-blue-600 dark:text-blue-400 font-semibold">= +Today + Prev Bal</span>
+                            <span className="text-[9px] text-indigo-600 dark:text-indigo-400 font-semibold">= +Today + Prev Bal</span>
                           </td>
 
                           {/* 10. Actions */}
@@ -831,7 +831,7 @@ function DubaiClientTransactionsContent() {
                                 <button
                                   onClick={() => handleOpenPayModal(t)}
                                   title="Record Payment in AED"
-                                  className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-300 px-2 py-1 rounded shadow-2xs transition-colors shrink-0"
+                                  className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-300 px-2 py-1 rounded shadow-2xs transition-colors shrink-0"
                                 >
                                   <CreditCard className="w-3 h-3" />
                                   <span>+ Pay</span>
@@ -851,7 +851,7 @@ function DubaiClientTransactionsContent() {
                               <button
                                 onClick={() => handleOpenEdit(t)}
                                 title="Edit Transfer"
-                                className="p-1 rounded text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                className="p-1 rounded text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
                               </button>
@@ -900,7 +900,7 @@ function DubaiClientTransactionsContent() {
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
                   <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <Edit2 className="w-4 h-4 text-teal-700" />
+                    <Edit2 className="w-4 h-4 text-indigo-700" />
                     <span>Edit Dubai Client Transfer</span>
                   </h3>
                   <span className="text-xs font-mono text-slate-500">
@@ -972,7 +972,7 @@ function DubaiClientTransactionsContent() {
                           setEditTotal(clean);
                         }
                       }}
-                      className="w-full text-sm font-bold pl-7 pr-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500 font-mono"
+                      className="w-full text-sm font-bold pl-7 pr-3 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
                     />
                   </div>
                 </div>
@@ -988,7 +988,7 @@ function DubaiClientTransactionsContent() {
                           type="button"
                           onClick={() => setEditCustRateConvention("AED_PER_1000")}
                           className={`px-1.5 py-0.5 rounded cursor-pointer transition-colors ${
-                            editCustRateConvention === "AED_PER_1000" ? "bg-teal-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
+                            editCustRateConvention === "AED_PER_1000" ? "bg-indigo-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
                           }`}
                         >
                           AED / 1k
@@ -997,7 +997,7 @@ function DubaiClientTransactionsContent() {
                           type="button"
                           onClick={() => setEditCustRateConvention("INR_PER_AED")}
                           className={`px-1.5 py-0.5 rounded cursor-pointer transition-colors ${
-                            editCustRateConvention === "INR_PER_AED" ? "bg-teal-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
+                            editCustRateConvention === "INR_PER_AED" ? "bg-indigo-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
                           }`}
                         >
                           INR / AED
@@ -1041,20 +1041,20 @@ function DubaiClientTransactionsContent() {
 
                 {/* Calculation Output Card */}
                 {editPreview && (
-                  <div className="p-3 bg-teal-50 rounded-xl border border-teal-200 text-xs space-y-1.5 font-medium">
+                  <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-200 text-xs space-y-1.5 font-medium">
                     <div className="flex justify-between">
-                      <span className="text-teal-800">Whole Sale Rate (=1000/Rate):</span>
-                      <span className="font-mono font-bold text-teal-900">{editPreview.wholesaleRate.toFixed(3)}</span>
+                      <span className="text-indigo-800">Whole Sale Rate (=1000/Rate):</span>
+                      <span className="font-mono font-bold text-indigo-900">{editPreview.wholesaleRate.toFixed(3)}</span>
                     </div>
                     <div className="flex justify-between font-bold">
-                      <span className="text-teal-900">In Dhirams (=Total/Wholesale):</span>
-                      <span className="font-mono text-teal-900">AED {editPreview.inDhirams.toFixed(3)}</span>
+                      <span className="text-indigo-900">In Dhirams (=Total/Wholesale):</span>
+                      <span className="font-mono text-indigo-900">AED {editPreview.inDhirams.toFixed(3)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-600">Paid Amount:</span>
                       <span className="font-mono text-slate-800">AED {editPreview.paidAmount.toFixed(3)}</span>
                     </div>
-                    <div className="flex justify-between font-bold pt-1 border-t border-teal-200 text-amber-800">
+                    <div className="flex justify-between font-bold pt-1 border-t border-indigo-200 text-amber-800">
                       <span>Balance to Paid:</span>
                       <span className="font-mono">AED {editPreview.balanceToPaid.toFixed(3)}</span>
                     </div>
@@ -1098,7 +1098,7 @@ function DubaiClientTransactionsContent() {
                   <button
                     type="submit"
                     disabled={isUpdating}
-                    className="px-4 py-2 text-xs font-bold bg-teal-700 hover:bg-teal-800 text-white rounded-lg shadow-sm disabled:opacity-50"
+                    className="px-4 py-2 text-xs font-bold bg-indigo-700 hover:bg-indigo-800 text-white rounded-lg shadow-sm disabled:opacity-50"
                   >
                     {isUpdating ? "Saving..." : "Save Changes"}
                   </button>
@@ -1115,7 +1115,7 @@ function DubaiClientTransactionsContent() {
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
                   <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-teal-700" />
+                    <CreditCard className="w-4 h-4 text-indigo-700" />
                     <span>Record Client Payment</span>
                   </h3>
                   <span className="text-xs text-slate-500 font-mono">
@@ -1210,7 +1210,7 @@ function DubaiClientTransactionsContent() {
                   <button
                     type="submit"
                     disabled={payLoading}
-                    className="px-4 py-2 text-xs font-bold bg-teal-700 hover:bg-teal-800 text-white rounded-lg shadow-sm disabled:opacity-50"
+                    className="px-4 py-2 text-xs font-bold bg-indigo-700 hover:bg-indigo-800 text-white rounded-lg shadow-sm disabled:opacity-50"
                   >
                     {payLoading ? "Recording..." : "Record Payment"}
                   </button>

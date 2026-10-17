@@ -205,9 +205,9 @@ function DashboardContent() {
           <Link
             href="/remittances/new"
             className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-[13px] font-semibold transition-all cursor-pointer shadow-sm hover:shadow"
-            style={{ background: "#0F766E", color: "#ffffff", borderRadius: 100, border: "none" }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#0D9488"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "#0F766E"; }}
+            style={{ background: "#6366F1", color: "#ffffff", borderRadius: 100, border: "none" }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#4F46E5"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "#6366F1"; }}
           >
             <PlusCircle className="w-4 h-4" />
             <span>+ New Transfer</span>
@@ -215,10 +215,10 @@ function DashboardContent() {
           {/* New Dubai Client Transfer (Wholesale) */}
           <Link
             href="/transactions/new"
-            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-[13px] font-semibold transition-colors bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-200 border border-teal-200 dark:border-teal-800 hover:bg-teal-100 dark:hover:bg-teal-900/60"
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-[13px] font-semibold transition-colors bg-indigo-50 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/60"
             style={{ borderRadius: 100 }}
           >
-            <Building2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+            <Building2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
             <span>+ Dubai Client</span>
           </Link>
           <button
@@ -247,7 +247,7 @@ function DashboardContent() {
           <button
             onClick={() => fetchDashboardData()}
             className="inline-flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium shrink-0 cursor-pointer self-start sm:self-auto"
-            style={{ background: "#0F766E", color: "#ffffff", borderRadius: 100, border: "none", fontFamily: "var(--font-body)" }}
+            style={{ background: "#6366F1", color: "#ffffff", borderRadius: 100, border: "none", fontFamily: "var(--font-body)" }}
           >
             Retry Connection
           </button>
@@ -259,7 +259,7 @@ function DashboardContent() {
         <div className="flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-3">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-[13px] font-medium mr-1.5 flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
-              <Clock className="w-4 h-4 text-teal-600 dark:text-teal-400" /> View Range:
+              <Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> View Range:
             </span>
             {[
               { id: "today", label: "Today" },
@@ -278,7 +278,7 @@ function DashboardContent() {
                   onClick={() => setTimeframe(item.id)}
                   className={`px-3.5 py-1.5 text-[13px] font-medium rounded-full transition-all cursor-pointer ${
                     isSelected
-                      ? "bg-[#0F766E] text-white shadow-2xs"
+                      ? "bg-[#6366F1] text-white shadow-2xs"
                       : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
                   }`}
                   style={{ fontFamily: "var(--font-body)" }}
@@ -297,11 +297,11 @@ function DashboardContent() {
               {/* Start Date Pill */}
               <div
                 onClick={() => openDatePicker(fromDateRef)}
-                className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-teal-500 dark:hover:border-teal-400 focus-within:border-teal-600 dark:focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-500/20 transition-all shadow-2xs cursor-pointer group"
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-indigo-500 dark:hover:border-indigo-400 focus-within:border-indigo-600 dark:focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all shadow-2xs cursor-pointer group"
                 title="Click anywhere to choose Start Date"
               >
                 <Calendar
-                  className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 cursor-pointer group-hover:scale-110 transition-transform"
+                  className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 cursor-pointer group-hover:scale-110 transition-transform"
                   onClick={(e) => {
                     e.stopPropagation();
                     openDatePicker(fromDateRef);
@@ -320,11 +320,11 @@ function DashboardContent() {
               {/* End Date Pill */}
               <div
                 onClick={() => openDatePicker(toDateRef)}
-                className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-teal-500 dark:hover:border-teal-400 focus-within:border-teal-600 dark:focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-500/20 transition-all shadow-2xs cursor-pointer group"
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-indigo-500 dark:hover:border-indigo-400 focus-within:border-indigo-600 dark:focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all shadow-2xs cursor-pointer group"
                 title="Click anywhere to choose End Date"
               >
                 <Calendar
-                  className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 cursor-pointer group-hover:scale-110 transition-transform"
+                  className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 cursor-pointer group-hover:scale-110 transition-transform"
                   onClick={(e) => {
                     e.stopPropagation();
                     openDatePicker(toDateRef);
@@ -372,13 +372,13 @@ function DashboardContent() {
               <span className="text-[12px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-400">
                 {timeframe === "today" ? "INR Sent Today" : "Total INR Sent"}
               </span>
-              <Coins className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+              <Coins className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             </div>
             <div className="mt-5">
               <div className="text-[26px] font-bold text-slate-900 dark:text-slate-100" style={{ fontFamily: '"Helvetica Neue", Arial, sans-serif', letterSpacing: "-0.02em" }}>
                 {formatINR(timeframe === "today" ? kpis?.todayInr : kpis?.totalInrProcessed)}
               </div>
-              <p className="text-[11px] text-teal-700 dark:text-teal-400 font-semibold leading-tight mt-0.5 break-words">
+              <p className="text-[11px] text-indigo-700 dark:text-indigo-400 font-semibold leading-tight mt-0.5 break-words">
                 {integerToIndianWords(timeframe === "today" ? kpis?.todayInr : kpis?.totalInrProcessed)}
               </p>
               <p className="text-[12px] mt-1 text-slate-400 dark:text-slate-400">India orders received from Dubai customers</p>
@@ -422,20 +422,20 @@ function DashboardContent() {
           </div>
           </FadeIn>
 
-          {/* Card 4 — Net Profit (Fresh Teal Accent Card) */}
+          {/* Card 4 — Net Profit (Cyber Iris Accent Card) */}
           <FadeIn delay={0.24}>
-          <div className="p-5 flex flex-col justify-between rounded-lg bg-[#0F766E] border border-[#0F766E] shadow-sm">
+          <div className="p-5 flex flex-col justify-between rounded-lg bg-[#6366F1] border border-[#6366F1] shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-[12px] font-semibold uppercase tracking-widest text-[#CCFBF1]">
+              <span className="text-[12px] font-semibold uppercase tracking-widest text-[#E0E7FF]">
                 {timeframe === "today" ? "Net Profit Today" : "Net Profit"}
               </span>
-              <TrendingUp className="w-4 h-4 text-[#5EEAD4]" />
+              <TrendingUp className="w-4 h-4 text-[#A78BFA]" />
             </div>
             <div className="mt-5">
               <div className="text-[26px] font-bold text-white" style={{ fontFamily: '"Helvetica Neue", Arial, sans-serif', letterSpacing: "-0.02em" }}>
                 {formatAED(timeframe === "today" ? kpis?.todayProfit : kpis?.netProfitAed)}
               </div>
-              <p className="text-[12px] mt-1 text-[#CCFBF1]">Gross Profit minus 20% delivery charge</p>
+              <p className="text-[12px] mt-1 text-[#E0E7FF]">Gross Profit minus 20% delivery charge</p>
             </div>
           </div>
           </FadeIn>
@@ -513,12 +513,12 @@ function DashboardContent() {
           <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between text-[13.5px] text-slate-600 dark:text-slate-300 font-medium mb-2">
               <span className="flex items-center gap-1.5">
-                <Banknote className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                <Banknote className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                 Total AED Collected
               </span>
               <span className="text-[11px] text-slate-400 uppercase font-semibold">Received</span>
             </div>
-            <div className="text-[22px] font-bold text-teal-700 dark:text-teal-400">
+            <div className="text-[22px] font-bold text-indigo-700 dark:text-indigo-400">
               {formatAED(kpis?.totalAedCollected)}
             </div>
             <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1">
@@ -554,7 +554,7 @@ function DashboardContent() {
           <div className="p-4 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between text-[13.5px] text-slate-600 dark:text-slate-300 font-medium mb-2">
               <span className="flex items-center gap-1.5">
-                <Building2 className="w-4 h-4 text-blue-500" />
+                <Building2 className="w-4 h-4 text-indigo-500" />
                 Bank Accounts Balance
               </span>
               <span className="text-[11px] text-slate-400 uppercase font-semibold">Bank Ledger</span>
@@ -562,7 +562,7 @@ function DashboardContent() {
             <div className="text-[22px] font-bold text-slate-900 dark:text-slate-100">
               {formatINR(kpis?.bankDistributionPendingInr)}
             </div>
-            <p className="text-[10px] text-teal-700 dark:text-teal-400 font-semibold leading-tight mt-0.5 break-words">
+            <p className="text-[10px] text-indigo-700 dark:text-indigo-400 font-semibold leading-tight mt-0.5 break-words">
               {integerToIndianWords(kpis?.bankDistributionPendingInr)}
             </p>
             <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1">
@@ -656,8 +656,8 @@ function DashboardContent() {
                     <span className="text-[13.5px] font-bold text-slate-900 dark:text-slate-100">{formatINR(d.inrVolume)}</span>
                   </div>
                   <div>
-                    <span className="text-[11px] text-teal-700 dark:text-teal-400 block uppercase tracking-wider font-semibold">Net Profit</span>
-                    <span className="text-[13.5px] font-bold text-teal-700 dark:text-teal-400">{formatAED(d.netProfit)}</span>
+                    <span className="text-[11px] text-indigo-700 dark:text-indigo-400 block uppercase tracking-wider font-semibold">Net Profit</span>
+                    <span className="text-[13.5px] font-bold text-indigo-700 dark:text-indigo-400">{formatAED(d.netProfit)}</span>
                   </div>
                 </div>
               ))
@@ -678,7 +678,7 @@ function DashboardContent() {
           </div>
           <Link
             href="/transactions"
-            className="text-[13px] font-semibold text-teal-700 dark:text-teal-400 hover:text-teal-800 flex items-center gap-1"
+            className="text-[13px] font-semibold text-indigo-700 dark:text-indigo-400 hover:text-indigo-800 flex items-center gap-1"
           >
             <span>View All</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -753,15 +753,15 @@ function DashboardContent() {
                     </td>
 
                     {/* Net Profit */}
-                    <td className="px-3 py-2.5 font-bold text-teal-700 dark:text-teal-400 font-mono whitespace-nowrap text-xs">
+                    <td className="px-3 py-2.5 font-bold text-indigo-700 dark:text-indigo-400 font-mono whitespace-nowrap text-xs">
                       {formatAED(t.net_profit_aed)}
                     </td>
 
                     {/* India Distribution */}
                     <td className="px-3 py-2.5">
                       {t.remaining_inr === 0 ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-teal-50 dark:bg-teal-950/40 text-teal-800 dark:text-teal-300 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800">
-                          <ShieldCheck className="w-3 h-3 text-teal-600 dark:text-teal-400" />
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
+                          <ShieldCheck className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
                           <span>100% Split</span>
                         </span>
                       ) : (
@@ -774,7 +774,7 @@ function DashboardContent() {
 
                     {/* Status */}
                     <td className="px-3 py-2.5">
-                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-teal-50 dark:bg-teal-950/40 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
                         {t.status}
                       </span>
                     </td>

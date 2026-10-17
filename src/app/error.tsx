@@ -40,11 +40,11 @@ export default function ErrorBoundary({
         {isDbError && (
           <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-left text-xs space-y-2">
             <div className="font-bold text-slate-800 flex items-center gap-1.5">
-              <Database className="w-3.5 h-3.5 text-teal-700" />
+              <Database className="w-3.5 h-3.5 text-indigo-700" />
               <span>How to resolve this on Vercel:</span>
             </div>
             <ol className="list-decimal list-inside text-slate-600 space-y-1 pl-1">
-              <li>Open your <strong>Vercel Dashboard</strong> ➔ select project <strong>petti-remittance</strong>.</li>
+              <li>Open your <strong>Vercel Dashboard</strong> ➔ select project <strong>accounts-remittance</strong>.</li>
               <li>Go to <strong>Settings</strong> ➔ <strong>Environment Variables</strong>.</li>
               <li>Add key <code className="bg-slate-200 px-1 py-0.5 rounded font-mono text-slate-800">DATABASE_URL</code> with your Neon PostgreSQL connection string.</li>
               <li>Redeploy your project from the Deployments tab.</li>
@@ -55,7 +55,7 @@ export default function ErrorBoundary({
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
           <button
             onClick={() => reset()}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs transition-colors shadow-sm cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white font-bold text-xs transition-colors shadow-sm cursor-pointer"
           >
             <RefreshCw className="w-4 h-4" />
             <span>Try Again</span>

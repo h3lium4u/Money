@@ -249,7 +249,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     { header: "Total Net Profit (INR)", key: "net_profit_inr", width: 22 },
     { header: "Registration Date", key: "created_date", width: 18 },
   ];
-  styleHeader(wsParty.getRow(1), "FF0F766E"); // Teal
+  styleHeader(wsParty.getRow(1), "FF6366F1"); // Teal
   wsParty.autoFilter = "A1:I1";
 
   parties.forEach((p, idx) => {

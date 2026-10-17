@@ -469,7 +469,7 @@ export default function BankDistripPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-lg bg-[#0F766E] text-white flex items-center justify-center shrink-0 shadow-sm">
+            <div className="w-9 h-9 rounded-lg bg-[#6366F1] text-white flex items-center justify-center shrink-0 shadow-sm">
               <Landmark className="w-5 h-5" />
             </div>
             <div>
@@ -480,7 +480,7 @@ export default function BankDistripPage() {
                 <span className="text-xs text-slate-500 dark:text-slate-400">
                   Authoritative Date-wise Settlement Ledger & Running Balances
                 </span>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-teal-50 dark:bg-teal-950/80 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
                   Excel Exact
                 </span>
               </div>
@@ -496,7 +496,7 @@ export default function BankDistripPage() {
               onClick={() => setActiveTab("ledger")}
               className={`px-3 py-1.5 rounded-md transition-all ${
                 activeTab === "ledger"
-                  ? "bg-white dark:bg-slate-900 text-teal-700 dark:text-teal-400 shadow-2xs font-bold"
+                  ? "bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-400 shadow-2xs font-bold"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               }`}
             >
@@ -507,7 +507,7 @@ export default function BankDistripPage() {
               onClick={() => setActiveTab("grand-total")}
               className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 ${
                 activeTab === "grand-total"
-                  ? "bg-white dark:bg-slate-900 text-teal-700 dark:text-teal-400 shadow-2xs font-bold"
+                  ? "bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-400 shadow-2xs font-bold"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               }`}
             >
@@ -521,7 +521,7 @@ export default function BankDistripPage() {
             onClick={() => setShowNewAccModal(true)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-2xs transition-colors cursor-pointer"
           >
-            <Building2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+            <Building2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
             <span className="hidden sm:inline">+ New Account</span>
           </button>
 
@@ -536,7 +536,7 @@ export default function BankDistripPage() {
               setAddError(null);
               setShowAddModal(true);
             }}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold bg-[#0F766E] hover:bg-[#0D9488] text-white shadow-sm transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold bg-[#6366F1] hover:bg-[#4F46E5] text-white shadow-sm transition-all cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             <span>+ Record Settlement</span>
@@ -545,14 +545,14 @@ export default function BankDistripPage() {
       </div>
 
       {/* Logic Callout Banner */}
-      <div className="bg-gradient-to-r from-teal-50/80 via-teal-50/50 to-teal-50/80 dark:from-teal-950/40 dark:via-teal-950/20 dark:to-teal-950/40 border border-teal-200/80 dark:border-teal-800/60 rounded-xl p-3 sm:p-4 text-xs text-slate-700 dark:text-slate-300 shadow-2xs">
+      <div className="bg-gradient-to-r from-indigo-50/80 via-indigo-50/50 to-indigo-50/80 dark:from-indigo-950/40 dark:via-indigo-950/20 dark:to-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 rounded-xl p-3 sm:p-4 text-xs text-slate-700 dark:text-slate-300 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-start gap-2.5">
-            <Calculator className="w-4 h-4 text-teal-700 dark:text-teal-400 shrink-0 mt-0.5" />
+            <Calculator className="w-4 h-4 text-indigo-700 dark:text-indigo-400 shrink-0 mt-0.5" />
             <div>
               <div className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <span>Excel Balance Formula:</span>
-                <code className="text-teal-800 dark:text-teal-300 font-mono font-bold bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800">
+                <code className="text-indigo-800 dark:text-indigo-300 font-mono font-bold bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
                   CURRENT BAL = PREVIOUS BAL + CURRENT ORDER + CURRENT COM - CURRENT PAID
                 </code>
               </div>
@@ -562,7 +562,7 @@ export default function BankDistripPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-[11px] text-teal-800 dark:text-teal-300 bg-teal-100/60 dark:bg-teal-900/40 px-2.5 py-1 rounded-lg border border-teal-200 dark:border-teal-800 self-start md:self-auto shrink-0">
+          <div className="flex items-center gap-2 text-[11px] text-indigo-800 dark:text-indigo-300 bg-indigo-100/60 dark:bg-indigo-900/40 px-2.5 py-1 rounded-lg border border-indigo-200 dark:border-indigo-800 self-start md:self-auto shrink-0">
             <Lock className="w-3 h-3" />
             <span>Single Source of Truth for Orders</span>
           </div>
@@ -606,7 +606,7 @@ export default function BankDistripPage() {
                 }}
                 className={`flex items-center gap-2.5 px-3.5 py-2 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer border ${
                   isSelected
-                    ? "bg-[#0F766E] text-white border-[#0F766E] shadow-sm font-bold"
+                    ? "bg-[#6366F1] text-white border-[#6366F1] shadow-sm font-bold"
                     : "bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
                 }`}
               >
@@ -614,14 +614,14 @@ export default function BankDistripPage() {
                 <span
                   className={`px-1.5 py-0.5 rounded text-[11px] font-mono flex items-center justify-center ${
                     isSelected
-                      ? "bg-teal-800/80 text-teal-100"
+                      ? "bg-indigo-800/80 text-indigo-100"
                       : isNeg
                       ? "bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300"
                       : "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
                   }`}
                 >
                   {loading ? (
-                    <div className={`h-4 w-12 rounded animate-pulse ${isSelected ? 'bg-teal-700' : 'bg-slate-200 dark:bg-slate-700'}`} />
+                    <div className={`h-4 w-12 rounded animate-pulse ${isSelected ? 'bg-indigo-700' : 'bg-slate-200 dark:bg-slate-700'}`} />
                   ) : (
                     formatINR(bal)
                   )}
@@ -643,7 +643,7 @@ export default function BankDistripPage() {
             <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
               <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
                 <span>GRAND ORDER</span>
-                <Layers className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                <Layers className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
               </div>
               {loading ? (
                 <div className="h-7 w-28 rounded bg-slate-200 dark:bg-slate-700 animate-pulse mt-2" />
@@ -660,7 +660,7 @@ export default function BankDistripPage() {
             <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
               <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
                 <span>GRAND COM</span>
-                <TrendingUp className="w-4 h-4 text-teal-700 dark:text-teal-400" />
+                <TrendingUp className="w-4 h-4 text-indigo-700 dark:text-indigo-400" />
               </div>
               {loading ? (
                 <div className="h-7 w-28 rounded bg-slate-200 dark:bg-slate-700 animate-pulse mt-2" />
@@ -691,19 +691,19 @@ export default function BankDistripPage() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-teal-900 to-slate-900 text-white p-4 rounded-xl border border-teal-800 shadow-md">
-              <div className="flex items-center justify-between text-xs text-teal-200 font-medium">
+            <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-4 rounded-xl border border-indigo-800 shadow-md">
+              <div className="flex items-center justify-between text-xs text-indigo-200 font-medium">
                 <span>GRAND CLOSING BAL</span>
-                <Landmark className="w-4 h-4 text-teal-300" />
+                <Landmark className="w-4 h-4 text-indigo-300" />
               </div>
               {loading ? (
-                <div className="h-7 w-32 rounded bg-teal-800 animate-pulse mt-2" />
+                <div className="h-7 w-32 rounded bg-indigo-800 animate-pulse mt-2" />
               ) : (
                 <div className="text-xl font-bold font-mono text-white mt-2">
                   {formatINR(grandTotals?.grand_balance || 0)}
                 </div>
               )}
-              <div className="text-[11px] text-teal-200/90 mt-1">
+              <div className="text-[11px] text-indigo-200/90 mt-1">
                 Sum of party closing balances (Excel Rule #9)
               </div>
             </div>
@@ -720,7 +720,7 @@ export default function BankDistripPage() {
                   Comparison across MK, SALA, SARABU / USAIN, ISMAIL, NNG, and all configured distributors
                 </p>
               </div>
-              <span className="text-xs text-teal-700 dark:text-teal-300 font-semibold bg-teal-50 dark:bg-teal-950 px-2.5 py-1 rounded-lg border border-teal-200 dark:border-teal-800">
+              <span className="text-xs text-indigo-700 dark:text-indigo-300 font-semibold bg-indigo-50 dark:bg-indigo-950 px-2.5 py-1 rounded-lg border border-indigo-200 dark:border-indigo-800">
                 {grandTotals?.distributor_summaries.length || accounts.length} Parties Active
               </span>
             </div>
@@ -755,7 +755,7 @@ export default function BankDistripPage() {
                     >
                       <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-slate-100">
                         <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0"></span>
+                          <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0"></span>
                           <span>{item.account_code}</span>
                           <span className="text-[10px] text-slate-400 font-normal">
                             ({item.account_name})
@@ -776,7 +776,7 @@ export default function BankDistripPage() {
                           className={`px-2 py-0.5 rounded text-[11px] ${
                             item.closing_balance < 0
                               ? "bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
-                              : "bg-teal-50 text-teal-800 dark:bg-teal-950 dark:text-teal-300"
+                              : "bg-indigo-50 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300"
                           }`}
                         >
                           {formatINR(item.closing_balance)}
@@ -792,7 +792,7 @@ export default function BankDistripPage() {
                             setSelectedAccount(item.account_id);
                             setActiveTab("ledger");
                           }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-semibold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950 hover:bg-teal-100 dark:hover:bg-teal-900 transition-colors"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950 hover:bg-indigo-100 dark:hover:bg-indigo-900 transition-colors"
                         >
                           <span>View Ledger</span>
                           <ArrowRight className="w-3 h-3" />
@@ -815,7 +815,7 @@ export default function BankDistripPage() {
                     <td className="py-2.5 px-3 text-right font-mono text-xs whitespace-nowrap">
                       {formatINR(grandTotals?.grand_paid || 0)}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-mono text-xs text-teal-700 dark:text-teal-300 whitespace-nowrap">
+                    <td className="py-2.5 px-3 text-right font-mono text-xs text-indigo-700 dark:text-indigo-300 whitespace-nowrap">
                       {formatINR(grandTotals?.grand_balance || 0)}
                     </td>
                     <td colSpan={2} className="py-2.5 px-3 text-right text-[11px] text-slate-500 font-normal italic">
@@ -833,10 +833,10 @@ export default function BankDistripPage() {
         <FadeIn delay={0.2}>
         <div className="space-y-6">
           {/* Today's Live Status Section */}
-          <div className="bg-gradient-to-r from-teal-500/10 via-teal-500/5 to-transparent dark:from-teal-950/40 dark:via-teal-950/20 p-4 rounded-xl border border-teal-200 dark:border-teal-800 shadow-xs space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-teal-100 dark:border-teal-900/60 pb-2.5">
+          <div className="bg-gradient-to-r from-indigo-500/10 via-indigo-500/5 to-transparent dark:from-indigo-950/40 dark:via-indigo-950/20 p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 shadow-xs space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-100 dark:border-indigo-900/60 pb-2.5">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-teal-600 animate-pulse"></span>
+                <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse"></span>
                 <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
                   Today's Live Orders & Settlement ({formatDateReadable(todayStr)}) — {activeAccount?.account_code || "Party"}
                 </h3>
@@ -846,7 +846,7 @@ export default function BankDistripPage() {
                   <button
                     type="button"
                     onClick={() => openEditModal(todayRecord)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-[#0F766E] hover:bg-[#0D9488] transition shadow-xs cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-[#6366F1] hover:bg-[#4F46E5] transition shadow-xs cursor-pointer"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
                     <span>Enter Today's COM & PAID</span>
@@ -863,7 +863,7 @@ export default function BankDistripPage() {
                       setAddError(null);
                       setShowAddModal(true);
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-[#0F766E] hover:bg-[#0D9488] transition shadow-xs cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-[#6366F1] hover:bg-[#4F46E5] transition shadow-xs cursor-pointer"
                   >
                     <PlusCircle className="w-3.5 h-3.5" />
                     <span>Record Today's Settlement</span>
@@ -873,12 +873,12 @@ export default function BankDistripPage() {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-teal-100 dark:border-teal-900/60 shadow-2xs">
+              <div className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-indigo-100 dark:border-indigo-900/60 shadow-2xs">
                 <div className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 flex items-center justify-between">
                   <span>Today's Total Order</span>
                   <Lock className="w-3 h-3 text-slate-400" />
                 </div>
-                <div className="text-lg font-bold font-mono text-teal-800 dark:text-teal-200 mt-1">
+                <div className="text-lg font-bold font-mono text-indigo-800 dark:text-indigo-200 mt-1">
                   {loading ? <div className="h-6 w-20 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" /> : formatINR(todayOrder)}
                 </div>
                 <div className="text-[10px] text-slate-400 mt-0.5">
@@ -886,10 +886,10 @@ export default function BankDistripPage() {
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-teal-100 dark:border-teal-900/60 shadow-2xs">
+              <div className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-indigo-100 dark:border-indigo-900/60 shadow-2xs">
                 <div className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 flex items-center justify-between">
                   <span>Today's Commission</span>
-                  <span className="text-[9px] px-1 rounded bg-teal-50 dark:bg-teal-950 text-teal-600 font-mono">Manual</span>
+                  <span className="text-[9px] px-1 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-600 font-mono">Manual</span>
                 </div>
                 <div className="text-lg font-bold font-mono text-slate-800 dark:text-slate-200 mt-1">
                   {loading ? <div className="h-6 w-20 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" /> : formatINR(todayCom)}
@@ -899,10 +899,10 @@ export default function BankDistripPage() {
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-teal-100 dark:border-teal-900/60 shadow-2xs">
+              <div className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-indigo-100 dark:border-indigo-900/60 shadow-2xs">
                 <div className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 flex items-center justify-between">
                   <span>Today's Paid</span>
-                  <span className="text-[9px] px-1 rounded bg-teal-50 dark:bg-teal-950 text-teal-600 font-mono">Manual</span>
+                  <span className="text-[9px] px-1 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-600 font-mono">Manual</span>
                 </div>
                 <div className="text-lg font-bold font-mono text-slate-800 dark:text-slate-200 mt-1">
                   {loading ? <div className="h-6 w-20 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" /> : formatINR(todayPaid)}
@@ -912,12 +912,12 @@ export default function BankDistripPage() {
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-teal-200 dark:border-teal-800 bg-gradient-to-br from-teal-50/50 dark:from-teal-950/50 shadow-2xs">
-                <div className="text-[10px] uppercase font-bold text-teal-800 dark:text-teal-300 flex items-center justify-between">
+              <div className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-gradient-to-br from-indigo-50/50 dark:from-indigo-950/50 shadow-2xs">
+                <div className="text-[10px] uppercase font-bold text-indigo-800 dark:text-indigo-300 flex items-center justify-between">
                   <span>Today's Running Bal</span>
-                  <Calculator className="w-3 h-3 text-teal-600" />
+                  <Calculator className="w-3 h-3 text-indigo-600" />
                 </div>
-                <div className="text-lg font-bold font-mono text-teal-700 dark:text-teal-300 mt-1">
+                <div className="text-lg font-bold font-mono text-indigo-700 dark:text-indigo-300 mt-1">
                   {loading ? <div className="h-6 w-24 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" /> : formatINR(todayBalance)}
                 </div>
                 <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
@@ -938,7 +938,7 @@ export default function BankDistripPage() {
                     Auto
                   </span>
                 </span>
-                <Layers className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                <Layers className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
               </div>
               {loading ? (
                 <div className="h-7 w-28 rounded bg-slate-200 dark:bg-slate-700 animate-pulse mt-2" />
@@ -958,11 +958,11 @@ export default function BankDistripPage() {
               <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
                 <span className="flex items-center gap-1.5">
                   <span>ALL-TIME COM</span>
-                  <span className="px-1.5 py-0.5 rounded text-[10px] bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 font-mono">
+                  <span className="px-1.5 py-0.5 rounded text-[10px] bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-mono">
                     Manual
                   </span>
                 </span>
-                <TrendingUp className="w-4 h-4 text-teal-700 dark:text-teal-400" />
+                <TrendingUp className="w-4 h-4 text-indigo-700 dark:text-indigo-400" />
               </div>
               {loading ? (
                 <div className="h-7 w-28 rounded bg-slate-200 dark:bg-slate-700 animate-pulse mt-2" />
@@ -981,7 +981,7 @@ export default function BankDistripPage() {
               <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
                 <span className="flex items-center gap-1.5">
                   <span>ALL-TIME PAID</span>
-                  <span className="px-1.5 py-0.5 rounded text-[10px] bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 font-mono">
+                  <span className="px-1.5 py-0.5 rounded text-[10px] bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-mono">
                     Manual
                   </span>
                 </span>
@@ -1000,25 +1000,25 @@ export default function BankDistripPage() {
             </div>
 
             {/* Closing Balance */}
-            <div className="bg-gradient-to-br from-teal-900 to-slate-900 text-white p-4 rounded-xl border border-teal-800 shadow-md">
-              <div className="flex items-center justify-between text-xs text-teal-200 font-medium">
+            <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-4 rounded-xl border border-indigo-800 shadow-md">
+              <div className="flex items-center justify-between text-xs text-indigo-200 font-medium">
                 <span className="tracking-wide">FINAL CLOSING BAL</span>
-                <Landmark className="w-4 h-4 text-teal-300" />
+                <Landmark className="w-4 h-4 text-indigo-300" />
               </div>
               {loading ? (
-                <div className="h-7 w-32 rounded bg-teal-800 animate-pulse mt-2" />
+                <div className="h-7 w-32 rounded bg-indigo-800 animate-pulse mt-2" />
               ) : (
                 <>
                   <div className="text-xl font-bold font-mono text-white mt-2">
                     {formatINR(closingBalance)}
                   </div>
-                  <p className="text-[10px] text-teal-200 font-medium leading-tight mt-0.5 break-words">
+                  <p className="text-[10px] text-indigo-200 font-medium leading-tight mt-0.5 break-words">
                     {integerToIndianWords(closingBalance)}
                   </p>
                 </>
               )}
-              <div className="text-[11px] text-teal-200/90 mt-1 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3 text-teal-400" />
+              <div className="text-[11px] text-indigo-200/90 mt-1 flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-indigo-400" />
                 <span>Current authoritative ledger balance</span>
               </div>
             </div>
@@ -1035,7 +1035,7 @@ export default function BankDistripPage() {
                   placeholder="Filter records by date or notes..."
                   value={searchFilter}
                   onChange={(e) => setSearchFilter(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
 
@@ -1150,7 +1150,7 @@ export default function BankDistripPage() {
                     <th className="py-2.5 px-3 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <span>RUNNING BAL (INR)</span>
-                        <Calculator className="w-3 h-3 text-teal-600 dark:text-teal-400" />
+                        <Calculator className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
                       </div>
                     </th>
                     <th className="py-2.5 px-3">Notes</th>
@@ -1161,7 +1161,7 @@ export default function BankDistripPage() {
                   {loading ? (
                     <tr>
                       <td colSpan={7} className="py-8 text-center text-slate-500">
-                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-teal-600" />
+                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-indigo-600" />
                         <span>Loading settlement records...</span>
                       </td>
                     </tr>
@@ -1187,7 +1187,7 @@ export default function BankDistripPage() {
                               setAddError(null);
                               setShowAddModal(true);
                             }}
-                            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 transition"
+                            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-700 hover:bg-indigo-800 transition"
                           >
                             <PlusCircle className="w-3.5 h-3.5" />
                             Record Settlement
@@ -1205,7 +1205,7 @@ export default function BankDistripPage() {
                           key={r.id || idx}
                           className={`transition-colors group ${
                             isTodayRow
-                              ? "bg-teal-50/50 dark:bg-teal-950/30 border-l-4 border-l-[#0F766E]"
+                              ? "bg-indigo-50/50 dark:bg-indigo-950/30 border-l-4 border-l-[#6366F1]"
                               : "hover:bg-slate-50/70 dark:hover:bg-slate-800/50"
                           }`}
                         >
@@ -1214,7 +1214,7 @@ export default function BankDistripPage() {
                             <div className="flex items-center gap-2">
                               <span>{formatDateReadable(r.record_date)}</span>
                               {isTodayRow && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#0F766E] text-white shadow-2xs">
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#6366F1] text-white shadow-2xs">
                                   TODAY
                                 </span>
                               )}
@@ -1225,7 +1225,7 @@ export default function BankDistripPage() {
                           <td className="py-2.5 px-3 text-right font-mono text-slate-800 dark:text-slate-200 whitespace-nowrap">
                             <div className="flex items-center justify-end gap-1.5">
                               {r.order_inr > 0 ? (
-                                <span className="font-semibold text-teal-950 dark:text-teal-100">{formatINR(r.order_inr)}</span>
+                                <span className="font-semibold text-indigo-950 dark:text-indigo-100">{formatINR(r.order_inr)}</span>
                               ) : (
                                 <span className="text-slate-400">₹ 0.00</span>
                               )}
@@ -1236,7 +1236,7 @@ export default function BankDistripPage() {
                           {/* COM (INR) */}
                           <td className="py-2.5 px-3 text-right font-mono text-slate-800 dark:text-slate-200 whitespace-nowrap">
                             {r.commission_inr !== 0 ? (
-                              <span className="text-teal-700 dark:text-teal-400 font-medium">
+                              <span className="text-indigo-700 dark:text-indigo-400 font-medium">
                                 {formatINR(r.commission_inr)}
                               </span>
                             ) : (
@@ -1267,7 +1267,7 @@ export default function BankDistripPage() {
                               className={`px-2 py-0.5 rounded text-[11px] ${
                                 isBalNeg
                                   ? "bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
-                                  : "bg-teal-50 text-teal-800 dark:bg-teal-950 dark:text-teal-300"
+                                  : "bg-indigo-50 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300"
                               }`}
                             >
                               {formatINR(r.balance_inr)}
@@ -1286,7 +1286,7 @@ export default function BankDistripPage() {
                                 <button
                                   type="button"
                                   onClick={() => openEditModal(r)}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold text-white bg-[#0F766E] hover:bg-[#0D9488] shadow-xs cursor-pointer transition-colors"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold text-white bg-[#6366F1] hover:bg-[#4F46E5] shadow-xs cursor-pointer transition-colors"
                                   title="Enter Commission or Payment for Today"
                                 >
                                   <Edit3 className="w-3 h-3" />
@@ -1296,7 +1296,7 @@ export default function BankDistripPage() {
                                 <button
                                   type="button"
                                   onClick={() => openEditModal(r)}
-                                  className="p-1 text-slate-500 hover:text-teal-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
+                                  className="p-1 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
                                   title="Edit Commission or Paid"
                                 >
                                   <Edit3 className="w-3.5 h-3.5" />
@@ -1334,7 +1334,7 @@ export default function BankDistripPage() {
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono text-xs">
                         <div className="flex flex-col items-end">
-                          <span className="text-teal-700 dark:text-teal-300 text-sm font-bold">
+                          <span className="text-indigo-700 dark:text-indigo-300 text-sm font-bold">
                             {formatINR(closingBalance)}
                           </span>
                           <span className="text-[10px] text-slate-500 font-normal">
@@ -1362,7 +1362,7 @@ export default function BankDistripPage() {
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                  <PlusCircle className="w-5 h-5 text-teal-600" />
+                  <PlusCircle className="w-5 h-5 text-indigo-600" />
                   <span>Record Settlement Entry</span>
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1395,7 +1395,7 @@ export default function BankDistripPage() {
                   value={addAccountId}
                   onChange={(e) => setAddAccountId(e.target.value)}
                   required
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 >
                   {accounts.map((a) => (
                     <option key={a.id} value={a.id}>
@@ -1417,7 +1417,7 @@ export default function BankDistripPage() {
                     value={addDate}
                     onChange={(e) => setAddDate(e.target.value)}
                     required
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                   <button
                     type="button"
@@ -1436,7 +1436,7 @@ export default function BankDistripPage() {
                     <Lock className="w-3.5 h-3.5 text-slate-400" />
                     <span>Auto-Linked Order (INR)</span>
                   </span>
-                  <span className="text-[10px] font-semibold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800">
+                  <span className="text-[10px] font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950 px-1.5 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
                     READ ONLY
                   </span>
                 </div>
@@ -1471,7 +1471,7 @@ export default function BankDistripPage() {
                         setAddCom(clean);
                       }
                     }}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-teal-500"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                   <span className="text-[10px] text-slate-400 mt-0.5 block">
                     Default 0 if no commission
@@ -1494,7 +1494,7 @@ export default function BankDistripPage() {
                       }
                     }}
                     required
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-teal-500"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                   <span className="text-[10px] text-slate-400 mt-0.5 block">
                     Supports negative (e.g. -56,530)
@@ -1512,13 +1512,13 @@ export default function BankDistripPage() {
                   placeholder="e.g. Bank transfer ref, settlement slip..."
                   value={addNotes}
                   onChange={(e) => setAddNotes(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
 
               {/* LIVE BALANCE PREVIEW */}
-              <div className="p-3 bg-teal-50/70 dark:bg-teal-950/40 rounded-xl border border-teal-200 dark:border-teal-800 space-y-1.5 text-[11px]">
-                <div className="font-bold text-teal-900 dark:text-teal-200 flex items-center justify-between">
+              <div className="p-3 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-xl border border-indigo-200 dark:border-indigo-800 space-y-1.5 text-[11px]">
+                <div className="font-bold text-indigo-900 dark:text-indigo-200 flex items-center justify-between">
                   <span>Balance Calculation Preview:</span>
                   <span className="font-mono text-xs">{formatINR(addCalculatedBalance)}</span>
                 </div>
@@ -1527,7 +1527,7 @@ export default function BankDistripPage() {
                   <div>+ Order: {formatINR(addOrder)}</div>
                   <div>+ Commission: {formatINR(addComNum)}</div>
                   <div>- Paid: {formatINR(addPaidNum)}</div>
-                  <div className="border-t border-teal-200 dark:border-teal-800 pt-0.5 font-bold text-teal-800 dark:text-teal-300">
+                  <div className="border-t border-indigo-200 dark:border-indigo-800 pt-0.5 font-bold text-indigo-800 dark:text-indigo-300">
                     = Resulting Bal: {formatINR(addCalculatedBalance)}
                   </div>
                 </div>
@@ -1545,7 +1545,7 @@ export default function BankDistripPage() {
                 <button
                   type="submit"
                   disabled={addSubmitting}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold bg-[#0F766E] hover:bg-[#0D9488] text-white shadow-sm cursor-pointer disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold bg-[#6366F1] hover:bg-[#4F46E5] text-white shadow-sm cursor-pointer disabled:opacity-50"
                 >
                   {addSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <PlusCircle className="w-4 h-4" />}
                   <span>Save Settlement</span>
@@ -1563,7 +1563,7 @@ export default function BankDistripPage() {
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                  <Edit3 className="w-5 h-5 text-teal-600" />
+                  <Edit3 className="w-5 h-5 text-indigo-600" />
                   <span>Edit Settlement Entry</span>
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1599,7 +1599,7 @@ export default function BankDistripPage() {
                     value={editDateVal}
                     onChange={(e) => setEditDateVal(e.target.value)}
                     required
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                   <button
                     type="button"
@@ -1618,7 +1618,7 @@ export default function BankDistripPage() {
                     <Lock className="w-3.5 h-3.5 text-slate-400" />
                     <span>Auto-Linked Order (INR)</span>
                   </span>
-                  <span className="text-[10px] font-semibold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800">
+                  <span className="text-[10px] font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950 px-1.5 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
                     READ ONLY
                   </span>
                 </div>
@@ -1646,7 +1646,7 @@ export default function BankDistripPage() {
                         setEditCom(clean);
                       }
                     }}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-teal-500"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                 </div>
 
@@ -1665,7 +1665,7 @@ export default function BankDistripPage() {
                       }
                     }}
                     required
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-teal-500"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                   <span className="text-[10px] text-slate-400 mt-0.5 block">
                     Supports negative (e.g. -56,530)
@@ -1682,22 +1682,22 @@ export default function BankDistripPage() {
                   type="text"
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
 
               {/* LIVE BALANCE PREVIEW */}
-              <div className="p-3 bg-teal-50/70 dark:bg-teal-950/40 rounded-xl border border-teal-200 dark:border-teal-800 space-y-1.5 text-[11px]">
-                <div className="font-bold text-teal-900 dark:text-teal-200 flex items-center justify-between">
+              <div className="p-3 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-xl border border-indigo-200 dark:border-indigo-800 space-y-1.5 text-[11px]">
+                <div className="font-bold text-indigo-900 dark:text-indigo-200 flex items-center justify-between">
                   <span>Excel Balance Formula:</span>
-                  <span className="font-mono text-xs font-bold text-teal-800 dark:text-teal-300">{formatINR(editCalculatedBalance)}</span>
+                  <span className="font-mono text-xs font-bold text-indigo-800 dark:text-indigo-300">{formatINR(editCalculatedBalance)}</span>
                 </div>
                 <div className="text-slate-600 dark:text-slate-400 font-mono space-y-0.5">
                   <div>Prev Bal: {formatINR(editPrevBal)}</div>
                   <div>+ Order: {formatINR(editOrder)}</div>
                   <div>+ Commission: {formatINR(editComNum)}</div>
                   <div>- Paid: {formatINR(editPaidNum)}</div>
-                  <div className="border-t border-teal-200 dark:border-teal-800 pt-0.5 font-bold text-teal-800 dark:text-teal-300">
+                  <div className="border-t border-indigo-200 dark:border-indigo-800 pt-0.5 font-bold text-indigo-800 dark:text-indigo-300">
                     = (Prev Bal + Order + COM - Paid) = {formatINR(editCalculatedBalance)}
                   </div>
                 </div>
@@ -1722,7 +1722,7 @@ export default function BankDistripPage() {
                 <button
                   type="submit"
                   disabled={editSubmitting}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold bg-[#0F766E] hover:bg-[#0D9488] text-white shadow-sm cursor-pointer disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold bg-[#6366F1] hover:bg-[#4F46E5] text-white shadow-sm cursor-pointer disabled:opacity-50"
                 >
                   {editSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                   <span>Update Settlement</span>
@@ -1790,7 +1790,7 @@ export default function BankDistripPage() {
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-teal-600" />
+                  <Building2 className="w-5 h-5 text-indigo-600" />
                   <span>Register Distributor Account</span>
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1824,7 +1824,7 @@ export default function BankDistripPage() {
                   value={newAccCode}
                   onChange={(e) => setNewAccCode(e.target.value.toUpperCase())}
                   required
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-bold focus:outline-none focus:ring-1 focus:ring-teal-500"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
 
@@ -1838,7 +1838,7 @@ export default function BankDistripPage() {
                   value={newAccName}
                   onChange={(e) => setNewAccName(e.target.value)}
                   required
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
 
@@ -1851,7 +1851,7 @@ export default function BankDistripPage() {
                   placeholder="e.g. HDFC Bank, ICICI..."
                   value={newAccBank}
                   onChange={(e) => setNewAccBank(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
 
@@ -1864,7 +1864,7 @@ export default function BankDistripPage() {
                   placeholder="e.g. 50100234891"
                   value={newAccNumber}
                   onChange={(e) => setNewAccNumber(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
 
@@ -1879,7 +1879,7 @@ export default function BankDistripPage() {
                 <button
                   type="submit"
                   disabled={newAccSubmitting}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold bg-[#0F766E] hover:bg-[#0D9488] text-white shadow-sm cursor-pointer disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold bg-[#6366F1] hover:bg-[#4F46E5] text-white shadow-sm cursor-pointer disabled:opacity-50"
                 >
                   {newAccSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Building2 className="w-4 h-4" />}
                   <span>Register Account</span>
