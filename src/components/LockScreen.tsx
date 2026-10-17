@@ -29,7 +29,7 @@ export default function LockScreen() {
     setLoading(false);
 
     if (!result.success) {
-      setErrorMsg(result.error ? `${result.error} (Default password is 12345678)` : "Incorrect password. Note: The default master password is 12345678.");
+      setErrorMsg(result.error || "Incorrect password. Please try again.");
     }
   };
 
@@ -103,9 +103,6 @@ export default function LockScreen() {
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
-            </div>
-            <div className="flex items-center justify-between mt-1.5 px-0.5 text-[11px] text-slate-400 dark:text-slate-500">
-              <span>Default password: <code className="font-mono text-indigo-600 dark:text-indigo-400 font-semibold">12345678</code></span>
             </div>
           </div>
 
