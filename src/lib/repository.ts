@@ -1018,6 +1018,9 @@ export async function createTransaction(data: {
       const balanceInr = s.balance_inr !== undefined ? Number(s.balance_inr) : roundTo(splitInr - paidInr, 3);
       const splitStatus = balanceInr <= 0 ? 'SETTLED' : (paidInr > 0 ? 'PARTIAL' : 'ALLOCATED');
       const splitId = crypto.randomUUID();
+      const aedEq = baseRate > 0
+        ? (baseConv === "AED_PER_1000" ? roundTo((splitInr * baseRate) / 1000, 3) : roundTo(splitInr / baseRate, 3))
+        : 0;
       await execute(`
         INSERT INTO distribution_splits (
           id, transaction_id, distributor_id, split_date,
@@ -1030,7 +1033,7 @@ export async function createTransaction(data: {
         )
       `, [
         splitId, id, s.distributor_id, data.transaction_date,
-        splitInr, baseRate, baseRate > 0 ? roundTo(splitInr / baseRate, 3) : 0,
+        splitInr, baseRate, aedEq,
         paidInr, balanceInr, splitStatus, s.notes || null
       ]);
     }
@@ -1282,7 +1285,10 @@ export async function createDistributionSplit(data: {
 
   const id = crypto.randomUUID();
   const wholesaleRate = data.wholesale_rate || txn.base_rate;
-  const aedEq = wholesaleRate ? roundTo(data.inr_amount / wholesaleRate, 3) : 0;
+  const baseRateConvention = txn.base_rate_convention || "INR_PER_AED";
+  const aedEq = wholesaleRate > 0
+    ? (baseRateConvention === "AED_PER_1000" ? roundTo((Number(data.inr_amount) * wholesaleRate) / 1000, 3) : roundTo(Number(data.inr_amount) / wholesaleRate, 3))
+    : 0;
 
   await execute(`
     INSERT INTO distribution_splits (
@@ -2363,6 +2369,9 @@ export async function updateTransaction(id: string, data: {
     id?: string;
     distributor_id: string;
     inr_amount: number;
+    paid_amount_inr?: number;
+    balance_inr?: number;
+    status?: string;
     notes?: string;
   }>;
 }): Promise<TransactionRecord> {
@@ -2484,11 +2493,40 @@ export async function updateTransaction(id: string, data: {
       throw new Error(`Total distribution (₹${rawSum.toLocaleString()}) cannot exceed customer order (₹${inrAmount.toLocaleString()})`);
     }
 
+    const existingSplits = await query<DistributionSplitRecord>(
+      `SELECT * FROM distribution_splits WHERE transaction_id = $1`,
+      [id]
+    );
+
+    const availableExistingSplits = [...existingSplits];
     const splitsToInsert = [...data.splits];
     await execute(`DELETE FROM distribution_splits WHERE transaction_id = $1`, [id]);
     for (const s of splitsToInsert) {
-      const splitId = s.id && !s.id.startsWith("new-") ? s.id : crypto.randomUUID();
-      const aedEq = baseRate > 0 ? roundTo(s.inr_amount / baseRate, 3) : 0;
+      let matchIdx = -1;
+      if (s.id && !s.id.startsWith("new-")) {
+        matchIdx = availableExistingSplits.findIndex(es => es.id === s.id);
+      }
+      if (matchIdx === -1) {
+        matchIdx = availableExistingSplits.findIndex(es => es.distributor_id === s.distributor_id);
+      }
+      const existingMatch = matchIdx >= 0 ? availableExistingSplits.splice(matchIdx, 1)[0] : null;
+
+      const splitId = s.id && !s.id.startsWith("new-") ? s.id : (existingMatch ? existingMatch.id : crypto.randomUUID());
+      const splitInr = roundTo(Number(s.inr_amount), 3);
+      const aedEq = baseRate > 0
+        ? (baseConv === "AED_PER_1000" ? roundTo((splitInr * baseRate) / 1000, 3) : roundTo(splitInr / baseRate, 3))
+        : 0;
+
+      const paidInr = s.paid_amount_inr !== undefined
+        ? Number(s.paid_amount_inr)
+        : (existingMatch ? Number(existingMatch.paid_amount_inr || 0) : 0.00);
+      const balanceInr = s.balance_inr !== undefined
+        ? Number(s.balance_inr)
+        : roundTo(splitInr - paidInr, 3);
+      const splitStatus = balanceInr <= 0
+        ? 'SETTLED'
+        : (paidInr > 0 ? 'PARTIAL' : (existingMatch ? existingMatch.status : 'ALLOCATED'));
+
       await execute(`
         INSERT INTO distribution_splits (
           id, transaction_id, distributor_id, split_date,
@@ -2496,17 +2534,23 @@ export async function updateTransaction(id: string, data: {
           balance_inr, status, notes
         ) VALUES (
           $1, $2, $3, $4,
-          $5, $6, $7, 0.00,
-          $5, 'ALLOCATED', $8
+          $5, $6, $7, $8,
+          $9, $10, $11
         )
       `, [
         splitId, id, s.distributor_id, transactionDate,
-        roundTo(s.inr_amount, 3), baseRate, aedEq, s.notes || null
+        splitInr, baseRate, aedEq, paidInr,
+        balanceInr, splitStatus, s.notes || (existingMatch ? existingMatch.notes : null)
       ]);
     }
 
-    const distIds = [...new Set(data.splits.map(s => s.distributor_id))];
-    for (const did of distIds) {
+    const allAffectedDistIds = [
+      ...new Set([
+        ...data.splits.map(s => s.distributor_id),
+        ...existingSplits.map(es => es.distributor_id)
+      ])
+    ];
+    for (const did of allAffectedDistIds) {
       await recalculateBankDistripBalances(did).catch(err => console.error("Error updating bank distrip on txn update:", err));
     }
   }
@@ -2623,18 +2667,22 @@ export async function updateDistributionSplit(id: string, data: {
     throw new Error(`New split amount (₹${newInr.toLocaleString()}) exceeds available unallocated order balance (₹${maxAllowed.toLocaleString()}).`);
   }
 
-  const aedEq = wholesaleRate ? roundTo(newInr / wholesaleRate, 3) : 0;
+  const baseRateConvention = txn.base_rate_convention || "INR_PER_AED";
+  const aedEq = wholesaleRate > 0
+    ? (baseRateConvention === "AED_PER_1000" ? roundTo((newInr * wholesaleRate) / 1000, 3) : roundTo(newInr / wholesaleRate, 3))
+    : 0;
   const paidInr = Number(existingSplit.paid_amount_inr || 0);
   const balanceInr = roundTo(newInr - paidInr, 3);
+  const splitStatus = balanceInr <= 0 ? 'SETTLED' : (paidInr > 0 ? 'PARTIAL' : 'ALLOCATED');
 
   await execute(`
     UPDATE distribution_splits
     SET distributor_id = $1, split_date = $2, inr_amount = $3,
-        wholesale_rate = $4, aed_equivalent = $5, balance_inr = $6, notes = $7
-    WHERE id = $8
+        wholesale_rate = $4, aed_equivalent = $5, balance_inr = $6, status = $7, notes = $8
+    WHERE id = $9
   `, [
     distId, splitDate, roundTo(newInr, 3),
-    wholesaleRate, aedEq, balanceInr, notes || null,
+    wholesaleRate, aedEq, balanceInr, splitStatus, notes || null,
     id
   ]);
 

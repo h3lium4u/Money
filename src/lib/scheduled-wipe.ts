@@ -282,28 +282,19 @@ export async function executeWipeNow(wipeId?: string, forceScope?: WipeScope): P
     try { await execute(`DELETE FROM bank_distrip_records`); } catch (err) { console.warn("Delete bank records:", err); }
     try { await execute(`DELETE FROM wholesale_settlements`); } catch (err) { console.warn("Delete wholesale settlements:", err); }
 
-    // Clean temporary customer accounts, preserve master parties
+    // Preserve all CUSTOMER and PARTY entity records (do not delete customer entity types)
     try {
       await execute(`
         DELETE FROM customers 
-        WHERE entity_type != 'PARTY' OR entity_type IS NULL
+        WHERE entity_type NOT IN ('PARTY', 'CUSTOMER') AND entity_type IS NOT NULL
       `);
-    } catch (err) { console.warn("Delete non-party customers:", err); }
+    } catch (err) { console.warn("Delete invalid customers:", err); }
 
-    // Reset balances on preserved master parties
-    try {
-      await execute(`
-        UPDATE customers 
-        SET total_inr = 0, total_aed = 0, total_paid = 0, outstanding_balance = 0 
-        WHERE entity_type = 'PARTY'
-      `);
-    } catch (err) { console.warn("Reset party totals:", err); }
-
-    // Remove any test distributors, keep official distributors
+    // Preserve active distributors, only remove inactive test entries
     try {
       await execute(`
         DELETE FROM distributors 
-        WHERE code NOT IN ('HAJA', 'MK', 'NF2', 'SALA', 'SARAB')
+        WHERE status != 'ACTIVE' AND code NOT IN ('HAJA', 'MK', 'NF2', 'SALA', 'SARAB')
       `);
     } catch (err) { console.warn("Clean distributors:", err); }
 
@@ -321,13 +312,13 @@ export async function executeWipeNow(wipeId?: string, forceScope?: WipeScope): P
     try {
       await execute(`
         DELETE FROM distribution_splits 
-        WHERE transaction_id IN (SELECT id FROM transactions WHERE date < $1)
+        WHERE transaction_id IN (SELECT id FROM transactions WHERE transaction_date < $1)
       `, [cutoffDate]);
     } catch (err) { console.warn("Delete old splits:", err); }
 
     // 2. Delete transactions older than cutoff
     try {
-      await execute(`DELETE FROM transactions WHERE date < $1`, [cutoffDate]);
+      await execute(`DELETE FROM transactions WHERE transaction_date < $1`, [cutoffDate]);
     } catch (err) { console.warn("Delete old transactions:", err); }
 
     // 3. Delete customer payments older than cutoff
@@ -337,39 +328,13 @@ export async function executeWipeNow(wipeId?: string, forceScope?: WipeScope): P
 
     // 4. Delete bank distrip records older than cutoff
     try {
-      await execute(`DELETE FROM bank_distrip_records WHERE date < $1`, [cutoffDate]);
+      await execute(`DELETE FROM bank_distrip_records WHERE record_date < $1`, [cutoffDate]);
     } catch (err) { console.warn("Delete old bank records:", err); }
 
     // 5. Delete wholesale settlements older than cutoff
     try {
       await execute(`DELETE FROM wholesale_settlements WHERE settlement_date < $1`, [cutoffDate]);
     } catch (err) { console.warn("Delete old settlements:", err); }
-
-    // 6. Recalculate customer balances from remaining transactions and payments
-    try {
-      await execute(`
-        UPDATE customers c
-        SET 
-          total_inr = COALESCE((SELECT SUM(inr_amount) FROM transactions WHERE customer_id = c.id AND status = 'CONFIRMED'), 0),
-          total_aed = COALESCE((SELECT SUM(aed_amount) FROM transactions WHERE customer_id = c.id AND status = 'CONFIRMED'), 0),
-          total_paid = COALESCE((SELECT SUM(amount_aed) FROM customer_payments WHERE customer_id = c.id), 0),
-          outstanding_balance = COALESCE((SELECT SUM(aed_amount) FROM transactions WHERE customer_id = c.id AND status = 'CONFIRMED'), 0) - COALESCE((SELECT SUM(amount_aed) FROM customer_payments WHERE customer_id = c.id), 0)
-        WHERE c.entity_type = 'CUSTOMER'
-      `);
-    } catch (err) { console.warn("Recalculate customer totals:", err); }
-
-    // 7. Recalculate party balances
-    try {
-      await execute(`
-        UPDATE customers c
-        SET 
-          total_inr = COALESCE((SELECT SUM(inr_amount) FROM transactions WHERE customer_id = c.id AND status = 'CONFIRMED'), 0),
-          total_aed = COALESCE((SELECT SUM(aed_amount) FROM transactions WHERE customer_id = c.id AND status = 'CONFIRMED'), 0),
-          total_paid = COALESCE((SELECT SUM(amount_aed) FROM wholesale_settlements WHERE party_id = c.id), 0),
-          outstanding_balance = COALESCE((SELECT SUM(aed_amount) FROM transactions WHERE customer_id = c.id AND status = 'CONFIRMED'), 0) - COALESCE((SELECT SUM(amount_aed) FROM wholesale_settlements WHERE party_id = c.id), 0)
-        WHERE c.entity_type = 'PARTY'
-      `);
-    } catch (err) { console.warn("Recalculate party totals:", err); }
   }
 
   // Invalidate in-memory caches

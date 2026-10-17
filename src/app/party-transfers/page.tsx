@@ -38,7 +38,12 @@ import {
   getStartOfWeekDateString,
   getStartOfMonthDateString,
 } from "@/lib/date-utils";
-import { numberToIndianWords } from "@/lib/number-to-words";
+import {
+  numberToIndianWords,
+  integerToIndianWords,
+  formatINR,
+  formatAED,
+} from "@/lib/number-to-words";
 
 interface Party {
   id: string;
@@ -171,16 +176,6 @@ function PartyTransfersContent() {
   const [savingExtraParty, setSavingExtraParty] = useState(false);
 
   const newDateRef = useRef<HTMLInputElement>(null);
-
-  const formatINR = (val?: number) => {
-    if (val === undefined || val === null || isNaN(val)) return "₹0.000";
-    return "₹ " + Number(val).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
-  };
-
-  const formatAED = (val?: number) => {
-    if (val === undefined || val === null || isNaN(val)) return "0.000 AED";
-    return Number(val).toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + " AED";
-  };
 
   async function loadData(isBackground = false) {
     if (!isBackground && !clientPartyTransfersCache) {
@@ -858,9 +853,16 @@ function PartyTransfersContent() {
           {loading ? (
             <div className="h-7 w-28 rounded bg-emerald-200/50 dark:bg-emerald-900/50 animate-pulse mt-2" />
           ) : (
-            <div className="mt-2 font-mono font-bold text-lg text-teal-900 dark:text-teal-100 truncate">
-              {currencyFilter === "AED" ? formatAED(totalPaidAedAll) : formatINR(totalIndiaAdvanceGiven)}
-            </div>
+            <>
+              <div className="mt-2 font-mono font-bold text-lg text-teal-900 dark:text-teal-100 truncate">
+                {currencyFilter === "AED" ? formatAED(totalPaidAedAll) : formatINR(totalIndiaAdvanceGiven)}
+              </div>
+              {currencyFilter !== "AED" && (
+                <p className="text-[10px] text-teal-700 dark:text-teal-400 font-semibold leading-tight mt-0.5 break-words">
+                  {integerToIndianWords(totalIndiaAdvanceGiven)}
+                </p>
+              )}
+            </>
           )}
           {loading ? (
             <div className="h-3 w-32 rounded bg-emerald-200/50 dark:bg-emerald-900/50 animate-pulse mt-1" />
@@ -902,9 +904,16 @@ function PartyTransfersContent() {
           {loading ? (
             <div className="h-7 w-28 rounded bg-slate-200 dark:bg-slate-700 animate-pulse mt-2" />
           ) : (
-            <div className="mt-2 font-mono font-bold text-lg text-slate-900 dark:text-slate-100 truncate">
-              {currencyFilter === "AED" ? formatAED(totalAedCharged) : formatINR(totalInrBilledAll)}
-            </div>
+            <>
+              <div className="mt-2 font-mono font-bold text-lg text-slate-900 dark:text-slate-100 truncate">
+                {currencyFilter === "AED" ? formatAED(totalAedCharged) : formatINR(totalInrBilledAll)}
+              </div>
+              {currencyFilter !== "AED" && (
+                <p className="text-[10px] text-teal-700 dark:text-teal-400 font-semibold leading-tight mt-0.5 break-words">
+                  {integerToIndianWords(totalInrBilledAll)}
+                </p>
+              )}
+            </>
           )}
           {loading ? (
             <div className="h-3 w-24 rounded bg-slate-200 dark:bg-slate-700 animate-pulse mt-1" />
@@ -1163,7 +1172,7 @@ function PartyTransfersContent() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+          <table className="w-full min-w-[950px] text-left border-collapse text-xs">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-800 text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
                 <th className="px-3 py-3 w-[15%]">TXN ID / Date</th>
@@ -1267,7 +1276,7 @@ function PartyTransfersContent() {
                           </Link>
                         </div>
                         <div className="flex items-center gap-1 mt-0.5">
-                          <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold border ${
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold border ${
                             isInd
                               ? "bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800"
                               : "bg-teal-50 dark:bg-emerald-950 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-emerald-800"
@@ -1287,11 +1296,19 @@ function PartyTransfersContent() {
                         <div className="font-bold text-slate-900 dark:text-slate-100 text-xs whitespace-nowrap">
                           {isInd ? formatINR(t.inr_amount) : formatAED(t.aed_amount)}
                         </div>
+                        {isInd && Number(t.inr_amount) > 0 && (
+                          <div
+                            className="text-[10px] text-slate-500 font-normal truncate max-w-[130px]"
+                            title={integerToIndianWords(t.inr_amount)}
+                          >
+                            {integerToIndianWords(t.inr_amount)}
+                          </div>
+                        )}
                         <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                           {isInd ? (
                             `Rate: ${t.customer_rate?.toFixed(3)}`
                           ) : (
-                            <span>Rate: {t.customer_rate?.toFixed(3)} <span className="text-[10px] opacity-75">(₹{t.inr_amount?.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })})</span></span>
+                            <span>Rate: {t.customer_rate?.toFixed(3)} <span className="text-[10px] opacity-75">({formatINR(t.inr_amount)})</span></span>
                           )}
                         </div>
                       </td>
@@ -1316,7 +1333,7 @@ function PartyTransfersContent() {
                           {isInd ? formatINR(getTransferNetProfitInr(t)) : formatAED(t.net_profit_aed)}
                         </div>
                         <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
-                          {isInd ? `Margin: ₹${getTransferNetProfitInr(t).toFixed(3)}` : formatINR(getTransferNetProfitInr(t))}
+                          {isInd ? `Margin: ${formatINR(getTransferNetProfitInr(t))}` : formatINR(getTransferNetProfitInr(t))}
                         </div>
                       </td>
 
@@ -1358,7 +1375,7 @@ function PartyTransfersContent() {
                           <div className="space-y-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span
-                                className={`inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider ${
+                                className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
                                   t.status === "CONFIRMED"
                                     ? isFullySettled
                                       ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
@@ -1891,7 +1908,7 @@ function PartyTransfersContent() {
                 <span className="text-slate-500">Party:</span>
                 <span className="font-bold text-teal-900 flex items-center gap-1.5">
                   <span>{parties.find((p) => p.id === newPartyId)?.name || "Selected Party"}</span>
-                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold border ${
+                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${
                     effectiveCurrency === "AED"
                       ? "bg-teal-50 text-teal-700 border-teal-200"
                       : "bg-orange-50 text-orange-700 border-orange-200"
@@ -2208,7 +2225,7 @@ function PartyTransfersContent() {
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1 flex items-center justify-between">
                   <span>{editCurrencyMode === "AED" ? "AED Order Amount (AED)" : "Advance Transfer Amount (₹)"}</span>
-                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold border ${
+                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${
                     editCurrencyMode === "AED"
                       ? "bg-teal-50 text-teal-700 border-teal-200"
                       : "bg-orange-50 text-orange-700 border-orange-200"

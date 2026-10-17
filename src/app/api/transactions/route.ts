@@ -12,7 +12,7 @@ const createSchema = z.object({
   customer_rate_convention: z.enum(["AED_PER_1000", "INR_PER_AED"]).default("AED_PER_1000"),
   base_rate: z.number().positive("Base rate must be positive").optional(),
   wholesale_rate: z.number().positive().optional(),
-  base_rate_convention: z.enum(["AED_PER_1000", "INR_PER_AED"]).default("AED_PER_1000"),
+  base_rate_convention: z.enum(["AED_PER_1000", "INR_PER_AED"]).default("INR_PER_AED"),
   paid_amount: z.number().min(0, "Paid amount cannot be negative").optional(),
   paid_aed: z.number().min(0).optional(),
   delivery_charge_pct: z.number().min(0).optional(),

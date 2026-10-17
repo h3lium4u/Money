@@ -112,12 +112,14 @@ export async function changeMasterPassword(
 }
 
 /**
- * Generates a signed session token.
+ * Generates a signed session token with 24-hour expiration.
  */
 export function generateSessionToken(): string {
+  const now = Date.now();
   const payload = {
     auth: true,
-    iat: Date.now(),
+    iat: now,
+    exp: now + 24 * 60 * 60 * 1000,
     nonce: crypto.randomBytes(16).toString("hex")
   };
   const secret = process.env.AUTH_SECRET || "petti-remittance-secure-session-salt-2026";
@@ -127,11 +129,14 @@ export function generateSessionToken(): string {
 }
 
 /**
- * Validates a signed session token.
+ * Validates a signed session token and checks 24-hour expiration.
  */
 export function validateSessionToken(token?: string | null): boolean {
-  if (!token || typeof token !== "string" || !token.includes(".")) return false;
-  const [data, signature] = token.split(".");
+  if (!token || typeof token !== "string") return false;
+  const cleanToken = token.replace(/^"(.*)"$/, "$1").trim();
+  const parts = cleanToken.split(".");
+  if (parts.length !== 2) return false;
+  const [data, signature] = parts;
   if (!data || !signature) return false;
 
   const secret = process.env.AUTH_SECRET || "petti-remittance-secure-session-salt-2026";
@@ -145,7 +150,20 @@ export function validateSessionToken(token?: string | null): boolean {
 
   try {
     const payload = JSON.parse(Buffer.from(data, "base64url").toString("utf-8"));
-    return payload && payload.auth === true;
+    if (!payload || payload.auth !== true) return false;
+
+    const now = Date.now();
+    const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
+    if (typeof payload.exp === "number") {
+      if (now > payload.exp) return false;
+    } else if (typeof payload.iat === "number") {
+      if (now - payload.iat > TWENTY_FOUR_HOURS_MS) return false;
+    } else {
+      return false;
+    }
+
+    return true;
   } catch {
     return false;
   }

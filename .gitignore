@@ -44,3 +44,6 @@ data/test_export.xlsx
 # runtime state files
 data/scheduled_wipe_state.json
 
+# local database backups
+/backups/
+

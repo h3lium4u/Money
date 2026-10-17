@@ -26,6 +26,7 @@ import {
   Filter,
 } from "lucide-react";
 import { getTodayDateString } from "@/lib/date-utils";
+import { formatINR, formatAED, formatRate, integerToIndianWords } from "@/lib/number-to-words";
 import { FadeIn, PageTransition, StaggerContainer, StaggerItem } from "@/components/AnimatedLayout";
 
 interface BankAccount {
@@ -449,18 +450,6 @@ export default function BankDistripPage() {
     }
   }
 
-  // Indian currency formatting (preserves negative values)
-  function formatINR(val?: number) {
-    if (val === undefined || val === null || isNaN(val)) return "₹ 0.000";
-    const isNegative = val < 0;
-    const abs = Math.abs(val);
-    const formatted = abs.toLocaleString("en-IN", {
-      minimumFractionDigits: 3,
-      maximumFractionDigits: 3,
-    });
-    return isNegative ? `-₹ ${formatted}` : `₹ ${formatted}`;
-  }
-
   // Format date readable (e.g. 2026-05-03 -> 03-May-2026)
   function formatDateReadable(dateStr: string) {
     if (!dateStr) return "-";
@@ -737,7 +726,7 @@ export default function BankDistripPage() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="w-full min-w-[950px] text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800 font-semibold uppercase tracking-wider text-[10px]">
                     <th className="py-2.5 px-3">Party / Distributor</th>
@@ -945,7 +934,7 @@ export default function BankDistripPage() {
               <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
                 <span className="flex items-center gap-1.5">
                   <span>ALL-TIME ORDERS</span>
-                  <span className="px-1.5 py-0.2 rounded text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono">
+                  <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono">
                     Auto
                   </span>
                 </span>
@@ -969,7 +958,7 @@ export default function BankDistripPage() {
               <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
                 <span className="flex items-center gap-1.5">
                   <span>ALL-TIME COM</span>
-                  <span className="px-1.5 py-0.2 rounded text-[10px] bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 font-mono">
+                  <span className="px-1.5 py-0.5 rounded text-[10px] bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 font-mono">
                     Manual
                   </span>
                 </span>
@@ -992,7 +981,7 @@ export default function BankDistripPage() {
               <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
                 <span className="flex items-center gap-1.5">
                   <span>ALL-TIME PAID</span>
-                  <span className="px-1.5 py-0.2 rounded text-[10px] bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 font-mono">
+                  <span className="px-1.5 py-0.5 rounded text-[10px] bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 font-mono">
                     Manual
                   </span>
                 </span>
@@ -1019,9 +1008,14 @@ export default function BankDistripPage() {
               {loading ? (
                 <div className="h-7 w-32 rounded bg-teal-800 animate-pulse mt-2" />
               ) : (
-                <div className="text-xl font-bold font-mono text-white mt-2">
-                  {formatINR(closingBalance)}
-                </div>
+                <>
+                  <div className="text-xl font-bold font-mono text-white mt-2">
+                    {formatINR(closingBalance)}
+                  </div>
+                  <p className="text-[10px] text-teal-200 font-medium leading-tight mt-0.5 break-words">
+                    {integerToIndianWords(closingBalance)}
+                  </p>
+                </>
               )}
               <div className="text-[11px] text-teal-200/90 mt-1 flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3 text-teal-400" />
@@ -1139,7 +1133,7 @@ export default function BankDistripPage() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="w-full min-w-[950px] text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800 font-semibold uppercase tracking-wider text-[10px]">
                     <th className="py-2.5 px-3">Date</th>

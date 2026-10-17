@@ -29,6 +29,7 @@ import {
   getStartOfYearDateString,
 } from "@/lib/date-utils";
 import { downloadMasterExcel } from "@/lib/export-utils";
+import { formatINR, formatAED, formatRate, integerToIndianWords } from "@/lib/number-to-words";
 
 function SkeletonCard() {
   return (
@@ -185,12 +186,6 @@ function DashboardContent() {
       setLoading(false);
     }
   }
-
-  const formatINR = (val?: number) =>
-    `₹ ${(val || 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`;
-
-  const formatAED = (val?: number) =>
-    `${(val || 0).toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED`;
 
   return (
     <PageTransition>
@@ -383,6 +378,9 @@ function DashboardContent() {
               <div className="text-[26px] font-bold text-slate-900 dark:text-slate-100" style={{ fontFamily: '"Helvetica Neue", Arial, sans-serif', letterSpacing: "-0.02em" }}>
                 {formatINR(timeframe === "today" ? kpis?.todayInr : kpis?.totalInrProcessed)}
               </div>
+              <p className="text-[11px] text-teal-700 dark:text-teal-400 font-semibold leading-tight mt-0.5 break-words">
+                {integerToIndianWords(timeframe === "today" ? kpis?.todayInr : kpis?.totalInrProcessed)}
+              </p>
               <p className="text-[12px] mt-1 text-slate-400 dark:text-slate-400">India orders received from Dubai customers</p>
             </div>
           </div>
@@ -542,6 +540,9 @@ function DashboardContent() {
             <div className="text-[22px] font-bold text-amber-600 dark:text-amber-400">
               {formatINR(kpis?.indiaDistributionPendingInr)}
             </div>
+            <p className="text-[10px] text-amber-800 dark:text-amber-400 font-semibold leading-tight mt-0.5 break-words">
+              {integerToIndianWords(kpis?.indiaDistributionPendingInr)}
+            </p>
             <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1">
               Customer orders waiting to be allocated to India parties
             </p>
@@ -561,6 +562,9 @@ function DashboardContent() {
             <div className="text-[22px] font-bold text-slate-900 dark:text-slate-100">
               {formatINR(kpis?.bankDistributionPendingInr)}
             </div>
+            <p className="text-[10px] text-teal-700 dark:text-teal-400 font-semibold leading-tight mt-0.5 break-words">
+              {integerToIndianWords(kpis?.bankDistributionPendingInr)}
+            </p>
             <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1">
               Net running balance across bank accounts (MK, SALA, etc.)
             </p>

@@ -25,9 +25,14 @@ import {
   Split,
   FileSpreadsheet,
 } from "lucide-react";
-import { downloadMasterExcel } from "@/lib/export-utils";
-import { numberToIndianWords } from "@/lib/number-to-words";
+import {
+  numberToIndianWords,
+  integerToIndianWords,
+  formatINR,
+  formatAED,
+} from "@/lib/number-to-words";
 import { generateTransactionReceipt } from "@/lib/pdf-generator";
+import { downloadMasterExcel } from "@/lib/export-utils";
 import {
   getTodayDateString,
   getYesterdayDateString,
@@ -378,11 +383,11 @@ function CustomerRemittancesContent() {
     if (Math.abs(diff) > 0.001) {
       if (diff > 0) {
         setEditError(
-          `Total splits (₹${totalEditSplits.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}) is less than order amount (₹${parsedEditInr.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}). Remaining unallocated: ₹${diff.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}.`
+          `Total splits (${formatINR(totalEditSplits)}) is less than order amount (${formatINR(parsedEditInr)}). Remaining unallocated: ${formatINR(diff)}.`
         );
       } else {
         setEditError(
-          `Total splits (₹${totalEditSplits.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}) exceeds order amount (₹${parsedEditInr.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}). Difference: ₹${Math.abs(diff).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}.`
+          `Total splits (${formatINR(totalEditSplits)}) exceeds order amount (${formatINR(parsedEditInr)}). Difference: ${formatINR(Math.abs(diff))}.`
         );
       }
       return;
@@ -530,12 +535,6 @@ function CustomerRemittancesContent() {
     }
   }
 
-  const formatINR = (val?: number) =>
-    `₹ ${(val || 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`;
-
-  const formatAED = (val?: number) =>
-    `${(val || 0).toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED`;
-
   // Strictly customer remittances: only entity_type === 'CUSTOMER'
   const filtered = transactions.filter((t) => {
     if (t.entity_type === "PARTY") return false;
@@ -638,6 +637,9 @@ function CustomerRemittancesContent() {
             <div className="text-base sm:text-lg font-black text-slate-900 font-mono tracking-tight">
               {formatINR(totalVolumeInr)}
             </div>
+            <p className="text-[10px] text-teal-700 dark:text-teal-400 font-semibold leading-tight break-words">
+              {integerToIndianWords(totalVolumeInr)}
+            </p>
             <span className="text-[10px] text-slate-400 block font-medium">
               Confirmed Transfers: {confirmed.length}
             </span>
@@ -879,6 +881,9 @@ function CustomerRemittancesContent() {
                         <td className="px-3.5 py-2.5 font-mono whitespace-nowrap">
                           <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">
                             {formatINR(t.inr_amount)}
+                          </div>
+                          <div className="text-[9px] text-teal-700 dark:text-teal-400 font-medium truncate max-w-[150px]" title={integerToIndianWords(t.inr_amount)}>
+                            {integerToIndianWords(t.inr_amount)}
                           </div>
                           {t.distributor_split_details && t.distributor_split_details !== "-" ? (
                             <div
@@ -1363,13 +1368,13 @@ function CustomerRemittancesContent() {
                           {isExactMatch ? (
                             "✓ Splits match order total exactly."
                           ) : diff > 0 ? (
-                            `⚠️ Unallocated: ₹${diff.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} remaining.`
+                            `⚠️ Unallocated: ${formatINR(diff)} remaining.`
                           ) : (
-                            `⛔ Over-allocated by ₹${Math.abs(diff).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}.`
+                            `⛔ Over-allocated by ${formatINR(Math.abs(diff))}.`
                           )}
                         </span>
                         <span className="font-bold">
-                          ₹{allocated.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} / ₹{currentOrder.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                          {formatINR(allocated)} / {formatINR(currentOrder)}
                         </span>
                       </div>
                     );

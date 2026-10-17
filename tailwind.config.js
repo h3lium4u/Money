@@ -8,6 +8,16 @@ module.exports = {
   ],
   theme: {
     extend: {
+      screens: {
+        xs: "480px",
+      },
+      boxShadow: {
+        "2xs": "0 1px 2px 0 rgba(0, 0, 0, 0.03)",
+        xs: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+      },
+      backdropBlur: {
+        xs: "2px",
+      },
       fontFamily: {
         display: ["Coolvetica", "PP Neue Montreal", "system-ui", "sans-serif"],
         body: ["PP Neue Montreal", "system-ui", "sans-serif"],

@@ -36,3 +36,17 @@ export async function GET(request: Request) {
   const isValid = validateSessionToken(cookieToken);
   return NextResponse.json({ authenticated: isValid });
 }
+
+export async function DELETE() {
+  const response = NextResponse.json({ success: true, message: "Logged out" });
+  response.cookies.set({
+    name: "petti_session",
+    value: "",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+    maxAge: 0,
+  });
+  return response;
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -14,11 +14,20 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // In-memory authentication state:
-  // Reset to false whenever the page is refreshed or opened in a new tab/window.
-  // Preserved seamlessly during client-side Next.js route navigation ("only not always").
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    // Restore authentication state from session cookie on mount / page refresh
+    fetch("/api/auth/verify")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && (data.authenticated || data.success)) {
+          setIsAuthenticated(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const login = async (password: string): Promise<{ success: boolean; error?: string }> => {
     try {
@@ -49,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const lock = () => {
     setIsAuthenticated(false);
+    fetch("/api/auth/verify", { method: "DELETE" }).catch(() => {});
   };
 
   const openChangePassword = () => {

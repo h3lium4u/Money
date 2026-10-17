@@ -22,6 +22,7 @@ import { ReceiptPrinterModal } from "@/components/animation/ReceiptPrinterModal"
 import { downloadMasterExcel } from "@/lib/export-utils";
 import { getTodayDateString } from "@/lib/date-utils";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { formatINR, integerToIndianWords } from "@/lib/number-to-words";
 
 export default function PartyDetailPage() {
   const params = useParams();
@@ -287,8 +288,13 @@ export default function PartyDetailPage() {
             Total Orders (INR)
           </span>
           <p className="text-xl font-mono font-bold text-slate-900 dark:text-slate-100 mt-1">
-            ₹{Number(party.total_inr || 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+            {formatINR(Number(party.total_inr || 0))}
           </p>
+          {Number(party.total_inr || 0) > 0 && (
+            <p className="text-[10px] text-slate-500 font-medium truncate mt-0.5" title={integerToIndianWords(Number(party.total_inr || 0))}>
+              {integerToIndianWords(Number(party.total_inr || 0))}
+            </p>
+          )}
         </div>
 
         <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
@@ -370,7 +376,14 @@ export default function PartyDetailPage() {
                         {e.notes && <span className="text-slate-400 font-normal ml-1">({e.notes})</span>}
                       </td>
                       <td className="py-3 px-4 font-mono font-semibold">
-                        {e.inr_amount ? `₹${Number(e.inr_amount).toLocaleString("en-IN")}` : "-"}
+                        {e.inr_amount ? (
+                          <div>
+                            <div>{formatINR(Number(e.inr_amount))}</div>
+                            <div className="text-[10px] text-slate-500 font-normal truncate max-w-[140px]" title={integerToIndianWords(Number(e.inr_amount))}>
+                              {integerToIndianWords(Number(e.inr_amount))}
+                            </div>
+                          </div>
+                        ) : "-"}
                       </td>
                       <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">
                         {e.debit_aed ? Number(e.debit_aed).toFixed(3) : "-"}

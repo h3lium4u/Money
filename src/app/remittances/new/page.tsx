@@ -22,7 +22,12 @@ import {
   Check,
   ChevronDown,
 } from "lucide-react";
-import { numberToIndianWords } from "@/lib/number-to-words";
+import {
+  numberToIndianWords,
+  integerToIndianWords,
+  formatINR,
+  formatAED,
+} from "@/lib/number-to-words";
 import { getTodayDateString } from "@/lib/date-utils";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { toast } from "sonner";
@@ -462,11 +467,11 @@ export default function NewRemittancePage() {
     if (Math.abs(diff) > 0.001) {
       if (diff > 0) {
         setError(
-          `India Distribution Split is mandatory: Full order amount must be distributed. Remaining unallocated: ₹${diff.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}`
+          `India Distribution Split is mandatory: Full order amount must be distributed. Remaining unallocated: ${formatINR(diff)}`
         );
       } else {
         setError(
-          `Total distributed (₹${totalAllocatedInr.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}) exceeds customer order by ₹${Math.abs(diff).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}`
+          `Total distributed (${formatINR(totalAllocatedInr)}) exceeds customer order by ${formatINR(Math.abs(diff))}`
         );
       }
       return;
@@ -591,7 +596,7 @@ export default function NewRemittancePage() {
   }
 
   const selectedCustomer = customers.find((c) => c.id === customerId);
-  const inrWords = totalOrderInr > 0 ? numberToIndianWords(totalOrderInr) : "";
+  const inrWords = totalOrderInr > 0 ? integerToIndianWords(totalOrderInr) : "";
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -707,7 +712,7 @@ export default function NewRemittancePage() {
                   <User className="w-3.5 h-3.5 text-teal-700" />
                   <span>Customer</span>
                   {selectedCustomer && (
-                    <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded font-semibold normal-case">
+                    <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-semibold normal-case">
                       Selected
                     </span>
                   )}
@@ -739,7 +744,7 @@ export default function NewRemittancePage() {
                             {selectedCustomer.name}
                           </span>
                           {selectedCustomer.code && (
-                            <span className="text-[10px] font-mono bg-teal-100/80 text-teal-800 px-1.5 py-0.2 rounded font-bold">
+                            <span className="text-[10px] font-mono bg-teal-100/80 text-teal-800 px-1.5 py-0.5 rounded font-bold">
                               {selectedCustomer.code}
                             </span>
                           )}
@@ -852,7 +857,7 @@ export default function NewRemittancePage() {
                                 )}
                                 <span className="font-bold truncate">{c.name}</span>
                                 {c.code && (
-                                  <span className="text-[10px] font-mono bg-slate-100 text-slate-600 px-1 py-0.2 rounded font-semibold shrink-0">
+                                  <span className="text-[10px] font-mono bg-slate-100 text-slate-600 px-1 py-0.5 rounded font-semibold shrink-0">
                                     {c.code}
                                   </span>
                                 )}
@@ -961,7 +966,7 @@ export default function NewRemittancePage() {
                     Total Order INR:
                   </span>
                   <span className="text-base font-extrabold text-teal-800 font-mono">
-                    ₹ {totalOrderInr.toLocaleString("en-IN")}
+                    {formatINR(totalOrderInr)}
                   </span>
                 </div>
                 {inrWords && (
@@ -1151,9 +1156,9 @@ export default function NewRemittancePage() {
                 >
                   <div className="flex items-center gap-1.5 font-mono">
                     <span>Allocated:</span>
-                    <strong>₹{totalAllocatedInr.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</strong>
+                    <strong>{formatINR(totalAllocatedInr)}</strong>
                     <span>/</span>
-                    <span>₹{totalOrderInr.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</span>
+                    <span>{formatINR(totalOrderInr)}</span>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -1165,11 +1170,11 @@ export default function NewRemittancePage() {
                       </strong>
                     ) : diff > 0 ? (
                       <span className="text-amber-800 font-semibold">
-                        Remaining: <strong>₹{diff.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</strong>
+                        Remaining: <strong>{formatINR(diff)}</strong>
                       </span>
                     ) : (
                       <span className="text-rose-700 font-semibold">
-                        Over-allocated by <strong>₹{Math.abs(diff).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</strong>
+                        Over-allocated by <strong>{formatINR(Math.abs(diff))}</strong>
                       </span>
                     )}
                   </div>
@@ -1466,8 +1471,8 @@ export default function NewRemittancePage() {
                   </div>
                   <span className="text-[10px] text-teal-700 font-mono">
                     {preview.customerRateConvention === "AED_PER_1000"
-                      ? `= (₹${preview.inrAmount.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} / 1000) × ${preview.customerRate.toFixed(3)}`
-                      : `= ₹${preview.inrAmount.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} / ${preview.customerRate.toFixed(3)}`}
+                      ? `= (${formatINR(preview.inrAmount)} / 1000) × ${preview.customerRate.toFixed(3)}`
+                      : `= ${formatINR(preview.inrAmount)} / ${preview.customerRate.toFixed(3)}`}
                   </span>
                 </div>
 
@@ -1779,7 +1784,7 @@ export default function NewRemittancePage() {
                 <div className="border-t border-slate-200 pt-2 flex justify-between items-center">
                   <span className="font-bold text-slate-900">Total INR Order:</span>
                   <span className="text-base font-extrabold text-teal-700 font-mono">
-                    ₹ {totalOrderInr.toLocaleString("en-IN")}
+                    {formatINR(totalOrderInr)}
                   </span>
                 </div>
                 {inrWords && (

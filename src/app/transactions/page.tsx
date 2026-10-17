@@ -27,9 +27,14 @@ import {
   X,
   Ban,
 } from "lucide-react";
-import { downloadMasterExcel } from "@/lib/export-utils";
-import { numberToIndianWords } from "@/lib/number-to-words";
+import {
+  numberToIndianWords,
+  integerToIndianWords,
+  formatINR,
+  formatAED,
+} from "@/lib/number-to-words";
 import { generateTransactionReceipt } from "@/lib/pdf-generator";
+import { downloadMasterExcel } from "@/lib/export-utils";
 import {
   getTodayDateString,
   getYesterdayDateString,
@@ -343,12 +348,6 @@ function DubaiClientTransactionsContent() {
     }
   }
 
-  const formatINR = (val?: number) =>
-    `₹ ${(val || 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`;
-
-  const formatAED = (val?: number) =>
-    `${(val || 0).toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED`;
-
   // Strictly Dubai Client transfers: only Dubai parties (exclude normal customers and Indian parties)
   const filtered = transactions.filter((t) => {
     if (t.entity_type === "CUSTOMER") return false;
@@ -488,6 +487,9 @@ function DubaiClientTransactionsContent() {
             <div className="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 font-mono tracking-tight">
               {formatINR(totalVolumeInr)}
             </div>
+            <p className="text-[10px] text-teal-700 dark:text-teal-400 font-semibold leading-tight break-words">
+              {integerToIndianWords(totalVolumeInr)}
+            </p>
             <span className="text-[10px] text-slate-400 dark:text-slate-500 block font-medium">
               Confirmed Transfers: {confirmedTransfers.length}
             </span>
@@ -756,6 +758,9 @@ function DubaiClientTransactionsContent() {
                           <td className="px-2.5 py-2.5 font-mono whitespace-nowrap">
                             <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">
                               {formatINR(totalVal)}
+                            </div>
+                            <div className="text-[9px] text-teal-700 dark:text-teal-400 font-medium truncate max-w-[140px]" title={integerToIndianWords(totalVal)}>
+                              {integerToIndianWords(totalVal)}
                             </div>
                           </td>
 

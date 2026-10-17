@@ -6,6 +6,7 @@ export interface DownloadExcelOptions {
   to?: string;
   filename?: string;
   url?: string;
+  headers?: Record<string, string>;
 }
 
 let isExportDownloading = false;
@@ -35,6 +36,7 @@ export async function downloadMasterExcel(options?: DownloadExcelOptions): Promi
       method: "GET",
       headers: {
         "Accept": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/octet-stream",
+        ...(options?.headers || {}),
       },
     });
 

@@ -25,6 +25,7 @@ import {
   getStartOfMonthDateString,
   getDayMonthYearString,
 } from "@/lib/date-utils";
+import { formatINR, formatAED, formatRate, integerToIndianWords } from "@/lib/number-to-words";
 
 export default function ReportsPage() {
   const [period, setPeriod] = useState("all");
@@ -131,7 +132,10 @@ export default function ReportsPage() {
     try {
       // 1. Trigger instantaneous pre-wipe backup download cleanly via blob with password authentication
       await downloadMasterExcel({
-        url: `/api/system/scheduled-wipe/download-backup?schedule=true&minutes=10&scope=${wipeScope}&password=${encodeURIComponent(wipePassword.trim())}`,
+        url: `/api/system/scheduled-wipe/download-backup?schedule=true&minutes=10&scope=${wipeScope}`,
+        headers: {
+          "x-wipe-password": wipePassword.trim(),
+        },
         filename: `Accounts_Backup_${wipeScope}_${getDayMonthYearString()}.xlsx`,
       });
 
@@ -215,12 +219,6 @@ export default function ReportsPage() {
       setLoading(false);
     }
   }
-
-  const formatINR = (val?: number) =>
-    `₹ ${(val || 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`;
-
-  const formatAED = (val?: number) =>
-    `${(val || 0).toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED`;
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto print:space-y-4">
@@ -643,7 +641,12 @@ export default function ReportsPage() {
             {loading ? (
               <div className="h-7 w-32 bg-slate-200 animate-pulse rounded my-1" />
             ) : (
-              <p className="text-xl font-bold text-slate-900">{formatINR(kpis?.totalInrProcessed)}</p>
+              <div>
+                <p className="text-xl font-bold text-slate-900">{formatINR(kpis?.totalInrProcessed)}</p>
+                <p className="text-[10px] text-teal-700 font-semibold leading-tight mt-0.5 break-words">
+                  {integerToIndianWords(kpis?.totalInrProcessed)}
+                </p>
+              </div>
             )}
             {loading ? (
               <div className="h-3.5 w-16 bg-slate-200 animate-pulse rounded" />

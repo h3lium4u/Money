@@ -5,6 +5,7 @@ import { Printer } from "lucide-react";
 import { ReceiptPrinter, ReceiptPrinterStage } from "./ReceiptPrinter";
 import styles from "./ReceiptPrinterModal.module.css";
 import { getDayMonthYearString } from "@/lib/date-utils";
+import { formatINR, formatAED } from "@/lib/number-to-words";
 
 export interface ReceiptPrinterModalProps {
   isOpen: boolean;
@@ -129,12 +130,6 @@ export function ReceiptPrinterModal({
     month: "short",
     year: "numeric",
   });
-
-  const formatINR = (val?: number) =>
-    `₹ ${(val || 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`;
-
-  const formatAED = (val?: number) =>
-    `${(val || 0).toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED`;
 
   const items = (customerData?.entries || []).slice(0, 5);
 

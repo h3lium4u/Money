@@ -16,12 +16,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Pre-warm Neon PostgreSQL connection to eliminate cold-start delay
-    fetch('/api/health')
-      .then(() => {
-        // Pre-warm party transfers cache in background
-        fetch('/api/party-transfers').catch(() => {});
-      })
-      .catch(() => {});
+    fetch('/api/health').catch(() => {});
   }, []);
 
   if (!isAuthenticated) {

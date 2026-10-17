@@ -20,6 +20,7 @@ import { ReceiptPrinterModal } from "@/components/animation/ReceiptPrinterModal"
 import { downloadMasterExcel } from "@/lib/export-utils";
 import { getTodayDateString } from "@/lib/date-utils";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { formatINR, integerToIndianWords } from "@/lib/number-to-words";
 
 export default function CustomerDetailPage() {
   const params = useParams();
@@ -266,8 +267,16 @@ export default function CustomerDetailPage() {
           <div className="text-right">
             <span className="text-xs text-slate-500 font-medium">Total Processed</span>
             <p className="text-base font-bold text-slate-900">
-              ₹ {(customer.total_inr || 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+              {formatINR(customer.total_inr || 0)}
             </p>
+            {Number(customer.total_inr || 0) > 0 && (
+              <p
+                className="text-[10px] text-slate-500 font-medium max-w-[200px] truncate"
+                title={integerToIndianWords(customer.total_inr || 0)}
+              >
+                {integerToIndianWords(customer.total_inr || 0)}
+              </p>
+            )}
           </div>
 
           <div className="text-right">

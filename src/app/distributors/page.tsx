@@ -2,7 +2,13 @@
 
 import { useState, useEffect, Fragment, useMemo, useRef } from "react";
 import Link from "next/link";
-import { numberToIndianWords } from "@/lib/number-to-words";
+import {
+  numberToIndianWords,
+  integerToIndianWords,
+  formatINR,
+  formatAED,
+  formatRate,
+} from "@/lib/number-to-words";
 import { getTodayDateString } from "@/lib/date-utils";
 import {
   Split,
@@ -318,33 +324,6 @@ export default function IndiaDistributionPage() {
     }
   }
 
-  const formatINR = (val?: number | string) => {
-    if (val === null || val === undefined || val === "") return "₹ 0";
-    const str = String(val).trim();
-    const num = Number(str);
-    if (isNaN(num)) return `₹ ${str}`;
-    const parts = str.split(".");
-    const intFormatted = Number(parts[0]).toLocaleString("en-IN");
-    return parts.length > 1 ? `₹ ${intFormatted}.${parts[1]}` : `₹ ${intFormatted}`;
-  };
-
-  const formatAED = (val?: number | string) => {
-    if (val === null || val === undefined || val === "") return "0 AED";
-    const str = String(val).trim();
-    const num = Number(str);
-    if (isNaN(num)) return `${str} AED`;
-    const parts = str.split(".");
-    const intFormatted = Number(parts[0]).toLocaleString("en-US");
-    return parts.length > 1 ? `${intFormatted}.${parts[1]} AED` : `${intFormatted} AED`;
-  };
-
-  const formatRate = (val?: any) => {
-    if (val === null || val === undefined || val === "") return "-";
-    const str = String(val).trim();
-    if (str === "" || str === "NaN") return "-";
-    return str;
-  };
-
   // IND group = India-side distributors for distribution splits (MK, SALA)
   const confirmedIndiaParties = distributors.filter((d) => d.group_type === "IND");
 
@@ -623,19 +602,31 @@ export default function IndiaDistributionPage() {
               {transactions.length} order{transactions.length !== 1 ? "s" : ""}
             </span>
           </div>
-          <div className="text-lg font-black text-slate-900 dark:text-slate-100">
-            {formatINR(totalOrdersInr)}
+          <div>
+            <div className="text-lg font-black text-slate-900 dark:text-slate-100">
+              {formatINR(totalOrdersInr)}
+            </div>
+            <p className="text-[10px] text-teal-700 dark:text-teal-400 font-semibold leading-tight mt-0.5 break-words">
+              {integerToIndianWords(totalOrdersInr)}
+            </p>
           </div>
-          <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-100 dark:border-slate-800 text-slate-500">
-            <span>
-              Allocated: <strong className="text-emerald-700 dark:text-emerald-400">{formatINR(totalAllocatedInr)}</strong>
-            </span>
-            <span>
-              Pending:{" "}
+          <div className="flex items-start justify-between text-[11px] pt-1.5 border-t border-slate-100 dark:border-slate-800 text-slate-500 gap-2">
+            <div className="min-w-0">
+              <span>Allocated: </span>
+              <strong className="text-emerald-700 dark:text-emerald-400">{formatINR(totalAllocatedInr)}</strong>
+              <div className="text-[9px] text-emerald-800 dark:text-emerald-400 font-medium truncate max-w-[130px]" title={integerToIndianWords(totalAllocatedInr)}>
+                {integerToIndianWords(totalAllocatedInr)}
+              </div>
+            </div>
+            <div className="text-right min-w-0">
+              <span>Pending: </span>
               <strong className={totalPendingInr > 0 ? "text-amber-700 dark:text-amber-400 font-extrabold" : "text-slate-500 font-medium"}>
                 {formatINR(totalPendingInr)}
               </strong>
-            </span>
+              <div className="text-[9px] text-amber-800 dark:text-amber-400 font-medium truncate max-w-[130px]" title={integerToIndianWords(totalPendingInr)}>
+                {integerToIndianWords(totalPendingInr)}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -657,7 +648,7 @@ export default function IndiaDistributionPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-black text-slate-900 dark:text-slate-100">{p.name}</span>
-                  <span className="text-[10px] font-extrabold bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 border border-teal-300 dark:border-teal-800 px-1.5 py-0.2 rounded font-mono">
+                  <span className="text-[10px] font-extrabold bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 border border-teal-300 dark:border-teal-800 px-1.5 py-0.5 rounded font-mono">
                     IND
                   </span>
                   <span className="text-[10px] text-slate-400 font-mono">({p.code})</span>
@@ -672,17 +663,20 @@ export default function IndiaDistributionPage() {
                 </Link>
               </div>
 
-              <div className="mt-2 flex items-baseline justify-between">
-                <div>
+              <div className="mt-2 flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
                   <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Allocated</span>
                   <span className="text-base font-extrabold text-slate-900 dark:text-slate-100">
                     {formatINR(totalAllocated)}
                   </span>
+                  <p className="text-[10px] text-teal-700 dark:text-teal-400 font-semibold leading-tight mt-0.5 break-words">
+                    {integerToIndianWords(totalAllocated)}
+                  </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setFilterDistributor(isFiltered ? "all" : p.id)}
-                  className={`text-[10px] font-bold px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                  className={`shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-md transition-all cursor-pointer ${
                     isFiltered
                       ? "bg-teal-700 text-white shadow-2xs"
                       : "bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 text-slate-700 dark:text-slate-300 hover:text-teal-800 border border-slate-200 dark:border-slate-700"
@@ -760,7 +754,10 @@ export default function IndiaDistributionPage() {
                     <span className="text-base font-extrabold text-slate-900 dark:text-slate-100">
                       {formatINR(selectedTxn.inr_amount)}
                     </span>
-                    <div className="text-[10px] text-slate-500 font-mono">
+                    <div className="text-[10px] text-teal-700 dark:text-teal-400 font-semibold leading-tight truncate mt-0.5" title={integerToIndianWords(selectedTxn.inr_amount)}>
+                      {integerToIndianWords(selectedTxn.inr_amount)}
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-mono mt-0.5">
                       {selectedTxn.aed_amount ? formatAED(selectedTxn.aed_amount) : ""} {selectedTxn.base_rate ? `@ ${selectedTxn.base_rate}` : ""}
                     </div>
                   </div>
@@ -769,7 +766,10 @@ export default function IndiaDistributionPage() {
                     <span className="text-base font-extrabold text-emerald-700 dark:text-emerald-400">
                       {formatINR(selectedTxn.total_distributed_inr)}
                     </span>
-                    <div className="text-[10px] text-slate-500 font-mono">
+                    <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold leading-tight truncate mt-0.5" title={integerToIndianWords(selectedTxn.total_distributed_inr)}>
+                      {integerToIndianWords(selectedTxn.total_distributed_inr)}
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-mono mt-0.5">
                       {selectedTxn.total_aed_equivalent ? formatAED(selectedTxn.total_aed_equivalent) : "-"}
                     </div>
                   </div>
@@ -784,9 +784,9 @@ export default function IndiaDistributionPage() {
                     >
                       {formatINR(selectedTxn.remaining_inr)}
                     </span>
-                    {(selectedTxn.remaining_inr || 0) > 0 && numberToIndianWords(selectedTxn.remaining_inr) && (
-                      <div className="text-[10px] text-amber-900 dark:text-amber-300 truncate font-medium" title={numberToIndianWords(selectedTxn.remaining_inr)}>
-                        ({numberToIndianWords(selectedTxn.remaining_inr)})
+                    {(selectedTxn.remaining_inr || 0) > 0 && (
+                      <div className="text-[10px] text-amber-800 dark:text-amber-300 truncate font-semibold leading-tight mt-0.5" title={integerToIndianWords(selectedTxn.remaining_inr)}>
+                        {integerToIndianWords(selectedTxn.remaining_inr)}
                       </div>
                     )}
                   </div>
@@ -1018,7 +1018,7 @@ export default function IndiaDistributionPage() {
                           )}
                         </div>
                         <span
-                          className={`text-[10px] font-bold px-1.5 py-0.2 rounded border shrink-0 ${
+                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded border shrink-0 ${
                             isComplete
                               ? "bg-teal-100 text-teal-800 border-teal-300"
                               : "bg-amber-100 text-amber-900 border-amber-300"
@@ -1029,7 +1029,10 @@ export default function IndiaDistributionPage() {
                       </div>
                       <div className="text-[11px] font-mono text-slate-500 flex justify-between items-center">
                         <span>{t.transaction_number}</span>
-                        <span className="font-bold text-slate-700">₹{Number(t.inr_amount).toLocaleString()}</span>
+                        <span className="font-bold text-slate-700">{formatINR(t.inr_amount)}</span>
+                      </div>
+                      <div className="text-[10px] text-teal-700 dark:text-teal-400 font-medium truncate mt-0.5" title={integerToIndianWords(t.inr_amount)}>
+                        {integerToIndianWords(t.inr_amount)}
                       </div>
                       {!isComplete && (
                         <div className="mt-2 pt-1.5 border-t border-slate-200/60 flex items-center justify-between">
@@ -1193,7 +1196,8 @@ export default function IndiaDistributionPage() {
                           </div>
                         </div>
                         {/* Group rows */}
-                        <table className="w-full text-left text-xs">
+                        <div className="overflow-x-auto">
+                          <table className="w-full min-w-[950px] text-left text-xs">
                           <thead className="bg-slate-50/70 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-100">
                             <tr>
                               <th className="px-3 py-2">Txn / Date</th>
@@ -1278,6 +1282,7 @@ export default function IndiaDistributionPage() {
                             })}
                           </tbody>
                         </table>
+                        </div>
                       </div>
                     );
                   })}
@@ -1286,7 +1291,7 @@ export default function IndiaDistributionPage() {
             ) : (
               /* ── FLAT TABLE VIEW ── */
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full min-w-[950px] text-left text-xs">
                   <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200 text-[10px]">
                     <tr>
                       <th
@@ -1419,6 +1424,9 @@ export default function IndiaDistributionPage() {
                                 <div className="font-bold text-slate-900">{formatINR(row.total_allocated_inr)}</div>
                                 <div className="text-[10px] text-slate-500">
                                   {row.is_fully_allocated ? "100% of " : "of "}{formatINR(row.order_inr)}
+                                </div>
+                                <div className="text-[9px] text-teal-700 dark:text-teal-400 font-medium truncate max-w-[150px]" title={integerToIndianWords(row.total_allocated_inr)}>
+                                  {integerToIndianWords(row.total_allocated_inr)}
                                 </div>
                               </td>
 
@@ -1621,14 +1629,23 @@ export default function IndiaDistributionPage() {
                 <div>
                   <span className="text-slate-500 block text-[10px] uppercase font-bold">Total Order</span>
                   <span className="font-extrabold text-slate-900">{formatINR(selectedModalTxn.inr_amount)}</span>
+                  <div className="text-[9px] text-teal-700 font-medium truncate" title={integerToIndianWords(selectedModalTxn.inr_amount)}>
+                    {integerToIndianWords(selectedModalTxn.inr_amount)}
+                  </div>
                 </div>
                 <div>
                   <span className="text-slate-500 block text-[10px] uppercase font-bold">Allocated So Far</span>
                   <span className="font-bold text-emerald-700">{formatINR(selectedModalTxn.total_distributed_inr)}</span>
+                  <div className="text-[9px] text-emerald-700 font-medium truncate" title={integerToIndianWords(selectedModalTxn.total_distributed_inr)}>
+                    {integerToIndianWords(selectedModalTxn.total_distributed_inr)}
+                  </div>
                 </div>
                 <div>
                   <span className="text-amber-800 block text-[10px] uppercase font-extrabold">Remaining to Split</span>
                   <span className="font-extrabold text-amber-700">{formatINR(selectedModalTxn.remaining_inr)}</span>
+                  <div className="text-[9px] text-amber-700 font-medium truncate" title={integerToIndianWords(selectedModalTxn.remaining_inr)}>
+                    {integerToIndianWords(selectedModalTxn.remaining_inr)}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1725,6 +1742,11 @@ export default function IndiaDistributionPage() {
                       className="w-full text-xs font-bold pl-6 pr-2 py-2 border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
                     />
                   </div>
+                  {modalAmount && Number(modalAmount) > 0 && (
+                    <p className="text-[10px] text-teal-700 font-semibold mt-1 leading-tight break-words">
+                      {integerToIndianWords(modalAmount)}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -1877,12 +1899,12 @@ export default function IndiaDistributionPage() {
                 </div>
               </div>
 
-              {numberToIndianWords(editAmount) && (
+              {editAmount && Number(editAmount) > 0 && (
                 <div className="p-2 bg-teal-50/90 border border-teal-200 rounded-lg flex items-center gap-1.5 text-xs text-teal-950 animate-in fade-in duration-100">
                   <span className="font-bold text-[10px] tracking-wider uppercase bg-teal-200 text-teal-950 px-1.5 py-0.5 rounded font-mono shrink-0">
                     In Words:
                   </span>
-                  <span className="font-semibold">{numberToIndianWords(editAmount)}</span>
+                  <span className="font-semibold break-words">{integerToIndianWords(editAmount)}</span>
                 </div>
               )}
 

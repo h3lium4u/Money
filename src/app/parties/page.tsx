@@ -24,6 +24,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { getTodayDateString } from "@/lib/date-utils";
+import { formatINR, formatAED, formatRate, integerToIndianWords } from "@/lib/number-to-words";
 import { FadeIn, PageTransition } from "@/components/AnimatedLayout";
 
 export default function PartiesPage() {
@@ -282,12 +283,6 @@ export default function PartiesPage() {
     }
   }
 
-  const formatINR = (val?: number) =>
-    `₹ ${(val || 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`;
-
-  const formatAED = (val?: number) =>
-    `${(val || 0).toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED`;
-
   // Summary parties and grand totals from backend
   const partyRows = summary?.parties || [];
   const grandTotals = summary?.grand_totals || {
@@ -543,7 +538,7 @@ export default function PartiesPage() {
             }`}
           >
             <span>Today</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full font-mono bg-teal-800 text-teal-100">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-mono bg-teal-800 text-teal-100">
               {formatINR(grandTotals.today)}
             </span>
           </button>
@@ -558,7 +553,7 @@ export default function PartiesPage() {
             }`}
           >
             <span>Previous Day</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full font-mono bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-mono bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
               {formatINR(grandTotals.yesterday)}
             </span>
           </button>
@@ -573,7 +568,7 @@ export default function PartiesPage() {
             }`}
           >
             <span>This Week</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full font-mono bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-mono bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
               {formatINR(grandTotals.week)}
             </span>
           </button>
@@ -588,7 +583,7 @@ export default function PartiesPage() {
             }`}
           >
             <span>This Month</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full font-mono bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-mono bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
               {formatINR(grandTotals.month)}
             </span>
           </button>
@@ -603,7 +598,7 @@ export default function PartiesPage() {
             }`}
           >
             <span>This Year</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full font-mono bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-mono bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
               {formatINR(grandTotals.year)}
             </span>
           </button>
@@ -619,7 +614,7 @@ export default function PartiesPage() {
           >
             <FileText className="w-3.5 h-3.5 text-teal-400" />
             <span>Customer Splits</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full font-mono bg-slate-700 text-slate-200">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-mono bg-slate-700 text-slate-200">
               {allAssignments.length}
             </span>
           </button>
@@ -635,7 +630,7 @@ export default function PartiesPage() {
           >
             <Handshake className="w-3.5 h-3.5" />
             <span>Party Master</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full font-mono bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-mono bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
               {parties.length}
             </span>
           </button>
@@ -669,7 +664,7 @@ export default function PartiesPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full min-w-[950px] text-left text-xs">
               <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="py-2.5 px-2.5">INR Party</th>
@@ -854,6 +849,19 @@ export default function PartiesPage() {
                     : grandTotals.year
                 )}
               </h3>
+              <p className="text-[10px] text-teal-200 font-semibold leading-tight mt-0.5 break-words">
+                {integerToIndianWords(
+                  selectedPeriod === "today"
+                    ? grandTotals.today
+                    : selectedPeriod === "yesterday"
+                    ? grandTotals.yesterday
+                    : selectedPeriod === "week"
+                    ? grandTotals.week
+                    : selectedPeriod === "month"
+                    ? grandTotals.month
+                    : grandTotals.year
+                )}
+              </p>
               <p className="text-xs text-teal-200/80 mt-1">
                 Grand total of all customer transfer amounts assigned across all India parties for this period.
               </p>
@@ -950,7 +958,7 @@ export default function PartiesPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full min-w-[950px] text-left text-xs">
                   <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider text-[10px]">
                     <tr>
                       <th className="py-3 px-4">Date</th>
@@ -1054,7 +1062,7 @@ export default function PartiesPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full min-w-[950px] text-left text-xs">
                   <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider text-[10px]">
                     <tr>
                       <th className="py-2.5 px-3">Txn / Date</th>
@@ -1230,7 +1238,7 @@ export default function PartiesPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full min-w-[950px] text-left text-xs">
                   <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider text-[10px]">
                     <tr>
                       <th className="py-2.5 px-3">Party Name</th>
@@ -1258,7 +1266,7 @@ export default function PartiesPage() {
                               <span>{party.name}</span>
                             </Link>
                             <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold border ${
+                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold border ${
                                 party.party_type === "INDIA"
                                   ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/70 dark:text-orange-300 dark:border-orange-800"
                                   : "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/70 dark:text-teal-300 dark:border-teal-800"

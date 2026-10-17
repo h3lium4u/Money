@@ -23,7 +23,12 @@ import {
   Check,
   ChevronDown,
 } from "lucide-react";
-import { numberToIndianWords } from "@/lib/number-to-words";
+import {
+  numberToIndianWords,
+  integerToIndianWords,
+  formatINR,
+  formatAED,
+} from "@/lib/number-to-words";
 import { getTodayDateString } from "@/lib/date-utils";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { toast } from "sonner";
@@ -352,7 +357,7 @@ export default function NewDubaiClientTransactionPage() {
   }
 
   const selectedClient = clients.find((c) => c.id === customerId);
-  const inrWords = totalOrderInr > 0 ? numberToIndianWords(totalOrderInr) : null;
+  const inrWords = totalOrderInr > 0 ? integerToIndianWords(totalOrderInr) : null;
 
 
   return (
@@ -436,7 +441,7 @@ export default function NewDubaiClientTransactionPage() {
                   <Building2 className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400" />
                   <span>Choose Dubai Client</span>
                   {selectedClient && (
-                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.2 rounded font-semibold normal-case">
+                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.5 rounded font-semibold normal-case">
                       Selected
                     </span>
                   )}
@@ -470,7 +475,7 @@ export default function NewDubaiClientTransactionPage() {
                             {selectedClient.name}
                           </span>
                           {selectedClient.code && (
-                            <span className="text-[10px] font-mono bg-teal-100/80 dark:bg-teal-900/60 text-teal-800 dark:text-teal-200 px-1.5 py-0.2 rounded font-bold">
+                            <span className="text-[10px] font-mono bg-teal-100/80 dark:bg-teal-900/60 text-teal-800 dark:text-teal-200 px-1.5 py-0.5 rounded font-bold">
                               {selectedClient.code}
                             </span>
                           )}
@@ -583,7 +588,7 @@ export default function NewDubaiClientTransactionPage() {
                                 )}
                                 <span className="font-bold truncate">{c.name}</span>
                                 {c.code && (
-                                  <span className="text-[10px] font-mono bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1 py-0.2 rounded font-semibold shrink-0">
+                                  <span className="text-[10px] font-mono bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1 py-0.5 rounded font-semibold shrink-0">
                                     {c.code}
                                   </span>
                                 )}
@@ -691,7 +696,7 @@ export default function NewDubaiClientTransactionPage() {
                     Total Order:
                   </span>
                   <span className="text-base font-extrabold text-teal-800 dark:text-teal-300 font-mono">
-                    ₹ {totalOrderInr.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                    {formatINR(totalOrderInr)}
                   </span>
                 </div>
                 {inrWords && (
@@ -857,10 +862,10 @@ export default function NewDubaiClientTransactionPage() {
                     In Dhirams (AED Amount)
                   </span>
                   <p className="text-2xl sm:text-3xl font-black text-teal-900 dark:text-teal-100 font-mono tracking-tight">
-                    {preview.inDhirams.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED
+                    {formatAED(preview.inDhirams)}
                   </p>
                   <span className="text-[11px] text-teal-700 dark:text-teal-300 block font-mono">
-                    = Total (₹{preview.total.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}) / Whole Sale Rate ({preview.wholesaleRate.toFixed(3)})
+                    = Total ({formatINR(preview.total)}) / Whole Sale Rate ({preview.wholesaleRate.toFixed(3)})
                   </span>
                 </div>
 
@@ -882,7 +887,7 @@ export default function NewDubaiClientTransactionPage() {
                       <span className="text-[10px] text-slate-400">Order Amount</span>
                     </div>
                     <span className="font-mono font-extrabold text-slate-900 dark:text-slate-100 text-sm">
-                      ₹ {preview.total.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                      {formatINR(preview.total)}
                     </span>
                   </div>
 
@@ -892,7 +897,7 @@ export default function NewDubaiClientTransactionPage() {
                       <span className="text-[10px] text-slate-400">Advance / Cash</span>
                     </div>
                     <span className="font-mono font-extrabold text-slate-900 dark:text-slate-100 text-sm">
-                      AED {preview.paidAmount.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                      {formatAED(preview.paidAmount)}
                     </span>
                   </div>
 
@@ -907,7 +912,7 @@ export default function NewDubaiClientTransactionPage() {
                       <span className="text-[10px] opacity-80 font-mono block">= In Dhirams - Paid amount</span>
                     </div>
                     <span className="font-mono font-black text-base sm:text-lg">
-                      AED {preview.balanceToPaid.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                      {formatAED(preview.balanceToPaid)}
                     </span>
                   </div>
                 </div>
@@ -994,9 +999,16 @@ export default function NewDubaiClientTransactionPage() {
               <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl space-y-2 border border-slate-200/80 dark:border-slate-700">
                 <div className="flex justify-between items-center text-sm font-bold">
                   <span className="text-slate-600 dark:text-slate-400">Total Order Amount (INR):</span>
-                  <span className="font-mono text-slate-900 dark:text-slate-100">
-                    ₹ {totalOrderInr.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
-                  </span>
+                  <div className="text-right">
+                    <span className="font-mono text-slate-900 dark:text-slate-100">
+                      {formatINR(totalOrderInr)}
+                    </span>
+                    {totalOrderInr > 0 && (
+                      <span className="block text-[10px] text-slate-500 font-normal">
+                        {integerToIndianWords(totalOrderInr)}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-600 dark:text-slate-400">Client Exchange Rate:</span>

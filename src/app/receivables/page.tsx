@@ -29,6 +29,7 @@ import {
 import { getTodayDateString } from "@/lib/date-utils";
 import { ReceiptPrinterModal } from "@/components/animation/ReceiptPrinterModal";
 import { downloadMasterExcel } from "@/lib/export-utils";
+import { formatINR, formatAED, formatRate, integerToIndianWords } from "@/lib/number-to-words";
 import { toast } from "sonner";
 
 interface CustomerRecord {
@@ -643,7 +644,7 @@ export default function ReceivablesPage() {
             <div className="h-7 w-32 rounded bg-slate-200 animate-pulse mt-2" />
           ) : (
             <h3 className="text-2xl font-bold text-rose-600 mt-1 font-mono">
-              {totalReceivables.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED
+              {formatAED(totalReceivables)}
             </h3>
           )}
           <p className="text-[11px] text-slate-400 mt-1">Across {owingCount} accounts with pending dues</p>
@@ -658,7 +659,7 @@ export default function ReceivablesPage() {
             <div className="h-7 w-32 rounded bg-slate-200 animate-pulse mt-2" />
           ) : (
             <h3 className="text-2xl font-bold text-teal-700 mt-1 font-mono">
-              {totalPaidSum.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} AED
+              {formatAED(totalPaidSum)}
             </h3>
           )}
           <p className="text-[11px] text-slate-400 mt-1">{allPayments.length} recorded payments</p>
@@ -744,7 +745,7 @@ export default function ReceivablesPage() {
 
         {/* Table Content */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full min-w-[950px] text-left text-xs">
             <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200 uppercase tracking-wider text-[11px]">
               <tr>
                 <th className="py-3 px-3.5 w-[25%]">Customer Account</th>
@@ -786,7 +787,7 @@ export default function ReceivablesPage() {
                               <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
                                 <span>{c.name}</span>
                                 {c.code && (
-                                  <span className="text-[10px] font-mono text-teal-700 bg-teal-50 border border-teal-200 px-1.5 py-0.2 rounded font-bold">
+                                  <span className="text-[10px] font-mono text-teal-700 bg-teal-50 border border-teal-200 px-1.5 py-0.5 rounded font-bold">
                                     {c.code}
                                   </span>
                                 )}
@@ -811,9 +812,14 @@ export default function ReceivablesPage() {
                         <td className="py-3 px-3 text-right font-mono font-medium text-slate-900 whitespace-nowrap">
                           {(c.total_aed || 0).toFixed(3)} AED
                           {c.total_inr && c.total_inr > 0 ? (
-                            <span className="text-[10px] text-slate-400 block">
-                              ₹ {c.total_inr.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
-                            </span>
+                            <div>
+                              <span className="text-[10px] text-slate-500 font-bold block">
+                                {formatINR(c.total_inr)}
+                              </span>
+                              <span className="text-[9px] text-teal-700 dark:text-teal-400 font-medium truncate block max-w-[130px]" title={integerToIndianWords(c.total_inr)}>
+                                {integerToIndianWords(c.total_inr)}
+                              </span>
+                            </div>
                           ) : null}
                         </td>
 
@@ -966,8 +972,11 @@ export default function ReceivablesPage() {
                                   <div className="grid grid-cols-3 gap-3 p-2.5 bg-slate-50 rounded-lg border border-slate-200/80 text-xs">
                                     <div>
                                       <span className="text-[10px] text-slate-400 font-bold uppercase block">Total Volume</span>
-                                      <span className="font-mono font-bold text-slate-900">
-                                        ₹ {(ledgerData.customer?.total_inr || 0).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                                      <span className="font-mono font-bold text-slate-900 block">
+                                        {formatINR(ledgerData.customer?.total_inr)}
+                                      </span>
+                                      <span className="text-[9px] text-teal-700 font-medium truncate block max-w-[140px]" title={integerToIndianWords(ledgerData.customer?.total_inr)}>
+                                        {integerToIndianWords(ledgerData.customer?.total_inr)}
                                       </span>
                                     </div>
                                     <div>
@@ -992,7 +1001,7 @@ export default function ReceivablesPage() {
 
                                   {/* Chronological Statement Entries */}
                                   <div className="overflow-x-auto">
-                                    <table className="w-full text-left text-xs">
+                                    <table className="w-full min-w-[950px] text-left text-xs">
                                       <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 text-[10px] uppercase">
                                         <tr>
                                           <th className="py-2 px-3">Date</th>
@@ -1104,7 +1113,7 @@ export default function ReceivablesPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full min-w-[950px] text-left text-xs">
             <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200 uppercase tracking-wider text-[11px]">
               <tr>
                 <th className="py-2.5 px-3">Date</th>
