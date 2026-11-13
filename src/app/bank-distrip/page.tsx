@@ -1203,7 +1203,7 @@ export default function BankDistripPage() {
                               : "hover:bg-slate-50/70 dark:hover:bg-slate-800/50"
                           }`}
                         >
-                          {/* Date */}
+                          {/* Date & Unique Record ID */}
                           <td className="py-2.5 px-3 font-mono font-medium text-slate-900 dark:text-slate-100 whitespace-nowrap">
                             <div className="flex items-center gap-2">
                               <span>{formatDateReadable(r.record_date)}</span>
@@ -1213,6 +1213,11 @@ export default function BankDistripPage() {
                                 </span>
                               )}
                             </div>
+                            {r.id && (
+                              <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5" title={r.id}>
+                                {r.id}
+                              </div>
+                            )}
                           </td>
 
                           {/* ORDER (INR) - Read-only badge */}
@@ -1223,7 +1228,7 @@ export default function BankDistripPage() {
                               ) : (
                                 <span className="text-slate-400">₹ 0.00</span>
                               )}
-                              <span className="text-[10px] text-slate-400 font-sans" title="Auto-fetched">🔒</span>
+                              <span className="text-[9px] uppercase tracking-wider font-bold text-slate-400 font-sans" title="Auto-fetched">AUTO</span>
                             </div>
                           </td>
 

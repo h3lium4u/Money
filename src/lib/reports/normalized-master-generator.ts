@@ -255,7 +255,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
 
   parties.forEach((p, idx) => {
     const isIndia = p.party_type === "INDIA" || p.name === "MK" || p.name === "SALA";
-    const region = isIndia ? "🇮🇳 India (INR)" : "🇦🇪 Dubai (AED)";
+    const region = isIndia ? "India (INR)" : "Dubai (AED)";
     const currency = isIndia ? "INR" : "AED";
 
     const partyTxns = partyTransfers.filter(t => t.customer_id === p.id && t.status === "CONFIRMED");
@@ -699,7 +699,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
       const uniqueDistCode = distCodeMap.get(s.distributor_id) || s.distributor_code || s.distributor_id;
 
       const row = wsSplits.addRow({
-        split_id: s.id.slice(0, 12),
+        split_id: s.id,
         date: s.split_date,
         day: getDayOfWeek(s.split_date),
         txn_id: s.transaction_number,
@@ -805,7 +805,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   const wsBank = wb.addWorksheet("08_Bank_Distribution", { views: [{ state: "frozen", ySplit: 2, showGridLines: true }] });
 
   // Banner
-  wsBank.mergeCells("A1:G1");
+  wsBank.mergeCells("A1:H1");
   const bankBanner = wsBank.getCell("A1");
   bankBanner.value = "BANK DISTRIBUTION SETTLEMENT (EXCEL BANK DISTRIP SPECIFICATION)";
   bankBanner.font = { bold: true, size: 12, color: { argb: "FFFFFFFF" } };
@@ -814,7 +814,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   wsBank.getRow(1).height = 32;
 
   // Formula Note
-  wsBank.mergeCells("A2:G2");
+  wsBank.mergeCells("A2:H2");
   const formulaNote = wsBank.getCell("A2");
   formulaNote.value = "Formula: CURRENT BALANCE = PREVIOUS BALANCE + CURRENT ORDER + CURRENT COM - CURRENT PAID";
   formulaNote.font = { italic: true, size: 9, color: { argb: "FF4338CA" } };
@@ -826,6 +826,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   wsBank.getCell("A4").font = { bold: true, size: 11, color: { argb: "FF1E1B4B" } };
 
   const summaryHeaders = [
+    "Account ID",
     "Party Code",
     "Distributor / Account Name",
     "Total Order (INR)",
@@ -854,21 +855,23 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   accountsSummary.forEach((acc: any) => {
     summaryRowIdx++;
     const row = wsBank.getRow(summaryRowIdx);
-    row.getCell(1).value = acc.account_code;
-    row.getCell(2).value = acc.account_name;
-    row.getCell(3).value = acc.total_order;
-    row.getCell(4).value = acc.total_commission;
-    row.getCell(5).value = acc.total_paid;
-    row.getCell(6).value = acc.closing_balance;
-    row.getCell(7).value = acc.record_count;
+    row.getCell(1).value = acc.account_id;
+    row.getCell(2).value = acc.account_code;
+    row.getCell(3).value = acc.account_name;
+    row.getCell(4).value = acc.total_order;
+    row.getCell(5).value = acc.total_commission;
+    row.getCell(6).value = acc.total_paid;
+    row.getCell(7).value = acc.closing_balance;
+    row.getCell(8).value = acc.record_count;
 
     row.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
-    row.getCell(3).numFmt = "#,##0.000";
+    row.getCell(2).alignment = { horizontal: "center", vertical: "middle" };
     row.getCell(4).numFmt = "#,##0.000";
     row.getCell(5).numFmt = "#,##0.000";
     row.getCell(6).numFmt = "#,##0.000";
-    row.getCell(7).numFmt = "#,##0";
-    row.getCell(7).alignment = { horizontal: "center", vertical: "middle" };
+    row.getCell(7).numFmt = "#,##0.000";
+    row.getCell(8).numFmt = "#,##0";
+    row.getCell(8).alignment = { horizontal: "center", vertical: "middle" };
     styleDataRow(row, summaryRowIdx % 2 === 0);
   });
 
@@ -876,20 +879,21 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   summaryRowIdx++;
   const grandTotalRow = wsBank.getRow(summaryRowIdx);
   grandTotalRow.getCell(1).value = "GRAND TOTAL";
-  grandTotalRow.getCell(2).value = `${accountsSummary.length} Distributors`;
-  grandTotalRow.getCell(3).value = { formula: `=SUM(C6:C${summaryRowIdx - 1})` };
+  grandTotalRow.getCell(2).value = "";
+  grandTotalRow.getCell(3).value = `${accountsSummary.length} Distributors`;
   grandTotalRow.getCell(4).value = { formula: `=SUM(D6:D${summaryRowIdx - 1})` };
   grandTotalRow.getCell(5).value = { formula: `=SUM(E6:E${summaryRowIdx - 1})` };
-  // Grand Balance = Sum of Closing Balances (EXCEL SPEC: DO NOT sum daily balances)
   grandTotalRow.getCell(6).value = { formula: `=SUM(F6:F${summaryRowIdx - 1})` };
+  // Grand Balance = Sum of Closing Balances (EXCEL SPEC: DO NOT sum daily balances)
   grandTotalRow.getCell(7).value = { formula: `=SUM(G6:G${summaryRowIdx - 1})` };
+  grandTotalRow.getCell(8).value = { formula: `=SUM(H6:H${summaryRowIdx - 1})` };
 
-  grandTotalRow.getCell(3).numFmt = "#,##0.000";
   grandTotalRow.getCell(4).numFmt = "#,##0.000";
   grandTotalRow.getCell(5).numFmt = "#,##0.000";
   grandTotalRow.getCell(6).numFmt = "#,##0.000";
-  grandTotalRow.getCell(7).numFmt = "#,##0";
-  grandTotalRow.getCell(7).alignment = { horizontal: "center", vertical: "middle" };
+  grandTotalRow.getCell(7).numFmt = "#,##0.000";
+  grandTotalRow.getCell(8).numFmt = "#,##0";
+  grandTotalRow.getCell(8).alignment = { horizontal: "center", vertical: "middle" };
   styleTotalRow(grandTotalRow, "FFE0E7FF"); // Soft Indigo fill
 
   // ─── PART 2: DATE-WISE SETTLEMENT LEDGERS PER DISTRIBUTOR ────────────────
@@ -907,9 +911,9 @@ export async function generateNormalizedMasterWorkbook(filters?: {
     accRecords.sort((a, b) => a.record_date.localeCompare(b.record_date) || a.created_at.localeCompare(b.created_at));
 
     // Section Header for Distributor
-    wsBank.mergeCells(`A${currRow}:G${currRow}`);
+    wsBank.mergeCells(`A${currRow}:H${currRow}`);
     const secCell = wsBank.getCell(`A${currRow}`);
-    secCell.value = `DISTRIBUTOR: ${acc.account_code} - ${acc.account_name} | Closing Balance: ₹${acc.closing_balance.toLocaleString()}`;
+    secCell.value = `DISTRIBUTOR: ${acc.account_code} - ${acc.account_name} (ID: ${acc.account_id}) | Closing Balance: ₹${acc.closing_balance.toLocaleString()}`;
     secCell.font = { bold: true, size: 10, color: { argb: "FFFFFFFF" } };
     secCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF312E81" } }; // Darker Indigo
     secCell.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
@@ -918,6 +922,7 @@ export async function generateNormalizedMasterWorkbook(filters?: {
 
     // Sub-table Columns
     const distSubHeaders = [
+      "RECORD ID",
       "DATE",
       "DAY",
       "ORDER (INR)",
@@ -938,51 +943,55 @@ export async function generateNormalizedMasterWorkbook(filters?: {
       const emptyRow = wsBank.getRow(currRow);
       emptyRow.getCell(1).value = "-";
       emptyRow.getCell(2).value = "-";
-      emptyRow.getCell(3).value = 0;
+      emptyRow.getCell(3).value = "-";
       emptyRow.getCell(4).value = 0;
       emptyRow.getCell(5).value = 0;
       emptyRow.getCell(6).value = 0;
-      emptyRow.getCell(7).value = "No settlement records recorded yet";
-      for (let c = 3; c <= 6; c++) emptyRow.getCell(c).numFmt = "#,##0.000";
+      emptyRow.getCell(7).value = 0;
+      emptyRow.getCell(8).value = "No settlement records recorded yet";
+      for (let c = 4; c <= 7; c++) emptyRow.getCell(c).numFmt = "#,##0.000";
       styleDataRow(emptyRow);
       currRow++;
 
       const dTotRow = wsBank.getRow(currRow);
       dTotRow.getCell(1).value = `TOTAL ${acc.account_code}`;
       dTotRow.getCell(2).value = "";
-      dTotRow.getCell(3).value = 0;
+      dTotRow.getCell(3).value = "";
       dTotRow.getCell(4).value = 0;
       dTotRow.getCell(5).value = 0;
       dTotRow.getCell(6).value = 0;
-      dTotRow.getCell(7).value = `Closing Balance: ₹0.000`;
-      for (let c = 3; c <= 6; c++) dTotRow.getCell(c).numFmt = "#,##0.000";
+      dTotRow.getCell(7).value = 0;
+      dTotRow.getCell(8).value = `Closing Balance: ₹0.000`;
+      for (let c = 4; c <= 7; c++) dTotRow.getCell(c).numFmt = "#,##0.000";
       styleTotalRow(dTotRow, "FFF3F4F6");
       currRow += 2;
     } else {
       accRecords.forEach((rec, recIdx) => {
         const rNum = currRow;
         const row = wsBank.getRow(rNum);
-        row.getCell(1).value = rec.record_date;
-        row.getCell(2).value = getDayOfWeek(rec.record_date);
-        row.getCell(3).value = rec.order_inr;
-        row.getCell(4).value = rec.commission_inr;
-        row.getCell(5).value = rec.paid_inr;
+        row.getCell(1).value = rec.id;
+        row.getCell(2).value = rec.record_date;
+        row.getCell(3).value = getDayOfWeek(rec.record_date);
+        row.getCell(4).value = rec.order_inr;
+        row.getCell(5).value = rec.commission_inr;
+        row.getCell(6).value = rec.paid_inr;
 
         // Running balance formula: Row 1 = ORDER + COM - PAID, Row n = PrevBAL + ORDER + COM - PAID
         if (recIdx === 0) {
-          row.getCell(6).value = { formula: `=C${rNum}+D${rNum}-E${rNum}` };
+          row.getCell(7).value = { formula: `=D${rNum}+E${rNum}-F${rNum}` };
         } else {
-          row.getCell(6).value = { formula: `=F${rNum - 1}+C${rNum}+D${rNum}-E${rNum}` };
+          row.getCell(7).value = { formula: `=G${rNum - 1}+D${rNum}+E${rNum}-F${rNum}` };
         }
 
-        row.getCell(7).value = rec.notes || "-";
+        row.getCell(8).value = rec.notes || "-";
 
         row.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
         row.getCell(2).alignment = { horizontal: "center", vertical: "middle" };
-        row.getCell(3).numFmt = "#,##0.000";
+        row.getCell(3).alignment = { horizontal: "center", vertical: "middle" };
         row.getCell(4).numFmt = "#,##0.000";
         row.getCell(5).numFmt = "#,##0.000";
         row.getCell(6).numFmt = "#,##0.000";
+        row.getCell(7).numFmt = "#,##0.000";
         styleDataRow(row, recIdx % 2 === 1);
         currRow++;
       });
@@ -992,17 +1001,18 @@ export async function generateNormalizedMasterWorkbook(filters?: {
       const dTotRow = wsBank.getRow(currRow);
       dTotRow.getCell(1).value = `TOTAL ${acc.account_code}`;
       dTotRow.getCell(2).value = "";
-      dTotRow.getCell(3).value = { formula: `=SUM(C${distStartRow}:C${distEndRow})` };
+      dTotRow.getCell(3).value = "";
       dTotRow.getCell(4).value = { formula: `=SUM(D${distStartRow}:D${distEndRow})` };
       dTotRow.getCell(5).value = { formula: `=SUM(E${distStartRow}:E${distEndRow})` };
+      dTotRow.getCell(6).value = { formula: `=SUM(F${distStartRow}:F${distEndRow})` };
       // Closing balance cell: Points to the last row's running balance cell!
-      dTotRow.getCell(6).value = { formula: `=F${distEndRow}` };
-      dTotRow.getCell(7).value = `Closing Balance for ${acc.account_code}`;
+      dTotRow.getCell(7).value = { formula: `=G${distEndRow}` };
+      dTotRow.getCell(8).value = `Closing Balance for ${acc.account_code}`;
 
-      dTotRow.getCell(3).numFmt = "#,##0.000";
       dTotRow.getCell(4).numFmt = "#,##0.000";
       dTotRow.getCell(5).numFmt = "#,##0.000";
       dTotRow.getCell(6).numFmt = "#,##0.000";
+      dTotRow.getCell(7).numFmt = "#,##0.000";
       styleTotalRow(dTotRow, "FFF3F4F6");
 
       currRow += 2; // Spacer between distributors
@@ -1010,13 +1020,14 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   }
 
   wsBank.columns = [
-    { width: 16 }, // A: Date / Code
-    { width: 26 }, // B: Day / Name
-    { width: 22 }, // C: Order / Order
-    { width: 20 }, // D: Com / Com
-    { width: 22 }, // E: Paid / Paid
-    { width: 24 }, // F: Running Bal / Bal
-    { width: 30 }, // G: Notes / Records
+    { width: 18 }, // A: Record ID / Account ID
+    { width: 16 }, // B: Date / Code
+    { width: 26 }, // C: Day / Name
+    { width: 22 }, // D: Order / Order
+    { width: 20 }, // E: Com / Com
+    { width: 22 }, // F: Paid / Paid
+    { width: 24 }, // G: Running Bal / Closing Bal
+    { width: 32 }, // H: Notes / Record Count
   ];
 
   // ═══════════════════════════════════════════════════════════════════════════
