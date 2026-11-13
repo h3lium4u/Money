@@ -172,9 +172,41 @@ export interface PartyPriorTransferSummary {
 
 function formatDate(val: any): string {
   if (!val) return "";
-  if (typeof val === "string") return val.slice(0, 10);
-  if (val instanceof Date) return val.toISOString().slice(0, 10);
-  return String(val).slice(0, 10);
+  if (val instanceof Date) {
+    if (isNaN(val.getTime())) return "";
+    const day = String(val.getDate()).padStart(2, "0");
+    const month = String(val.getMonth() + 1).padStart(2, "0");
+    const year = val.getFullYear();
+    return `${day}-${month}-${year}`;
+  }
+  const s = String(val).trim();
+  if (/^\d{2}-\d{2}-\d{4}$/.test(s)) return s;
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) {
+    return `${m[3]}-${m[2]}-${m[1]}`;
+  }
+  return s.slice(0, 10);
+}
+
+function toDbDate(val: any): string {
+  if (!val) return getTodayDateString();
+  if (val instanceof Date) {
+    if (isNaN(val.getTime())) return getTodayDateString();
+    const year = val.getFullYear();
+    const month = String(val.getMonth() + 1).padStart(2, "0");
+    const day = String(val.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+  const s = String(val).trim();
+  const dmy = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (dmy) {
+    return `${dmy[3]}-${dmy[2]}-${dmy[1]}`;
+  }
+  const ymd = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (ymd) {
+    return `${ymd[1]}-${ymd[2]}-${ymd[3]}`;
+  }
+  return s.slice(0, 10);
 }
 
 function formatDateTime(val: any): string {
@@ -781,11 +813,11 @@ export async function listTransactions(filters?: {
 
 
   if (filters?.from) {
-    params.push(filters.from);
+    params.push(toDbDate(filters.from));
     sql += ` AND t.transaction_date >= $${params.length}`;
   }
   if (filters?.to) {
-    params.push(filters.to);
+    params.push(toDbDate(filters.to));
     sql += ` AND t.transaction_date <= $${params.length}`;
   }
   if (filters?.customerId) {
@@ -970,6 +1002,8 @@ export async function createTransaction(data: {
     netProfitAed = 0;
   }
 
+  const txnDate = toDbDate(data.transaction_date);
+
   await execute(`
     INSERT INTO transactions (
       id, transaction_number, transaction_date, customer_id,
@@ -983,7 +1017,7 @@ export async function createTransaction(data: {
       $15, $16, 'CONFIRMED', $17, false
     )
   `, [
-    id, txnNumber, data.transaction_date, data.customer_id,
+    id, txnNumber, txnDate, data.customer_id,
     inrAmount, customerRate, custConv, aedAmount, baseRate, baseConv,
     costAed, grossProfitAed, deliveryPct, deliveryChargeAed,
     netProfitAed, data.distributor_id || null, data.notes || null
@@ -1001,7 +1035,7 @@ export async function createTransaction(data: {
         $1, $2, $3, $4, $5,
         $6, 'CASH', 'Initial payment upon transfer creation', false
       )
-    `, [paymentId, pmtNumber, data.transaction_date, data.customer_id, id, paidAmount]);
+    `, [paymentId, pmtNumber, txnDate, data.customer_id, id, paidAmount]);
   }
 
   // Insert initial splits if provided (exact amounts preserved without automatic changes)
@@ -1032,7 +1066,7 @@ export async function createTransaction(data: {
           $9, $10, $11
         )
       `, [
-        splitId, id, s.distributor_id, data.transaction_date,
+        splitId, id, s.distributor_id, txnDate,
         splitInr, baseRate, aedEq,
         paidInr, balanceInr, splitStatus, s.notes || null
       ]);
@@ -1123,11 +1157,11 @@ export async function listDistributionSplits(filters?: {
     sql += ` AND s.distributor_id = $${params.length}`;
   }
   if (filters?.from) {
-    params.push(filters.from);
+    params.push(toDbDate(filters.from));
     sql += ` AND s.split_date >= $${params.length}`;
   }
   if (filters?.to) {
-    params.push(filters.to);
+    params.push(toDbDate(filters.to));
     sql += ` AND s.split_date <= $${params.length}`;
   }
 
@@ -1301,7 +1335,7 @@ export async function createDistributionSplit(data: {
       $5, 'ALLOCATED', $8
     )
   `, [
-    id, data.transaction_id, data.distributor_id, data.split_date,
+    id, data.transaction_id, data.distributor_id, toDbDate(data.split_date),
     roundTo(data.inr_amount, 3), wholesaleRate, aedEq, data.notes || null
   ]);
 
@@ -1344,7 +1378,7 @@ export async function recordCustomerPayment(data: {
       amount_aed, payment_method, reference_number, notes, is_demo
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, false)
   `, [
-    id, paymentNumber, data.payment_date, resolvedCustomerId, data.transaction_id || null,
+    id, paymentNumber, toDbDate(data.payment_date), resolvedCustomerId, data.transaction_id || null,
     roundTo(data.amount_aed, 3), data.payment_method || 'CASH', data.reference_number || null, data.notes || null
   ]);
 
@@ -1387,11 +1421,11 @@ export async function listCustomerPayments(filters?: {
     sql += ` AND cp.customer_id = $${params.length}`;
   }
   if (filters?.from) {
-    params.push(filters.from);
+    params.push(toDbDate(filters.from));
     sql += ` AND cp.payment_date >= $${params.length}`;
   }
   if (filters?.to) {
-    params.push(filters.to);
+    params.push(toDbDate(filters.to));
     sql += ` AND cp.payment_date <= $${params.length}`;
   }
   sql += ` ORDER BY cp.payment_date DESC, cp.created_at DESC`;
@@ -1877,7 +1911,7 @@ export async function saveBankDistributionEntry(data: {
   notes?: string;
 }): Promise<void> {
   const accountId = data.account_id;
-  const recordDate = data.record_date;
+  const recordDate = toDbDate(data.record_date);
   const com = roundTo(Number(data.commission_inr || 0), 3);
   const paid = roundTo(Number(data.paid_inr || 0), 3);
   const notes = data.notes?.trim() || null;
@@ -1917,9 +1951,10 @@ export async function createBankDistripRecord(data: {
   paid_inr?: number;
   notes?: string;
 }): Promise<BankDistripRecord> {
+  const recDate = toDbDate(data.record_date);
   await saveBankDistributionEntry({
     account_id: data.account_id,
-    record_date: data.record_date,
+    record_date: recDate,
     commission_inr: data.commission_inr || 0,
     paid_inr: data.paid_inr || 0,
     notes: data.notes,
@@ -1931,7 +1966,7 @@ export async function createBankDistripRecord(data: {
     JOIN bank_distrip_accounts a ON a.id = r.account_id
     WHERE r.account_id = $1 AND r.record_date = $2
     LIMIT 1
-  `, [data.account_id, data.record_date]);
+  `, [data.account_id, recDate]);
 
   return mapBankDistripRecord(record);
 }
@@ -2038,11 +2073,11 @@ export async function getBankDistributionSettlement(
   }
 
   if (options?.from) {
-    recordsParams.push(options.from);
+    recordsParams.push(toDbDate(options.from));
     recordsSql += ` AND r.record_date >= $${recordsParams.length}`;
   }
   if (options?.to) {
-    recordsParams.push(options.to);
+    recordsParams.push(toDbDate(options.to));
     recordsSql += ` AND r.record_date <= $${recordsParams.length}`;
   }
 
@@ -2166,15 +2201,17 @@ export async function getDashboardKPIs(filters?: { from?: string; to?: string; t
   const payParams: any[] = [];
 
   if (filters?.from) {
-    txnParams.push(filters.from);
+    const f = toDbDate(filters.from);
+    txnParams.push(f);
     txnWhere += ` AND transaction_date >= $${txnParams.length}`;
-    payParams.push(filters.from);
+    payParams.push(f);
     payWhere += ` AND payment_date >= $${payParams.length}`;
   }
   if (filters?.to) {
-    txnParams.push(filters.to);
+    const t = toDbDate(filters.to);
+    txnParams.push(t);
     txnWhere += ` AND transaction_date <= $${txnParams.length}`;
-    payParams.push(filters.to);
+    payParams.push(t);
     payWhere += ` AND payment_date <= $${payParams.length}`;
   }
 
@@ -2380,7 +2417,7 @@ export async function updateTransaction(id: string, data: {
 
   const total = Number(data.total ?? data.inr_amount ?? existing.inr_amount);
   const manualRate = Number(data.manual_rate ?? data.customer_rate ?? existing.customer_rate);
-  const transactionDate = data.transaction_date ?? existing.transaction_date;
+  const transactionDate = toDbDate(data.transaction_date ?? existing.transaction_date);
   const customerId = data.customer_id ?? existing.customer_id;
   const notes = data.notes !== undefined ? data.notes : existing.notes;
 
@@ -2653,7 +2690,7 @@ export async function updateDistributionSplit(id: string, data: {
 
   const newInr = data.inr_amount !== undefined ? Number(data.inr_amount) : Number(existingSplit.inr_amount);
   const distId = data.distributor_id || existingSplit.distributor_id;
-  const splitDate = data.split_date || existingSplit.split_date;
+  const splitDate = toDbDate(data.split_date || existingSplit.split_date);
   const wholesaleRate = data.wholesale_rate !== undefined ? data.wholesale_rate : (existingSplit.wholesale_rate || txn.base_rate);
   const notes = data.notes !== undefined ? data.notes : existingSplit.notes;
 
@@ -2717,7 +2754,7 @@ export async function updateBankDistripRecord(id: string, data: {
   const existing = await queryOne(`SELECT * FROM bank_distrip_records WHERE id = $1`, [id]);
   if (!existing) throw new Error("Record not found");
 
-  const recordDate = data.record_date || existing.record_date;
+  const recordDate = toDbDate(data.record_date || existing.record_date);
   const accountId = data.account_id || existing.account_id;
   const orderInr = data.order_inr !== undefined ? Number(data.order_inr) : Number(existing.order_inr);
   const commissionInr = data.commission_inr !== undefined ? Number(data.commission_inr) : Number(existing.commission_inr);

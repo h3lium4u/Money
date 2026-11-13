@@ -11,7 +11,7 @@ import { invalidateDistributorsPageCache } from "@/app/api/distributors/page-dat
 const createSplitSchema = z.object({
   transaction_id: z.string().min(1, "Transaction ID is required"),
   distributor_id: z.string().min(1, "Distributor ID is required"),
-  split_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"),
+  split_date: z.string().regex(/^(\d{4}-\d{2}-\d{2}|\d{2}-\d{2}-\d{4})$/, "Invalid date format (DD-MM-YYYY or YYYY-MM-DD)"),
   inr_amount: z.number().positive("Distribution amount must be greater than zero"),
   wholesale_rate: z.number().positive().optional(),
   notes: z.string().optional(),
@@ -20,7 +20,7 @@ const createSplitSchema = z.object({
 const updateSplitSchema = z.object({
   id: z.string().min(1, "Split ID is required"),
   distributor_id: z.string().min(1).optional(),
-  split_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format").optional(),
+  split_date: z.string().regex(/^(\d{4}-\d{2}-\d{2}|\d{2}-\d{2}-\d{4})$/, "Invalid date format (DD-MM-YYYY or YYYY-MM-DD)").optional(),
   inr_amount: z.number().positive().optional(),
   wholesale_rate: z.number().positive().optional(),
   notes: z.string().optional(),

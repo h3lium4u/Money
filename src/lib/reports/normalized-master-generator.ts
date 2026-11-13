@@ -12,6 +12,7 @@ import {
   getBankDistributionSettlement,
   onDataChange,
 } from "../repository.ts";
+import { parseDateSafe } from "../date-utils.ts";
 
 export async function generateNormalizedMasterWorkbook(filters?: {
   from?: string;
@@ -54,8 +55,8 @@ export async function generateNormalizedMasterWorkbook(filters?: {
   function getDayOfWeek(dateStr?: string): string {
     if (!dateStr) return "-";
     try {
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return "-";
+      const d = parseDateSafe(dateStr);
+      if (!d || isNaN(d.getTime())) return "-";
       return d.toLocaleDateString("en-US", { weekday: "short" });
     } catch {
       return "-";

@@ -37,6 +37,7 @@ import {
   getYesterdayDateString,
   getStartOfWeekDateString,
   getStartOfMonthDateString,
+  toISODate,
 } from "@/lib/date-utils";
 import {
   numberToIndianWords,
@@ -521,7 +522,7 @@ function PartyTransfersContent() {
     setEditingTxn(t);
     const ind = isIndianParty(t);
     setEditCurrencyMode(ind ? "INR" : "AED");
-    setEditDate(t.transaction_date?.slice(0, 10) || getTodayDateString());
+    setEditDate(toISODate(t.transaction_date) || getTodayDateString());
     setEditPartyId(t.customer_id);
     setEditInrAmount(String(ind ? t.inr_amount : (t.aed_amount || 0)));
     setEditCustomerRate(String(t.customer_rate));
@@ -645,17 +646,17 @@ function PartyTransfersContent() {
   const weekStartStr = getStartOfWeekDateString();
 
   const todayTransfers = transfers.filter(
-    (t) => t.status === "CONFIRMED" && t.transaction_date?.slice(0, 10) === todayStr
+    (t) => t.status === "CONFIRMED" && toISODate(t.transaction_date) === todayStr
   );
   const todayInrTotal = todayTransfers.reduce((sum, t) => sum + (t.inr_amount || 0), 0);
 
   const yesterdayTransfers = transfers.filter(
-    (t) => t.status === "CONFIRMED" && t.transaction_date?.slice(0, 10) === yesterdayStr
+    (t) => t.status === "CONFIRMED" && toISODate(t.transaction_date) === yesterdayStr
   );
   const yesterdayInrTotal = yesterdayTransfers.reduce((sum, t) => sum + (t.inr_amount || 0), 0);
 
   const monthTransfers = transfers.filter(
-    (t) => t.status === "CONFIRMED" && t.transaction_date?.slice(0, 10) >= monthStartStr
+    (t) => t.status === "CONFIRMED" && toISODate(t.transaction_date) >= monthStartStr
   );
   const monthInrTotal = monthTransfers.reduce((sum, t) => sum + (t.inr_amount || 0), 0);
 
@@ -740,13 +741,13 @@ function PartyTransfersContent() {
     }
 
     // Date Presets
-    const txnDate = t.transaction_date?.slice(0, 10);
+    const txnDate = toISODate(t.transaction_date);
     if (dateFilter === "TODAY" && txnDate !== todayStr) return false;
     if (dateFilter === "YESTERDAY" && txnDate !== yesterdayStr) return false;
     if (dateFilter === "WEEK" && (txnDate < weekStartStr || txnDate > todayStr)) return false;
     if (dateFilter === "MONTH" && (txnDate < monthStartStr || txnDate > todayStr)) return false;
-    if (customFrom && txnDate < customFrom) return false;
-    if (customTo && txnDate > customTo) return false;
+    if (customFrom && txnDate < toISODate(customFrom)) return false;
+    if (customTo && txnDate > toISODate(customTo)) return false;
 
     return true;
   });

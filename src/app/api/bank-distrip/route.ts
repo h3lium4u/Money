@@ -11,7 +11,7 @@ import {
 import { z } from "zod";
 
 const createRecordSchema = z.object({
-  record_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format (YYYY-MM-DD)"),
+  record_date: z.string().regex(/^(\d{4}-\d{2}-\d{2}|\d{2}-\d{2}-\d{4})$/, "Invalid date format (DD-MM-YYYY or YYYY-MM-DD)"),
   account_id: z.string().min(1, "Account ID is required"),
   commission_inr: z.number().default(0),
   paid_inr: z.number().default(0),
@@ -27,7 +27,7 @@ const createAccountSchema = z.object({
 
 const updateRecordSchema = z.object({
   id: z.string().min(1, "Record ID is required"),
-  record_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format").optional(),
+  record_date: z.string().regex(/^(\d{4}-\d{2}-\d{2}|\d{2}-\d{2}-\d{4})$/, "Invalid date format (DD-MM-YYYY or YYYY-MM-DD)").optional(),
   account_id: z.string().optional(),
   commission_inr: z.number().optional(),
   paid_inr: z.number().optional(),

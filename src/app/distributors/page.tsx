@@ -9,7 +9,7 @@ import {
   formatAED,
   formatRate,
 } from "@/lib/number-to-words";
-import { getTodayDateString } from "@/lib/date-utils";
+import { getTodayDateString, toISODate } from "@/lib/date-utils";
 import {
   Split,
   PlusCircle,
@@ -147,7 +147,7 @@ export default function IndiaDistributionPage() {
     setModalTxnId(txn.id);
     const rem = Number(txn.remaining_inr || 0);
     setModalAmount(rem > 0 ? String(rem) : "");
-    setModalDate(txn.transaction_date || getTodayDateString());
+    setModalDate(toISODate(txn.transaction_date) || getTodayDateString());
     setModalRate(txn.base_rate ? String(txn.base_rate) : "");
     setModalNotes("");
     setModalError(null);
@@ -172,7 +172,7 @@ export default function IndiaDistributionPage() {
   function openEditSplit(s: any) {
     setEditSplit(s);
     setEditDistId(s.distributor_id);
-    setEditDate(s.split_date);
+    setEditDate(toISODate(s.split_date));
     setEditAmount(String(s.inr_amount));
     setEditRate(s.wholesale_rate ? String(s.wholesale_rate) : "");
     setEditNotes(s.notes || "");

@@ -3,7 +3,7 @@ import { getTransaction, voidTransaction, updateTransaction, deleteTransaction, 
 import { z } from "zod";
 
 const updateSchema = z.object({
-  transaction_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format").optional(),
+  transaction_date: z.string().regex(/^(\d{4}-\d{2}-\d{2}|\d{2}-\d{2}-\d{4})$/, "Invalid date format (DD-MM-YYYY or YYYY-MM-DD)").optional(),
   customer_id: z.string().min(1).optional(),
   total: z.number().positive().optional(),
   inr_amount: z.number().positive().optional(),

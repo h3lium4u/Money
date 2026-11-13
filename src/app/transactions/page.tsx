@@ -40,6 +40,7 @@ import {
   getYesterdayDateString,
   getDaysAgoDateString,
   getStartOfMonthDateString,
+  toISODate,
 } from "@/lib/date-utils";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
@@ -220,7 +221,7 @@ function DubaiClientTransactionsContent() {
   // Open Edit Modal
   function handleOpenEdit(t: any) {
     setEditingTxn(t);
-    setEditDate(t.transaction_date);
+    setEditDate(toISODate(t.transaction_date));
     setEditCustomerId(t.customer_id);
     setEditTotal(String(t.total ?? t.inr_amount));
     setEditManualRate(String(t.manual_rate ?? t.customer_rate));
@@ -390,7 +391,7 @@ function DubaiClientTransactionsContent() {
   const chronological = [...filtered]
     .filter((t) => t.status === "CONFIRMED")
     .sort((a, b) => {
-      const cmp = (a.transaction_date || "").localeCompare(b.transaction_date || "");
+      const cmp = (toISODate(a.transaction_date) || "").localeCompare(toISODate(b.transaction_date) || "");
       if (cmp !== 0) return cmp;
       return (a.created_at || "").localeCompare(b.created_at || "");
     });

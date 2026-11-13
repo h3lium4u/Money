@@ -25,7 +25,7 @@ import {
   ArrowRight,
   Filter,
 } from "lucide-react";
-import { getTodayDateString } from "@/lib/date-utils";
+import { getTodayDateString, toISODate, formatDisplayDate } from "@/lib/date-utils";
 import { formatINR, formatAED, formatRate, integerToIndianWords } from "@/lib/number-to-words";
 import { FadeIn, PageTransition, StaggerContainer, StaggerItem } from "@/components/AnimatedLayout";
 
@@ -272,7 +272,7 @@ export default function BankDistripPage() {
 
   // Today's metrics for active account
   const todayStr = getTodayDateString();
-  const todayRecord = records.find((r) => r.record_date === todayStr);
+  const todayRecord = records.find((r) => toISODate(r.record_date) === todayStr);
   const todayOrder = todayRecord ? Number(todayRecord.order_inr || 0) : 0;
   const todayCom = todayRecord ? Number(todayRecord.commission_inr || 0) : 0;
   const todayPaid = todayRecord ? Number(todayRecord.paid_inr || 0) : 0;
@@ -297,7 +297,7 @@ export default function BankDistripPage() {
   // Open Edit Modal
   function openEditModal(record: BankRecord) {
     setEditRecord(record);
-    setEditDateVal(record.record_date);
+    setEditDateVal(toISODate(record.record_date));
     setEditOrder(Number(record.order_inr || 0));
     setEditCom(record.commission_inr && Number(record.commission_inr) !== 0 ? String(record.commission_inr) : "");
     setEditPaid(record.paid_inr && Number(record.paid_inr) !== 0 ? String(record.paid_inr) : "");
@@ -450,16 +450,10 @@ export default function BankDistripPage() {
     }
   }
 
-  // Format date readable (e.g. 2026-05-03 -> 03-May-2026)
+  // Format date readable in DD-MM-YYYY
   function formatDateReadable(dateStr: string) {
     if (!dateStr) return "-";
-    const parts = dateStr.split("-");
-    if (parts.length === 3) {
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      const mIdx = parseInt(parts[1], 10) - 1;
-      return `${parts[2]}-${months[mIdx] || parts[1]}-${parts[0]}`;
-    }
-    return dateStr;
+    return formatDisplayDate(dateStr);
   }
 
   return (

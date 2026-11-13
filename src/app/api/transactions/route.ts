@@ -3,7 +3,7 @@ import { listTransactions, createTransaction } from "@/lib/repository";
 import { z } from "zod";
 
 const createSchema = z.object({
-  transaction_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format (YYYY-MM-DD)"),
+  transaction_date: z.string().regex(/^(\d{4}-\d{2}-\d{2}|\d{2}-\d{2}-\d{4})$/, "Invalid date format (DD-MM-YYYY or YYYY-MM-DD)"),
   customer_id: z.string().min(1, "Dubai client is required"),
   total: z.number().positive("Total must be greater than 0").optional(),
   inr_amount: z.number().positive("Amount must be greater than 0").optional(),

@@ -38,6 +38,7 @@ import {
   getYesterdayDateString,
   getDaysAgoDateString,
   getStartOfMonthDateString,
+  toISODate,
 } from "@/lib/date-utils";
 
 function CustomerRemittancesContent() {
@@ -232,7 +233,7 @@ function CustomerRemittancesContent() {
 
   async function handleOpenEdit(t: any) {
     setEditingTxn(t);
-    setEditDate(t.transaction_date);
+    setEditDate(toISODate(t.transaction_date));
     setEditCustomerId(t.customer_id);
     setEditInr(String(t.inr_amount));
     setEditCustRate(String(t.customer_rate));

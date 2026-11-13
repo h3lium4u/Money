@@ -3,7 +3,7 @@ import { recordCustomerPayment, deleteCustomerPayment, listCustomerPayments } fr
 import { z } from "zod";
 
 const schema = z.object({
-  payment_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"),
+  payment_date: z.string().regex(/^(\d{4}-\d{2}-\d{2}|\d{2}-\d{2}-\d{4})$/, "Invalid date format (DD-MM-YYYY or YYYY-MM-DD)"),
   amount_aed: z.number().positive("Payment amount must be greater than zero"),
   payment_method: z.string().default("CASH"),
   reference_number: z.string().optional(),

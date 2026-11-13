@@ -10,9 +10,18 @@ import type {
 
 function toDateStr(val: any): string {
   if (!val) return "";
-  if (typeof val === "string") return val.slice(0, 10);
-  if (val instanceof Date) return val.toISOString().slice(0, 10);
-  return String(val).slice(0, 10);
+  if (val instanceof Date) {
+    if (isNaN(val.getTime())) return "";
+    const day = String(val.getDate()).padStart(2, "0");
+    const month = String(val.getMonth() + 1).padStart(2, "0");
+    const year = val.getFullYear();
+    return `${day}-${month}-${year}`;
+  }
+  const s = String(val).trim();
+  if (/^\d{2}-\d{2}-\d{4}$/.test(s)) return s;
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  return s.slice(0, 10);
 }
 
 /**
