@@ -9,18 +9,19 @@ import type {
 } from "./types.ts";
 
 function toDateStr(val: any): string {
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   if (!val) return "";
   if (val instanceof Date) {
     if (isNaN(val.getTime())) return "";
     const day = String(val.getDate()).padStart(2, "0");
-    const month = String(val.getMonth() + 1).padStart(2, "0");
-    const year = val.getFullYear();
-    return `${day}-${month}-${year}`;
+    return `${day} ${MONTHS[val.getMonth()]} ${val.getFullYear()}`;
   }
   const s = String(val).trim();
-  if (/^\d{2}-\d{2}-\d{4}$/.test(s)) return s;
-  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  if (/^\d{2} [A-Za-z]{3} \d{4}$/.test(s)) return s;
+  const ymd = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (ymd) return `${ymd[3]} ${MONTHS[Number(ymd[2]) - 1]} ${ymd[1]}`;
+  const dmy = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (dmy) return `${dmy[1]} ${MONTHS[Number(dmy[2]) - 1]} ${dmy[3]}`;
   return s.slice(0, 10);
 }
 

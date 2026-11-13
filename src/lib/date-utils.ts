@@ -61,42 +61,48 @@ export function getDayMonthYearString(d: Date = new Date()): string {
 }
 
 /**
- * Universal date formatter to DD-MM-YYYY (e.g. 04-10-2026).
- * Accepts ISO string (2026-10-04), Date object, or DD-MM-YYYY string.
+ * Universal date formatter to DD MMM YYYY (e.g. 04 Oct 2026).
+ * Accepts ISO string (2026-10-04), Date object, DD-MM-YYYY, or DD MMM YYYY string.
  */
 export function formatDisplayDate(val: any): string {
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   if (!val) return "";
   if (val instanceof Date) {
     if (isNaN(val.getTime())) return "";
     const day = String(val.getDate()).padStart(2, "0");
-    const month = String(val.getMonth() + 1).padStart(2, "0");
-    const year = val.getFullYear();
-    return `${day}-${month}-${year}`;
+    return `${day} ${MONTHS[val.getMonth()]} ${val.getFullYear()}`;
   }
   const s = String(val).trim();
-  // Already in DD-MM-YYYY format
-  if (/^\d{2}-\d{2}-\d{4}$/.test(s)) return s;
-  // If in YYYY-MM-DD or ISO timestamp format
+  // Already DD MMM YYYY
+  if (/^\d{2} [A-Za-z]{3} \d{4}$/.test(s)) return s;
+  // ISO YYYY-MM-DD or timestamp
   const ymd = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (ymd) {
-    return `${ymd[3]}-${ymd[2]}-${ymd[1]}`;
+    return `${ymd[3]} ${MONTHS[Number(ymd[2]) - 1]} ${ymd[1]}`;
   }
-  // Fallback date parsing
+  // Legacy DD-MM-YYYY
+  const dmy = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (dmy) {
+    return `${dmy[1]} ${MONTHS[Number(dmy[2]) - 1]} ${dmy[3]}`;
+  }
+  // Fallback
   const d = new Date(s);
   if (!isNaN(d.getTime())) {
     const day = String(d.getDate()).padStart(2, "0");
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const year = d.getFullYear();
-    return `${day}-${month}-${year}`;
+    return `${day} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
   }
   return s;
 }
 
 /**
  * Universal date parser to ISO YYYY-MM-DD for database storage and <input type="date">.
- * Converts DD-MM-YYYY or Date object to YYYY-MM-DD.
+ * Converts DD MMM YYYY, DD-MM-YYYY, or Date object to YYYY-MM-DD.
  */
 export function toISODate(val: any): string {
+  const MONTH_MAP: Record<string, string> = {
+    jan:"01",feb:"02",mar:"03",apr:"04",may:"05",jun:"06",
+    jul:"07",aug:"08",sep:"09",oct:"10",nov:"11",dec:"12"
+  };
   if (!val) return "";
   if (val instanceof Date) {
     if (isNaN(val.getTime())) return "";
@@ -106,12 +112,18 @@ export function toISODate(val: any): string {
     return `${year}-${month}-${day}`;
   }
   const s = String(val).trim();
-  // If in DD-MM-YYYY format
+  // DD MMM YYYY (new display format)
+  const dmmy = s.match(/^(\d{2}) ([A-Za-z]{3}) (\d{4})$/);
+  if (dmmy) {
+    const mon = MONTH_MAP[dmmy[2].toLowerCase()];
+    if (mon) return `${dmmy[3]}-${mon}-${dmmy[1]}`;
+  }
+  // DD-MM-YYYY
   const dmy = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
   if (dmy) {
     return `${dmy[3]}-${dmy[2]}-${dmy[1]}`;
   }
-  // If in YYYY-MM-DD format
+  // YYYY-MM-DD
   const ymd = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (ymd) {
     return `${ymd[1]}-${ymd[2]}-${ymd[3]}`;
@@ -120,17 +132,29 @@ export function toISODate(val: any): string {
 }
 
 /**
- * Safely parses any date string (DD-MM-YYYY or YYYY-MM-DD) into a valid Date object.
+ * Safely parses any date string (DD MMM YYYY, DD-MM-YYYY, or YYYY-MM-DD) into a valid Date object.
  */
 export function parseDateSafe(val: any): Date | null {
+  const MONTH_MAP: Record<string, number> = {
+    jan:0,feb:1,mar:2,apr:3,may:4,jun:5,
+    jul:6,aug:7,sep:8,oct:9,nov:10,dec:11
+  };
   if (!val) return null;
   if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
   const s = String(val).trim();
+  // DD MMM YYYY
+  const dmmy = s.match(/^(\d{2}) ([A-Za-z]{3}) (\d{4})$/);
+  if (dmmy) {
+    const mon = MONTH_MAP[dmmy[2].toLowerCase()];
+    if (mon !== undefined) return new Date(Number(dmmy[3]), mon, Number(dmmy[1]));
+  }
+  // DD-MM-YYYY
   const dmy = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
   if (dmy) {
     const [, day, month, year] = dmy;
     return new Date(Number(year), Number(month) - 1, Number(day));
   }
+  // YYYY-MM-DD
   const ymd = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (ymd) {
     const [, year, month, day] = ymd;

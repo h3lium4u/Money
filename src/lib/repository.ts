@@ -171,24 +171,37 @@ export interface PartyPriorTransferSummary {
 }
 
 function formatDate(val: any): string {
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   if (!val) return "";
   if (val instanceof Date) {
     if (isNaN(val.getTime())) return "";
     const day = String(val.getDate()).padStart(2, "0");
-    const month = String(val.getMonth() + 1).padStart(2, "0");
-    const year = val.getFullYear();
-    return `${day}-${month}-${year}`;
+    return `${day} ${MONTHS[val.getMonth()]} ${val.getFullYear()}`;
   }
   const s = String(val).trim();
-  if (/^\d{2}-\d{2}-\d{4}$/.test(s)) return s;
-  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (m) {
-    return `${m[3]}-${m[2]}-${m[1]}`;
+  // Already in DD MMM YYYY format
+  if (/^\d{2} [A-Za-z]{3} \d{4}$/.test(s)) return s;
+  // ISO YYYY-MM-DD or timestamp
+  const ymd = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (ymd) {
+    const day = ymd[3];
+    const mon = MONTHS[Number(ymd[2]) - 1];
+    return `${day} ${mon} ${ymd[1]}`;
+  }
+  // Legacy DD-MM-YYYY
+  const dmy = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (dmy) {
+    const mon = MONTHS[Number(dmy[2]) - 1];
+    return `${dmy[1]} ${mon} ${dmy[3]}`;
   }
   return s.slice(0, 10);
 }
 
 function toDbDate(val: any): string {
+  const MONTH_MAP: Record<string, string> = {
+    jan:"01",feb:"02",mar:"03",apr:"04",may:"05",jun:"06",
+    jul:"07",aug:"08",sep:"09",oct:"10",nov:"11",dec:"12"
+  };
   if (!val) return getTodayDateString();
   if (val instanceof Date) {
     if (isNaN(val.getTime())) return getTodayDateString();
@@ -198,10 +211,18 @@ function toDbDate(val: any): string {
     return `${year}-${month}-${day}`;
   }
   const s = String(val).trim();
+  // DD MMM YYYY (new display format)
+  const dmmy = s.match(/^(\d{2}) ([A-Za-z]{3}) (\d{4})$/);
+  if (dmmy) {
+    const mon = MONTH_MAP[dmmy[2].toLowerCase()];
+    if (mon) return `${dmmy[3]}-${mon}-${dmmy[1]}`;
+  }
+  // Legacy DD-MM-YYYY
   const dmy = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
   if (dmy) {
     return `${dmy[3]}-${dmy[2]}-${dmy[1]}`;
   }
+  // ISO YYYY-MM-DD
   const ymd = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (ymd) {
     return `${ymd[1]}-${ymd[2]}-${ymd[3]}`;
