@@ -267,8 +267,24 @@ html.dark input[type="date"]::-webkit-calendar-picker-indicator {
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: var(--r-xs); }
 ::-webkit-scrollbar-thumb:hover { background: var(--fg-faint); }
 
-/* ── Print ── */
+/* ── Print Styles & Browser Header/Footer Removal ── */
+@page {
+  margin: 0 !important;
+  size: auto;
+}
+
 @media print {
+  @page {
+    margin: 0 !important;
+    size: auto;
+  }
+
+  /* Suppress browser link URLs in all PDF and physical printouts */
+  a, a:visited, a[href]:after {
+    content: none !important;
+    text-decoration: none !important;
+  }
+
   aside, header, nav, button, .no-print, input, select { display: none !important; }
   html, body {
     height: auto !important;
@@ -279,6 +295,12 @@ html.dark input[type="date"]::-webkit-calendar-picker-indicator {
     font-size: 10pt !important;
     margin: 0 !important;
     padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  /* Standard margin padding when printing full sheets (not thermal receipts) */
+  body:not(:has(.thermal-receipt)) {
+    padding: 10mm 12mm !important;
   }
   div, main, section, article {
     height: auto !important;
@@ -295,7 +317,8 @@ html.dark input[type="date"]::-webkit-calendar-picker-indicator {
     width: 76mm !important;
     max-width: 100% !important;
     margin: 0 auto !important;
-    padding: 2mm !important;
+    padding: 6mm 4mm !important;
+    box-sizing: border-box !important;
     font-family: 'Courier New', Courier, monospace !important;
     color: #000 !important;
     background: #fff !important;

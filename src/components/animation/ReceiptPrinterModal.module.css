@@ -291,8 +291,17 @@
   background-color: #047857;
 }
 
-/* Ensure modal is never rendered on physical paper print */
+/* Ensure modal is never rendered on physical paper print and remove browser header/footer URLs */
+@page {
+  margin: 0 !important;
+  size: auto;
+}
+
 @media print {
+  @page {
+    margin: 0 !important;
+    size: auto;
+  }
   .overlay {
     display: none !important;
   }

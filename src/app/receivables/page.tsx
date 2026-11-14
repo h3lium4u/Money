@@ -148,6 +148,13 @@ export default function ReceivablesPage() {
   const [deletingPaymentCustId, setDeletingPaymentCustId] = useState<string | null>(null);
   const [isDeletingPayment, setIsDeletingPayment] = useState(false);
 
+  // Settle Small Due (< 50 AED) modal & state
+  const [smallDueTarget, setSmallDueTarget] = useState<CustomerRecord | null>(null);
+  const [smallDueDate, setSmallDueDate] = useState(getTodayDateString());
+  const [smallDueMethod, setSmallDueMethod] = useState("CASH");
+  const [smallDueNotes, setSmallDueNotes] = useState("");
+  const [settlingSmallDue, setSettlingSmallDue] = useState(false);
+
   useEffect(() => {
     loadAllData();
   }, []);
@@ -417,6 +424,70 @@ export default function ReceivablesPage() {
       toast.error("Failed to record payment");
     } finally {
       setSubmittingPay(false);
+    }
+  }
+
+  function openSmallDueModal(c: CustomerRecord) {
+    setSmallDueTarget(c);
+    setSmallDueDate(getTodayDateString());
+    setSmallDueMethod("CASH");
+    setSmallDueNotes("Small Due Settlement (< 50 AED)");
+  }
+
+  async function handleConfirmSmallDueSettle() {
+    if (!smallDueTarget) return;
+    const dueAmt = smallDueTarget.outstanding_balance;
+    if (!dueAmt || dueAmt <= 0 || dueAmt >= 50) {
+      toast.error("Settlement button is only available for small dues below 50 AED");
+      return;
+    }
+
+    setSettlingSmallDue(true);
+    try {
+      const res = await fetch(`/api/customers/${smallDueTarget.id}/payments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          payment_date: smallDueDate,
+          amount_aed: dueAmt,
+          payment_method: smallDueMethod,
+          notes: smallDueNotes || `Small Due Settlement (< 50 AED) - Cleared ${dueAmt.toFixed(3)} AED`,
+        }),
+      });
+
+      if (res.ok) {
+        const settledName = smallDueTarget.name;
+        const settledAmount = dueAmt.toFixed(3);
+        const targetId = smallDueTarget.id;
+        setSmallDueTarget(null);
+        toast.success(`Settled small due of ${settledAmount} AED for ${settledName}`);
+
+        // Invalidate ledger cache for this customer
+        setCustomerLedgerMap((prev) => {
+          const next = { ...prev };
+          delete next[targetId];
+          return next;
+        });
+
+        await Promise.all([fetchCustomers(), fetchGlobalPayments()]);
+
+        // Refresh inline statement if expanded
+        if (expandedCustId === targetId) {
+          const lRes = await fetch(`/api/customers/${targetId}`);
+          const lData = await lRes.json();
+          if (lData?.customer) {
+            setCustomerLedgerMap((prev) => ({ ...prev, [targetId]: lData }));
+          }
+        }
+      } else {
+        const errJson = await res.json();
+        toast.error(errJson.error || "Failed to settle small due");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to settle small due");
+    } finally {
+      setSettlingSmallDue(false);
     }
   }
 
@@ -813,6 +884,7 @@ export default function ReceivablesPage() {
                   const ledgerData = customerLedgerMap[c.id];
                   const isLoadingThisLedger = loadingLedgerCustId === c.id;
                   const isOwing = (c.outstanding_balance || 0) > 0.01;
+                  const isSmallDue = (c.outstanding_balance || 0) > 0.001 && (c.outstanding_balance || 0) < 50;
 
                   return (
                     <Fragment key={c.id}>
@@ -881,6 +953,17 @@ export default function ReceivablesPage() {
                           >
                             {isOwing ? "Due Pending" : "✓ Settled"}
                           </span>
+                          {isSmallDue && (
+                            <button
+                              type="button"
+                              onClick={() => openSmallDueModal(c)}
+                              className="mt-1 px-1.5 py-0.5 text-[10px] font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded inline-flex items-center gap-1 transition cursor-pointer shadow-2xs"
+                              title={`Settle remaining ${(c.outstanding_balance || 0).toFixed(3)} AED`}
+                            >
+                              <Coins className="w-2.5 h-2.5 text-amber-600" />
+                              <span>Settle Small Due</span>
+                            </button>
+                          )}
                         </td>
 
                         {/* Actions */}
@@ -907,6 +990,19 @@ export default function ReceivablesPage() {
                                 <ChevronDown className="w-3 h-3" />
                               )}
                             </button>
+
+                            {/* Settle Small Due Button (Only when < 50 AED) */}
+                            {isSmallDue && (
+                              <button
+                                type="button"
+                                onClick={() => openSmallDueModal(c)}
+                                className="px-2 py-1 text-[11px] font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                                title={`Quick settle small due of ${(c.outstanding_balance || 0).toFixed(3)} AED`}
+                              >
+                                <Coins className="w-3 h-3 text-amber-600" />
+                                <span>Settle Due ({(c.outstanding_balance || 0).toFixed(2)})</span>
+                              </button>
+                            )}
 
                             {/* Settle Payment */}
                             <button
@@ -967,6 +1063,18 @@ export default function ReceivablesPage() {
                                 </div>
 
                                 <div className="flex items-center gap-2">
+                                  {c.outstanding_balance !== undefined && c.outstanding_balance > 0.001 && c.outstanding_balance < 50 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => openSmallDueModal(c)}
+                                      className="px-2.5 py-1 text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg shadow-2xs flex items-center gap-1.5 transition cursor-pointer"
+                                      title={`Quick settle ${(c.outstanding_balance || 0).toFixed(3)} AED`}
+                                    >
+                                      <Coins className="w-3.5 h-3.5 text-amber-600" />
+                                      <span>Settle Small Due ({(c.outstanding_balance || 0).toFixed(2)} AED)</span>
+                                    </button>
+                                  )}
+
                                   {ledgerData && (
                                     <button
                                       type="button"
@@ -1033,6 +1141,19 @@ export default function ReceivablesPage() {
                                       >
                                         {(ledgerData.customer?.outstanding_balance || 0).toFixed(3)} AED
                                       </span>
+                                      {ledgerData.customer?.outstanding_balance !== undefined &&
+                                       ledgerData.customer.outstanding_balance > 0.001 &&
+                                       ledgerData.customer.outstanding_balance < 50 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => openSmallDueModal(ledgerData.customer as any)}
+                                          className="mt-1 px-2 py-0.5 text-[10px] font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded inline-flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                                          title={`Settle remaining ${(ledgerData.customer.outstanding_balance || 0).toFixed(3)} AED`}
+                                        >
+                                          <Coins className="w-2.5 h-2.5 text-amber-700" />
+                                          <span>Settle Small Due</span>
+                                        </button>
+                                      )}
                                     </div>
                                   </div>
 
@@ -1281,6 +1402,32 @@ export default function ReceivablesPage() {
                 />
               </div>
             </div>
+
+            {(() => {
+              const curCust = customers.find((c) => c.id === selectedCustId);
+              const bal = curCust?.outstanding_balance || 0;
+              if (bal > 0.001 && bal < 50) {
+                return (
+                  <div className="flex items-center justify-between text-xs bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-amber-900">
+                    <div>
+                      <span className="font-semibold">Small Due Balance: </span>
+                      <span className="font-mono font-bold text-rose-700">{bal.toFixed(3)} AED</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPayAmount(bal.toFixed(3));
+                        setPayNotes("Small Due Settlement (< 50 AED)");
+                      }}
+                      className="px-2.5 py-1 text-[11px] font-bold bg-amber-200 hover:bg-amber-300 rounded text-amber-950 transition cursor-pointer shadow-2xs"
+                    >
+                      Fill Exact Due
+                    </button>
+                  </div>
+                );
+              }
+              return null;
+            })()}
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -1653,6 +1800,109 @@ export default function ReceivablesPage() {
                 className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold"
               >
                 {isDeletingPayment ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 6: SETTLE SMALL DUE (< 50 AED) */}
+      {/* ========================================================================= */}
+      {smallDueTarget && (
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Coins className="w-5 h-5 text-amber-600" />
+                <span>Settle Small Due Balance</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setSmallDueTarget(null)}
+                className="text-slate-400 hover:text-slate-600 text-sm font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-amber-800 font-semibold">Customer:</span>
+                <span className="font-bold text-slate-900">{smallDueTarget.name} {smallDueTarget.code ? `(${smallDueTarget.code})` : ""}</span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-amber-800 font-semibold">Outstanding Due:</span>
+                <span className="font-mono font-bold text-rose-700 text-sm">
+                  {(smallDueTarget.outstanding_balance || 0).toFixed(3)} AED
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-xs border-t border-amber-200/60 pt-1.5">
+                <span className="text-amber-800 font-semibold">Resulting Balance:</span>
+                <span className="font-mono font-bold text-emerald-700">0.000 AED (Cleared)</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Settlement Date</label>
+                <input
+                  type="date"
+                  required
+                  value={smallDueDate}
+                  onChange={(e) => setSmallDueDate(e.target.value)}
+                  className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Payment Method</label>
+                <input
+                  type="text"
+                  value={smallDueMethod}
+                  onChange={(e) => setSmallDueMethod(e.target.value)}
+                  placeholder="e.g. CASH"
+                  className="w-full text-xs font-semibold border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Settlement Note / Reference</label>
+              <input
+                type="text"
+                value={smallDueNotes}
+                onChange={(e) => setSmallDueNotes(e.target.value)}
+                placeholder="e.g. Small Due Settlement (< 50 AED)"
+                className="w-full text-xs border border-slate-300 rounded-lg p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setSmallDueTarget(null)}
+                className="px-4 py-2 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSmallDueSettle}
+                disabled={settlingSmallDue}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {settlingSmallDue ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Settling...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    <span>Confirm & Settle {(smallDueTarget.outstanding_balance || 0).toFixed(3)} AED</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
