@@ -34,6 +34,9 @@ const createSchema = z.object({
   path: ["manual_rate"],
 });
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -45,7 +48,11 @@ export async function GET(request: Request) {
     const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : 100;
 
     const data = await listTransactions({ from, to, customerId, status, limit, entityType });
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      },
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to list transactions" }, { status: 500 });
   }

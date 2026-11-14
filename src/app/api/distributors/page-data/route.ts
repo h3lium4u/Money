@@ -14,6 +14,9 @@ export function invalidateDistributorsPageCache() {
   memoryCache = null;
 }
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -24,7 +27,7 @@ export async function GET(request: Request) {
       return NextResponse.json(memoryCache.data, {
         headers: {
           "X-Cache": "HIT",
-          "Cache-Control": "public, s-maxage=10, stale-while-revalidate=30",
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
         },
       });
     }
@@ -111,7 +114,7 @@ export async function GET(request: Request) {
     return NextResponse.json(payload, {
       headers: {
         "X-Cache": "MISS",
-        "Cache-Control": "public, s-maxage=10, stale-while-revalidate=30",
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
       },
     });
   } catch (error: any) {

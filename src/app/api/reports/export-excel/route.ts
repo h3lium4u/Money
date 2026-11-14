@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { generateNormalizedMasterWorkbook } from "@/lib/reports/normalized-master-generator";
 import { getDayMonthYearString } from "@/lib/date-utils";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -17,7 +20,7 @@ export async function GET(request: Request) {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "Content-Disposition": `attachment; filename="${filename}"`,
-        "Cache-Control": "no-store, max-age=0",
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
       },
     });
   } catch (error: any) {

@@ -34,6 +34,9 @@ const updateRecordSchema = z.object({
   notes: z.string().optional(),
 });
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -44,9 +47,17 @@ export async function GET(request: Request) {
       const date = searchParams.get("date");
       if (accountId && date) {
         const order = await getDistributorOrderForDate(accountId, date);
-        return NextResponse.json({ order_inr: order });
+        return NextResponse.json({ order_inr: order }, {
+          headers: {
+            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          },
+        });
       }
-      return NextResponse.json({ order_inr: 0 });
+      return NextResponse.json({ order_inr: 0 }, {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        },
+      });
     }
 
     const accountId = searchParams.get("accountId") || undefined;
@@ -60,7 +71,11 @@ export async function GET(request: Request) {
       sortOrder: sort,
     });
 
-    return NextResponse.json(settlementData);
+    return NextResponse.json(settlementData, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      },
+    });
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || "Failed to load bank distribution settlement data" },

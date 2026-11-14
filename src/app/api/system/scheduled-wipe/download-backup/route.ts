@@ -4,6 +4,9 @@ import { scheduleWipe, WipeScope } from "@/lib/scheduled-wipe";
 import { verifyMasterPassword } from "@/lib/auth";
 import { getDayMonthYearString } from "@/lib/date-utils";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 async function handleDownloadBackup(request: Request) {
   try {
     const { searchParams } = new URL(request.url);

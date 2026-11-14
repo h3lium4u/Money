@@ -27,6 +27,9 @@ const updateSchema = z.object({
   })).optional(),
 });
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -39,7 +42,11 @@ export async function GET(
     }
 
     const auditLogs = await getAuditLogs('TRANSACTION', id);
-    return NextResponse.json({ transaction: txn, auditLogs });
+    return NextResponse.json({ transaction: txn, auditLogs }, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      },
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to fetch transaction" }, { status: 500 });
   }

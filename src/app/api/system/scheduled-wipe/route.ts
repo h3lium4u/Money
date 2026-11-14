@@ -12,6 +12,9 @@ let cachedStatus: any = null;
 let lastStatusFetchTime = 0;
 const STATUS_CACHE_TTL = 5000;
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);

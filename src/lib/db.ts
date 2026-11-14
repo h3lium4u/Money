@@ -16,8 +16,14 @@ types.setTypeParser(1082, (val: string) => val);
 let pool: Pool | null = null;
 let httpSql: ReturnType<typeof neon> | null = null;
 
+export function resolveDatabaseUrl(): string | null {
+  const url = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL;
+  if (!url || url.trim().length === 0) return null;
+  return url.trim().replace(/^["']|["']$/g, "");
+}
+
 export function isNeonEnabled(): boolean {
-  return Boolean(process.env.DATABASE_URL && process.env.DATABASE_URL.trim().length > 0);
+  return Boolean(resolveDatabaseUrl());
 }
 
 /**
@@ -28,7 +34,7 @@ export function isNeonEnabled(): boolean {
 export function getNeonHttp() {
   if (!isNeonEnabled()) return null;
   if (!httpSql) {
-    const rawUrl = process.env.DATABASE_URL!.trim().replace(/^["']|["']$/g, "");
+    const rawUrl = resolveDatabaseUrl()!;
     // Normalize: Remove pooler hostname and channel_binding to ensure rapid HTTPS connection
     const cleanUrl = rawUrl
       .replace("-pooler.", ".")
@@ -46,8 +52,9 @@ export function getNeonHttp() {
 export function getPool(): Pool | null {
   if (!isNeonEnabled()) return null;
   if (!pool) {
+    const rawUrl = resolveDatabaseUrl()!;
     pool = new Pool({
-      connectionString: process.env.DATABASE_URL!.trim(),
+      connectionString: rawUrl,
       connectionTimeoutMillis: 30000, // 30s timeout allows Neon serverless to wake from sleep
       idleTimeoutMillis: 30000,
     });
