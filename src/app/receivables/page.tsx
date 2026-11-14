@@ -111,7 +111,12 @@ export default function ReceivablesPage() {
   const [newRate, setNewRate] = useState("38.25");
   const [creatingCustomer, setCreatingCustomer] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
-  const [sameNameSuggestion, setSameNameSuggestion] = useState<{ existingName: string; existingCode: string; nextCode: string } | null>(null);
+
+  const duplicateNewCustomer = React.useMemo(() => {
+    const trimmed = newName.trim().toLowerCase();
+    if (!trimmed) return null;
+    return customers.find((c) => c.name.trim().toLowerCase() === trimmed) || null;
+  }, [newName, customers]);
 
   // Edit Customer Modal
   const [editCustomerTarget, setEditCustomerTarget] = useState<CustomerRecord | null>(null);
@@ -121,6 +126,17 @@ export default function ReceivablesPage() {
   const [editRate, setEditRate] = useState("38.25");
   const [editingCustomer, setEditingCustomer] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+
+  const duplicateEditCustomer = React.useMemo(() => {
+    if (!editCustomerTarget) return null;
+    const trimmed = editName.trim().toLowerCase();
+    if (!trimmed) return null;
+    return (
+      customers.find(
+        (c) => c.id !== editCustomerTarget.id && c.name.trim().toLowerCase() === trimmed
+      ) || null
+    );
+  }, [editName, editCustomerTarget, customers]);
 
   // Delete Customer Modal
   const [deleteCustomerTarget, setDeleteCustomerTarget] = useState<CustomerRecord | null>(null);
@@ -212,25 +228,19 @@ export default function ReceivablesPage() {
 
   async function handleCreateCustomer(e: React.FormEvent) {
     e.preventDefault();
-    if (!newName.trim()) {
+    const cleanName = newName.trim();
+    if (!cleanName) {
       setCreateError("Customer name is required");
       return;
     }
 
-    const trimmedName = newName.trim().toLowerCase();
-    const existing = customers.find((c) => c.name.trim().toLowerCase() === trimmedName);
-    if (existing && !sameNameSuggestion) {
-      const base = newName.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10) || "CUST";
-      const matches = customers.filter((c) => c.code && c.code.toUpperCase().startsWith(base));
-      const nextCode = `${base}-${String(matches.length + 1).padStart(2, "0")}`;
-      setSameNameSuggestion({ existingName: existing.name, existingCode: existing.code || base, nextCode });
+    if (duplicateNewCustomer) {
+      setCreateError(
+        `A customer named "${duplicateNewCustomer.name}" already exists. Please enter a unique name (e.g. "${cleanName} 2" or "${cleanName} Dubai") to proceed.`
+      );
       return;
     }
 
-    await executeCreateCustomer(newCode.trim() || (sameNameSuggestion ? sameNameSuggestion.nextCode : undefined));
-  }
-
-  async function executeCreateCustomer(codeToUse?: string) {
     setCreatingCustomer(true);
     setCreateError(null);
     try {
@@ -238,8 +248,8 @@ export default function ReceivablesPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: newName.trim(),
-          code: codeToUse || undefined,
+          name: cleanName,
+          code: newCode.trim() || undefined,
           phone: newPhone.trim() || undefined,
           default_rate: newRate ? parseFloat(newRate) : 38.25,
         }),
@@ -249,7 +259,6 @@ export default function ReceivablesPage() {
       if (!res.ok) throw new Error(data.error || "Failed to create customer");
 
       setShowCreateModal(false);
-      setSameNameSuggestion(null);
       setNewName("");
       setNewCode("");
       setNewPhone("");
@@ -275,7 +284,19 @@ export default function ReceivablesPage() {
 
   async function handleUpdateCustomer(e: React.FormEvent) {
     e.preventDefault();
-    if (!editCustomerTarget || !editName.trim()) return;
+    if (!editCustomerTarget) return;
+    const cleanName = editName.trim();
+    if (!cleanName) {
+      setEditError("Customer name is required");
+      return;
+    }
+
+    if (duplicateEditCustomer) {
+      setEditError(
+        `A customer named "${duplicateEditCustomer.name}" already exists. Please enter a unique name to proceed.`
+      );
+      return;
+    }
 
     setEditingCustomer(true);
     setEditError(null);
@@ -284,7 +305,7 @@ export default function ReceivablesPage() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: editName.trim(),
+          name: cleanName,
           code: editCode.trim() || undefined,
           phone: editPhone.trim() || undefined,
           default_rate: editRate ? parseFloat(editRate) : 38.25,
@@ -1323,7 +1344,7 @@ export default function ReceivablesPage() {
               </h3>
               <button
                 type="button"
-                onClick={() => { setShowCreateModal(false); setSameNameSuggestion(null); }}
+                onClick={() => { setShowCreateModal(false); setCreateError(null); }}
                 className="text-slate-400 hover:text-slate-600 text-sm font-bold cursor-pointer"
               >
                 ✕
@@ -1337,33 +1358,15 @@ export default function ReceivablesPage() {
               </div>
             )}
 
-            {sameNameSuggestion && (
-              <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg text-xs space-y-2">
+            {duplicateNewCustomer && (
+              <div className="p-3 bg-amber-50 border border-amber-300 text-amber-900 rounded-lg text-xs space-y-1">
                 <div className="flex items-center gap-2 font-bold text-amber-800">
                   <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>Notice: Customer with same name exists</span>
+                  <span>Customer Name Already Exists</span>
                 </div>
-                <p className="text-[11px] leading-relaxed text-amber-700">
-                  There is already a customer named <strong>{sameNameSuggestion.existingName}</strong> (Code: <strong>{sameNameSuggestion.existingCode}</strong>). 
-                  A new unique account will be created with auto-assigned code <strong>{sameNameSuggestion.nextCode}</strong> so both accounts remain completely separate.
+                <p className="text-[11px] leading-relaxed text-amber-800">
+                  A customer named <strong>{duplicateNewCustomer.name}</strong> already exists. Customer names must be unique to prevent ledger clashes. Please provide a unique name (e.g. <strong>{newName.trim()} 2</strong> or <strong>{newName.trim()} Dubai</strong>) to proceed.
                 </p>
-                <div className="flex items-center justify-end gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setSameNameSuggestion(null)}
-                    className="px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:text-slate-800 cursor-pointer"
-                  >
-                    Edit Name
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => executeCreateCustomer(sameNameSuggestion.nextCode)}
-                    disabled={creatingCustomer}
-                    className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-[11px] font-bold shadow-xs cursor-pointer"
-                  >
-                    {creatingCustomer ? "Registering..." : "Proceed with New Customer"}
-                  </button>
-                </div>
               </div>
             )}
 
@@ -1376,8 +1379,13 @@ export default function ReceivablesPage() {
                 required
                 placeholder="e.g. Al-Mansoor Trading"
                 value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                onChange={(e) => {
+                  setNewName(e.target.value);
+                  if (createError) setCreateError(null);
+                }}
+                className={`w-full text-xs font-bold border rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 ${
+                  duplicateNewCustomer ? "border-amber-500 focus:ring-amber-500" : "border-slate-300 focus:ring-indigo-500"
+                }`}
               />
             </div>
 
@@ -1426,15 +1434,15 @@ export default function ReceivablesPage() {
             <div className="flex justify-end gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => { setShowCreateModal(false); setSameNameSuggestion(null); }}
+                onClick={() => { setShowCreateModal(false); setCreateError(null); }}
                 className="px-4 py-2 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-50 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                disabled={creatingCustomer}
-                className="px-4 py-2 bg-indigo-700 text-white text-xs font-bold rounded-lg hover:bg-indigo-800 shadow-sm cursor-pointer disabled:opacity-50"
+                disabled={creatingCustomer || !newName.trim() || !!duplicateNewCustomer}
+                className="px-4 py-2 bg-indigo-700 text-white text-xs font-bold rounded-lg hover:bg-indigo-800 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {creatingCustomer ? "Registering..." : "Add Customer"}
               </button>
@@ -1473,6 +1481,18 @@ export default function ReceivablesPage() {
               </div>
             )}
 
+            {duplicateEditCustomer && (
+              <div className="p-3 bg-amber-50 border border-amber-300 text-amber-900 rounded-lg text-xs space-y-1">
+                <div className="flex items-center gap-2 font-bold text-amber-800">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Customer Name Already Exists</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-amber-800">
+                  Another customer named <strong>{duplicateEditCustomer.name}</strong> already exists. Customer names must be unique to prevent ledger clashes. Please provide a distinct name.
+                </p>
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                 Customer Name *
@@ -1481,8 +1501,13 @@ export default function ReceivablesPage() {
                 type="text"
                 required
                 value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                onChange={(e) => {
+                  setEditName(e.target.value);
+                  if (editError) setEditError(null);
+                }}
+                className={`w-full text-xs font-bold border rounded-lg p-2.5 text-slate-900 focus:outline-none focus:ring-2 ${
+                  duplicateEditCustomer ? "border-amber-500 focus:ring-amber-500" : "border-slate-300 focus:ring-indigo-500"
+                }`}
               />
             </div>
 
@@ -1535,8 +1560,8 @@ export default function ReceivablesPage() {
               </button>
               <button
                 type="submit"
-                disabled={editingCustomer}
-                className="px-4 py-2 bg-indigo-700 text-white text-xs font-bold rounded-lg hover:bg-indigo-800 shadow-sm cursor-pointer disabled:opacity-50"
+                disabled={editingCustomer || !editName.trim() || !!duplicateEditCustomer}
+                className="px-4 py-2 bg-indigo-700 text-white text-xs font-bold rounded-lg hover:bg-indigo-800 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {editingCustomer ? "Saving..." : "Save Changes"}
               </button>

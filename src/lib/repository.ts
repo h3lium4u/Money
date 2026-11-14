@@ -712,34 +712,45 @@ export async function createCustomer(data: {
   entity_type?: string;
   party_type?: "DUBAI" | "INDIA" | string;
 }): Promise<Customer> {
+  const cleanName = data.name.trim();
+  if (!cleanName) throw new Error("Customer name is required");
+
+  // Validate that customer name is unique
+  const existingWithName = await queryOne(
+    `SELECT id, name, code FROM customers WHERE LOWER(TRIM(name)) = LOWER($1) LIMIT 1`,
+    [cleanName]
+  );
+  if (existingWithName) {
+    throw new Error(
+      `A customer named "${existingWithName.name}" already exists (Code: ${existingWithName.code}). Please provide a unique name (e.g. "${cleanName} 2" or "${cleanName} Dubai") to proceed.`
+    );
+  }
+
   const entityType = data.entity_type || "CUSTOMER";
   const partyType = data.party_type || (entityType === "PARTY" ? "DUBAI" : undefined);
   
-  // Auto-generate next unique code if not provided, or ensure uniqueness if provided
+  // Use user-provided code, or derive directly from the unique customer name
   let code = data.code?.trim().toUpperCase();
   if (!code) {
-    code = await generateNextCustomerCode(data.name, entityType);
-  } else {
-    // If explicit code is provided, verify it does not clash with existing customer
-    const existingWithCode = await queryOne(`SELECT id FROM customers WHERE UPPER(code) = $1`, [code]);
-    if (existingWithCode) {
-      code = await generateNextCustomerCode(code, entityType);
-    }
+    code = cleanName.toUpperCase().replace(/[^A-Z0-9]/g, "_").replace(/_+/g, "_").slice(0, 20) || "CUST";
   }
 
-  let id: string;
-  if (entityType === "PARTY") {
-    const baseId = `party-${code.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
-    const existingParty = await queryOne(`SELECT id FROM customers WHERE id = $1`, [baseId]);
-    id = existingParty ? `${baseId}-${crypto.randomUUID().slice(0, 6)}` : baseId;
-  } else {
-    id = crypto.randomUUID();
+  // Ensure code is also unique
+  const existingWithCode = await queryOne(`SELECT id FROM customers WHERE UPPER(code) = $1`, [code]);
+  if (existingWithCode) {
+    code = `${code}_${Math.floor(100 + Math.random() * 900)}`;
   }
+
+  const slug = cleanName.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-");
+  const prefix = entityType === "PARTY" ? "party" : "cust";
+  const baseId = `${prefix}-${slug}`;
+  const existingWithId = await queryOne(`SELECT id FROM customers WHERE id = $1`, [baseId]);
+  const id = existingWithId ? `${baseId}-${crypto.randomUUID().slice(0, 4)}` : baseId;
   
   await execute(`
     INSERT INTO customers (id, code, name, phone, default_rate, status, entity_type, party_type)
     VALUES ($1, $2, $3, $4, $5, 'ACTIVE', $6, $7)
-  `, [id, code, data.name.trim(), data.phone || null, data.default_rate || 38.25, entityType, partyType || null]);
+  `, [id, code, cleanName, data.phone || null, data.default_rate || 38.25, entityType, partyType || null]);
 
   // If this is an Indian party, ensure it's also registered in distributors (for splits) & bank_distrip_accounts
   if (entityType === "PARTY" && partyType === "INDIA") {
@@ -748,22 +759,23 @@ export async function createCustomer(data: {
       INSERT INTO distributors (id, code, name, partner_type, group_type, default_settlement_currency, status)
       VALUES ($1, $2, $3, 'INDIA_DISTRIBUTOR', 'IND', 'INR', 'ACTIVE')
       ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, code = EXCLUDED.code;
-    `, [distId, code, data.name.trim()]);
+    `, [distId, code, cleanName]);
 
     await execute(`
       INSERT INTO bank_distrip_accounts (id, account_code, account_name, status)
       VALUES ($1, $2, $3, 'ACTIVE')
       ON CONFLICT (id) DO UPDATE SET account_name = EXCLUDED.account_name, account_code = EXCLUDED.account_code;
-    `, [distId, code, data.name.trim()]);
+    `, [distId, code, cleanName]);
   } else if (entityType === "PARTY" && partyType === "DUBAI") {
     const distId = `dist-${code.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
     await execute(`
       INSERT INTO distributors (id, code, name, partner_type, group_type, default_settlement_currency, status)
       VALUES ($1, $2, $3, 'WHOLESALE_PARTNER', 'AED', 'AED', 'ACTIVE')
       ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, code = EXCLUDED.code;
-    `, [distId, code, data.name.trim()]);
+    `, [distId, code, cleanName]);
   }
 
+  notifyDataChange();
   invalidatePartyTransfersCache();
   const created = await getCustomer(id);
   return created!;
@@ -2672,6 +2684,18 @@ export async function updateCustomer(id: string, data: {
 }): Promise<Customer> {
   const existing = await getCustomer(id);
   if (!existing) throw new Error("Customer not found");
+
+  if (data.name !== undefined) {
+    const cleanName = data.name.trim();
+    if (!cleanName) throw new Error("Customer name is required");
+    const clashing = await queryOne(
+      `SELECT id, name FROM customers WHERE LOWER(TRIM(name)) = LOWER($1) AND id != $2 LIMIT 1`,
+      [cleanName, id]
+    );
+    if (clashing) {
+      throw new Error(`A customer named "${clashing.name}" already exists. Please enter a unique name to proceed.`);
+    }
+  }
 
   const name = data.name !== undefined ? data.name.trim() : existing.name;
   const code = data.code !== undefined ? data.code.trim() : existing.code;

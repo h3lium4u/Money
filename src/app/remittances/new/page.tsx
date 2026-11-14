@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Calculator,
@@ -147,7 +147,12 @@ export default function NewRemittancePage() {
   const [newCustRate, setNewCustRate] = useState("");
   const [savingNewCust, setSavingNewCust] = useState(false);
   const [newCustError, setNewCustError] = useState<string | null>(null);
-  const [sameNameSuggestion, setSameNameSuggestion] = useState<{ existingName: string; existingCode: string; nextCode: string } | null>(null);
+
+  const duplicateCustomer = useMemo(() => {
+    const trimmed = newCustName.trim().toLowerCase();
+    if (!trimmed) return null;
+    return customers.find((c) => c.name.trim().toLowerCase() === trimmed) || null;
+  }, [newCustName, customers]);
 
   // Searchable Customer Combobox State
   const [customerSearchQuery, setCustomerSearchQuery] = useState("");
@@ -237,26 +242,19 @@ export default function NewRemittancePage() {
 
   async function handleCreateNewCustomer(e: React.FormEvent) {
     e.preventDefault();
-    if (!newCustName.trim()) {
+    const cleanName = newCustName.trim();
+    if (!cleanName) {
       setNewCustError("Customer name is required");
       return;
     }
 
-    // Check if a customer with the identical name already exists and suggestion not yet confirmed
-    const trimmedName = newCustName.trim().toLowerCase();
-    const existing = customers.find((c) => c.name.trim().toLowerCase() === trimmedName);
-    if (existing && !sameNameSuggestion) {
-      const base = newCustName.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10) || "CUST";
-      const matches = customers.filter((c) => c.code && c.code.toUpperCase().startsWith(base));
-      const nextCode = `${base}-${String(matches.length + 1).padStart(2, "0")}`;
-      setSameNameSuggestion({ existingName: existing.name, existingCode: existing.code || base, nextCode });
+    if (duplicateCustomer) {
+      setNewCustError(
+        `A customer named "${duplicateCustomer.name}" already exists. Please enter a unique name (e.g. "${cleanName} 2" or "${cleanName} Dubai") to proceed.`
+      );
       return;
     }
 
-    await executeCreateCustomer(newCustCode.trim() || (sameNameSuggestion ? sameNameSuggestion.nextCode : undefined));
-  }
-
-  async function executeCreateCustomer(codeToUse?: string) {
     setSavingNewCust(true);
     setNewCustError(null);
     try {
@@ -264,8 +262,8 @@ export default function NewRemittancePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: newCustName.trim(),
-          code: codeToUse || undefined,
+          name: cleanName,
+          code: newCustCode.trim() || undefined,
           phone: newCustPhone.trim() || undefined,
           default_rate: newCustRate ? parseFloat(newCustRate) : 38.25,
         }),
@@ -282,7 +280,6 @@ export default function NewRemittancePage() {
       }
 
       setShowNewCustModal(false);
-      setSameNameSuggestion(null);
       setNewCustName("");
       setNewCustCode("");
       setNewCustPhone("");
@@ -1553,7 +1550,7 @@ export default function NewRemittancePage() {
               </h3>
               <button
                 type="button"
-                onClick={() => { setShowNewCustModal(false); setSameNameSuggestion(null); }}
+                onClick={() => { setShowNewCustModal(false); setNewCustError(null); }}
                 className="text-slate-400 hover:text-slate-600 text-lg font-bold"
               >
                 ✕
@@ -1567,33 +1564,15 @@ export default function NewRemittancePage() {
               </div>
             )}
 
-            {sameNameSuggestion && (
-              <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg text-xs space-y-2">
+            {duplicateCustomer && (
+              <div className="p-3 bg-amber-50 border border-amber-300 text-amber-900 rounded-lg text-xs space-y-1">
                 <div className="flex items-center gap-2 font-bold text-amber-800">
                   <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>Notice: Customer with same name exists</span>
+                  <span>Customer Name Already Exists</span>
                 </div>
-                <p className="text-[11px] leading-relaxed text-amber-700">
-                  There is already a customer named <strong>{sameNameSuggestion.existingName}</strong> (Code: <strong>{sameNameSuggestion.existingCode}</strong>). 
-                  A new unique account will be created with code <strong>{sameNameSuggestion.nextCode}</strong> so both accounts remain completely separate.
+                <p className="text-[11px] leading-relaxed text-amber-800">
+                  A customer named <strong>{duplicateCustomer.name}</strong> already exists. Customer names must be unique to prevent ledger clashes. Please provide a unique name (e.g. <strong>{newCustName.trim()} 2</strong> or <strong>{newCustName.trim()} Dubai</strong>) to proceed.
                 </p>
-                <div className="flex items-center justify-end gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setSameNameSuggestion(null)}
-                    className="px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:text-slate-800 cursor-pointer"
-                  >
-                    Edit Name
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => executeCreateCustomer(sameNameSuggestion.nextCode)}
-                    disabled={savingNewCust}
-                    className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-[11px] font-bold shadow-xs cursor-pointer"
-                  >
-                    {savingNewCust ? "Creating..." : "Proceed with New Customer"}
-                  </button>
-                </div>
               </div>
             )}
 
@@ -1607,8 +1586,13 @@ export default function NewRemittancePage() {
                   required
                   placeholder="e.g. DIVAN or AHMAD"
                   value={newCustName}
-                  onChange={(e) => setNewCustName(e.target.value)}
-                  className="w-full text-xs font-bold border border-slate-300 rounded-lg p-2.5 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  onChange={(e) => {
+                    setNewCustName(e.target.value);
+                    if (newCustError) setNewCustError(null);
+                  }}
+                  className={`w-full text-xs font-bold border rounded-lg p-2.5 bg-white text-slate-900 focus:outline-none focus:ring-2 ${
+                    duplicateCustomer ? "border-amber-500 focus:ring-amber-500" : "border-slate-300 focus:ring-indigo-500"
+                  }`}
                 />
               </div>
 
@@ -1662,15 +1646,15 @@ export default function NewRemittancePage() {
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => { setShowNewCustModal(false); setSameNameSuggestion(null); }}
-                  className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  onClick={() => { setShowNewCustModal(false); setNewCustError(null); }}
+                  className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={savingNewCust}
-                  className="px-4 py-2 bg-[#6366F1] hover:bg-[#4F46E5] text-white rounded-lg text-xs font-bold disabled:opacity-50 shadow-sm cursor-pointer"
+                  disabled={savingNewCust || !newCustName.trim() || !!duplicateCustomer}
+                  className="px-4 py-2 bg-[#6366F1] hover:bg-[#4F46E5] text-white rounded-lg text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-sm cursor-pointer"
                 >
                   {savingNewCust ? "Saving..." : "Create & Select"}
                 </button>
