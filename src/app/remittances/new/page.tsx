@@ -1565,14 +1565,36 @@ export default function NewRemittancePage() {
             )}
 
             {duplicateCustomer && (
-              <div className="p-3 bg-amber-50 border border-amber-300 text-amber-900 rounded-lg text-xs space-y-1">
+              <div className="p-3 bg-amber-50 border border-amber-300 text-amber-900 rounded-lg text-xs space-y-2">
                 <div className="flex items-center gap-2 font-bold text-amber-800">
                   <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>Customer Name Already Exists</span>
+                  <span>Customer Already Exists</span>
                 </div>
                 <p className="text-[11px] leading-relaxed text-amber-800">
-                  A customer named <strong>{duplicateCustomer.name}</strong> already exists. Customer names must be unique to prevent ledger clashes. Please provide a unique name (e.g. <strong>{newCustName.trim()} 2</strong> or <strong>{newCustName.trim()} Dubai</strong>) to proceed.
+                  A customer named <strong>{duplicateCustomer.name}</strong> (Code: <strong>{duplicateCustomer.code}</strong>) already exists. If you came here by mistake, you can select this existing customer directly. Otherwise, please enter a unique name (e.g. <strong>{newCustName.trim()} 2</strong> or <strong>{newCustName.trim()} Dubai</strong>) to create a new profile.
                 </p>
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCustomerId(duplicateCustomer.id);
+                      if (duplicateCustomer.default_rate && !customerRate.trim()) {
+                        setCustomerRate(String(duplicateCustomer.default_rate));
+                      }
+                      setShowNewCustModal(false);
+                      setNewCustName("");
+                      setNewCustCode("");
+                      setNewCustPhone("");
+                      setNewCustRate("");
+                      setNewCustError(null);
+                      toast.info(`Selected existing customer: ${duplicateCustomer.name}`);
+                    }}
+                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Select Existing Customer ({duplicateCustomer.name})</span>
+                  </button>
+                </div>
               </div>
             )}
 

@@ -1359,14 +1359,34 @@ export default function ReceivablesPage() {
             )}
 
             {duplicateNewCustomer && (
-              <div className="p-3 bg-amber-50 border border-amber-300 text-amber-900 rounded-lg text-xs space-y-1">
+              <div className="p-3 bg-amber-50 border border-amber-300 text-amber-900 rounded-lg text-xs space-y-2">
                 <div className="flex items-center gap-2 font-bold text-amber-800">
                   <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>Customer Name Already Exists</span>
+                  <span>Customer Already Exists</span>
                 </div>
                 <p className="text-[11px] leading-relaxed text-amber-800">
-                  A customer named <strong>{duplicateNewCustomer.name}</strong> already exists. Customer names must be unique to prevent ledger clashes. Please provide a unique name (e.g. <strong>{newName.trim()} 2</strong> or <strong>{newName.trim()} Dubai</strong>) to proceed.
+                  A customer named <strong>{duplicateNewCustomer.name}</strong> (Code: <strong>{duplicateNewCustomer.code}</strong>) already exists. If you came here by mistake, you can choose to view this existing customer. Otherwise, please enter a unique name (e.g. <strong>{newName.trim()} 2</strong> or <strong>{newName.trim()} Dubai</strong>) to register a new profile.
                 </p>
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateModal(false);
+                      setNewName("");
+                      setNewCode("");
+                      setNewPhone("");
+                      setNewRate("38.25");
+                      setCreateError(null);
+                      setSearch(duplicateNewCustomer.name);
+                      toggleCustomerLedger(duplicateNewCustomer.id);
+                      toast.info(`Viewing existing customer: ${duplicateNewCustomer.name}`);
+                    }}
+                    className="px-3 py-1.5 bg-indigo-700 hover:bg-indigo-800 text-white rounded-md text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
+                  >
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    <span>View Existing Customer ({duplicateNewCustomer.name})</span>
+                  </button>
+                </div>
               </div>
             )}
 
