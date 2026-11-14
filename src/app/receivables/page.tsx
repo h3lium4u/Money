@@ -111,6 +111,7 @@ export default function ReceivablesPage() {
   const [newRate, setNewRate] = useState("38.25");
   const [creatingCustomer, setCreatingCustomer] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [sameNameSuggestion, setSameNameSuggestion] = useState<{ existingName: string; existingCode: string; nextCode: string } | null>(null);
 
   // Edit Customer Modal
   const [editCustomerTarget, setEditCustomerTarget] = useState<CustomerRecord | null>(null);
@@ -216,6 +217,20 @@ export default function ReceivablesPage() {
       return;
     }
 
+    const trimmedName = newName.trim().toLowerCase();
+    const existing = customers.find((c) => c.name.trim().toLowerCase() === trimmedName);
+    if (existing && !sameNameSuggestion) {
+      const base = newName.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10) || "CUST";
+      const matches = customers.filter((c) => c.code && c.code.toUpperCase().startsWith(base));
+      const nextCode = `${base}-${String(matches.length + 1).padStart(2, "0")}`;
+      setSameNameSuggestion({ existingName: existing.name, existingCode: existing.code || base, nextCode });
+      return;
+    }
+
+    await executeCreateCustomer(newCode.trim() || (sameNameSuggestion ? sameNameSuggestion.nextCode : undefined));
+  }
+
+  async function executeCreateCustomer(codeToUse?: string) {
     setCreatingCustomer(true);
     setCreateError(null);
     try {
@@ -224,7 +239,7 @@ export default function ReceivablesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newName.trim(),
-          code: newCode.trim() || undefined,
+          code: codeToUse || undefined,
           phone: newPhone.trim() || undefined,
           default_rate: newRate ? parseFloat(newRate) : 38.25,
         }),
@@ -234,6 +249,7 @@ export default function ReceivablesPage() {
       if (!res.ok) throw new Error(data.error || "Failed to create customer");
 
       setShowCreateModal(false);
+      setSameNameSuggestion(null);
       setNewName("");
       setNewCode("");
       setNewPhone("");
@@ -1307,7 +1323,7 @@ export default function ReceivablesPage() {
               </h3>
               <button
                 type="button"
-                onClick={() => setShowCreateModal(false)}
+                onClick={() => { setShowCreateModal(false); setSameNameSuggestion(null); }}
                 className="text-slate-400 hover:text-slate-600 text-sm font-bold cursor-pointer"
               >
                 ✕
@@ -1318,6 +1334,36 @@ export default function ReceivablesPage() {
               <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs font-medium flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
                 <span>{createError}</span>
+              </div>
+            )}
+
+            {sameNameSuggestion && (
+              <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg text-xs space-y-2">
+                <div className="flex items-center gap-2 font-bold text-amber-800">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Notice: Customer with same name exists</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-amber-700">
+                  There is already a customer named <strong>{sameNameSuggestion.existingName}</strong> (Code: <strong>{sameNameSuggestion.existingCode}</strong>). 
+                  A new unique account will be created with auto-assigned code <strong>{sameNameSuggestion.nextCode}</strong> so both accounts remain completely separate.
+                </p>
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setSameNameSuggestion(null)}
+                    className="px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:text-slate-800 cursor-pointer"
+                  >
+                    Edit Name
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => executeCreateCustomer(sameNameSuggestion.nextCode)}
+                    disabled={creatingCustomer}
+                    className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-[11px] font-bold shadow-xs cursor-pointer"
+                  >
+                    {creatingCustomer ? "Registering..." : "Proceed with New Customer"}
+                  </button>
+                </div>
               </div>
             )}
 
@@ -1380,7 +1426,7 @@ export default function ReceivablesPage() {
             <div className="flex justify-end gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => setShowCreateModal(false)}
+                onClick={() => { setShowCreateModal(false); setSameNameSuggestion(null); }}
                 className="px-4 py-2 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-50 cursor-pointer"
               >
                 Cancel

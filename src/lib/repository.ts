@@ -644,6 +644,30 @@ export async function getPartiesPriorTransfersSummary(): Promise<{
   return { summaries, list };
 }
 
+export async function generateNextCustomerCode(name: string, entityType: string = "CUSTOMER"): Promise<string> {
+  const cleanName = name.trim();
+  const baseCode = cleanName.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10) || "CUST";
+  
+  const existing = await query(
+    `SELECT code FROM customers WHERE UPPER(code) = $1 OR UPPER(code) LIKE $2 ORDER BY code ASC`,
+    [baseCode, `${baseCode}-%`]
+  );
+  
+  if (existing.length === 0) return baseCode;
+  
+  const existingCodes = new Set(existing.map((r: any) => String(r.code).toUpperCase().trim()));
+  if (!existingCodes.has(baseCode)) return baseCode;
+  
+  let counter = 2;
+  while (
+    existingCodes.has(`${baseCode}-${String(counter).padStart(2, "0")}`) || 
+    existingCodes.has(`${baseCode}-${counter}`)
+  ) {
+    counter++;
+  }
+  return `${baseCode}-${String(counter).padStart(2, "0")}`;
+}
+
 export async function getCustomer(id: string): Promise<Customer | null> {
   const cachedLedger = cacheStore.customerLedger.get(id);
   if (cachedLedger && (Date.now() - cachedLedger.timestamp < 30000)) {
@@ -655,19 +679,13 @@ export async function getCustomer(id: string): Promise<Customer | null> {
              SUM(inr_amount) AS total_inr, 
              SUM(aed_amount) AS total_aed
       FROM transactions 
-      WHERE status = 'CONFIRMED' AND (
-        customer_id = $1 
-        OR customer_id IN (SELECT id FROM customers WHERE UPPER(code) = UPPER($2) OR UPPER(name) = UPPER($2))
-        OR distributor_id = $1
-      )
+      WHERE status = 'CONFIRMED'
       GROUP BY customer_id
     ),
     pay_agg AS (
       SELECT customer_id, 
              SUM(amount_aed) AS total_paid
       FROM customer_payments
-      WHERE customer_id = $1 
-         OR customer_id IN (SELECT id FROM customers WHERE UPPER(code) = UPPER($2) OR UPPER(name) = UPPER($2))
       GROUP BY customer_id
     )
     SELECT 
@@ -678,13 +696,9 @@ export async function getCustomer(id: string): Promise<Customer | null> {
     FROM customers c
     LEFT JOIN txn_agg ta ON ta.customer_id = c.id
     LEFT JOIN pay_agg pa ON pa.customer_id = c.id
-    WHERE c.id = $1 
-       OR UPPER(c.code) = UPPER($2)
-       OR UPPER(c.name) = UPPER($2)
-       OR c.code IN (SELECT code FROM distributors WHERE id = $1)
-       OR UPPER(c.name) IN (SELECT UPPER(name) FROM distributors WHERE id = $1)
+    WHERE c.id = $1 OR UPPER(c.code) = UPPER($1)
     LIMIT 1
-  `, [id, id]);
+  `, [id]);
 
   if (!r) return null;
   return mapCustomerRecord(r);
@@ -700,23 +714,31 @@ export async function createCustomer(data: {
 }): Promise<Customer> {
   const entityType = data.entity_type || "CUSTOMER";
   const partyType = data.party_type || (entityType === "PARTY" ? "DUBAI" : undefined);
-  const id = entityType === "PARTY"
-    ? `party-${(data.code || data.name).toLowerCase().replace(/[^a-z0-9]/g, "")}`
-    : crypto.randomUUID();
-  const code = data.code?.trim() || (
-    data.name.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10) +
-    (entityType === "PARTY" ? "" : ("-" + Math.floor(100 + Math.random() * 900)))
-  );
+  
+  // Auto-generate next unique code if not provided, or ensure uniqueness if provided
+  let code = data.code?.trim().toUpperCase();
+  if (!code) {
+    code = await generateNextCustomerCode(data.name, entityType);
+  } else {
+    // If explicit code is provided, verify it does not clash with existing customer
+    const existingWithCode = await queryOne(`SELECT id FROM customers WHERE UPPER(code) = $1`, [code]);
+    if (existingWithCode) {
+      code = await generateNextCustomerCode(code, entityType);
+    }
+  }
+
+  let id: string;
+  if (entityType === "PARTY") {
+    const baseId = `party-${code.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+    const existingParty = await queryOne(`SELECT id FROM customers WHERE id = $1`, [baseId]);
+    id = existingParty ? `${baseId}-${crypto.randomUUID().slice(0, 6)}` : baseId;
+  } else {
+    id = crypto.randomUUID();
+  }
   
   await execute(`
     INSERT INTO customers (id, code, name, phone, default_rate, status, entity_type, party_type)
     VALUES ($1, $2, $3, $4, $5, 'ACTIVE', $6, $7)
-    ON CONFLICT (code) DO UPDATE SET 
-      name = EXCLUDED.name,
-      entity_type = EXCLUDED.entity_type,
-      party_type = COALESCE(EXCLUDED.party_type, customers.party_type),
-      phone = COALESCE(EXCLUDED.phone, customers.phone),
-      default_rate = COALESCE(EXCLUDED.default_rate, customers.default_rate)
   `, [id, code, data.name.trim(), data.phone || null, data.default_rate || 38.25, entityType, partyType || null]);
 
   // If this is an Indian party, ensure it's also registered in distributors (for splits) & bank_distrip_accounts
@@ -1502,35 +1524,32 @@ export async function getCustomerLedger(customerId: string): Promise<{
     return cached.data;
   }
 
-  // 1. Resolve customer or party record flexibly by id, code, or linked distributor id/code/name
+  // 1. Resolve customer or party record strictly by unique id, code, or linked distributor id
   let custRow = await queryOne(`
     SELECT * FROM customers 
     WHERE id = $1 
        OR UPPER(code) = UPPER($1) 
-       OR UPPER(name) = UPPER($1)
        OR code IN (SELECT code FROM distributors WHERE id = $1)
-       OR UPPER(name) IN (SELECT UPPER(name) FROM distributors WHERE id = $1)
     LIMIT 1
   `, [customerId]);
 
   if (!custRow) {
-    const distRow = await queryOne(`SELECT * FROM distributors WHERE id = $1 OR UPPER(code) = UPPER($1) OR UPPER(name) = UPPER($1)`, [customerId]);
+    const distRow = await queryOne(`SELECT * FROM distributors WHERE id = $1 OR UPPER(code) = UPPER($1)`, [customerId]);
     if (distRow) {
       custRow = await queryOne(`
         SELECT * FROM customers 
-        WHERE (UPPER(code) = UPPER($1) OR UPPER(name) = UPPER($2))
+        WHERE UPPER(code) = UPPER($1)
           AND COALESCE(entity_type, 'CUSTOMER') = 'PARTY'
         LIMIT 1
-      `, [distRow.code || '', distRow.name || '']);
+      `, [distRow.code || '']);
     }
   }
 
   if (!custRow) throw new Error("Party account not found");
 
   const resolvedId = custRow.id;
-  const resolvedCode = custRow.code;
 
-  // Parallel fetch: confirmed transactions (orders/transfers) and payments (settlements)
+  // Parallel fetch: confirmed transactions (orders/transfers) and payments (settlements) bound strictly to customer_id
   const [txns, pays] = await Promise.all([
     query(`
       SELECT id, transaction_date as date, 'TRANSACTION' as type, transaction_number as reference,
@@ -1538,29 +1557,19 @@ export async function getCustomerLedger(customerId: string): Promise<{
              aed_amount as debit_aed, 0.0 as credit_aed, created_at,
              inr_amount, aed_amount, notes
       FROM transactions
-      WHERE (
-        customer_id = $1 
-        OR customer_id = $2 
-        OR customer_id IN (SELECT id FROM customers WHERE UPPER(code) = UPPER($3) OR UPPER(name) = UPPER($3))
-        OR distributor_id = $1
-        OR distributor_id = $2
-      ) 
+      WHERE customer_id = $1 
         AND status = 'CONFIRMED'
       ORDER BY transaction_date ASC, created_at ASC
-    `, [resolvedId, customerId, resolvedCode]),
+    `, [resolvedId]),
     query(`
       SELECT id, payment_date as date, 'PAYMENT' as type, payment_number as reference,
              'Payment (' || payment_method || ')' as description,
              0.0 as debit_aed, amount_aed as credit_aed, created_at,
              amount_aed, notes
       FROM customer_payments
-      WHERE (
-        customer_id = $1 
-        OR customer_id = $2 
-        OR customer_id IN (SELECT id FROM customers WHERE UPPER(code) = UPPER($3) OR UPPER(name) = UPPER($3))
-      )
+      WHERE customer_id = $1
       ORDER BY payment_date ASC, created_at ASC
-    `, [resolvedId, customerId, resolvedCode]),
+    `, [resolvedId]),
   ]);
 
   const totalInr = roundTo(txns.reduce((sum: number, t: any) => sum + Number(t.inr_amount || 0), 0), 3);
