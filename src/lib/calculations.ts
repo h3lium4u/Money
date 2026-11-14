@@ -61,9 +61,8 @@ export function calculateDubaiClientTransfer(inputs: DubaiClientInputs): DubaiCl
   const manualRate = Number(inputs.manualRate);
   const paidAmount = Number(inputs.paidAmount || 0);
 
-  if (total <= 0) throw new Error("Total amount must be greater than zero");
+  if (isNaN(total) || total === 0) throw new Error("Total amount must not be zero");
   if (manualRate <= 0) throw new Error("Manual rate value must be greater than zero");
-  if (paidAmount < 0) throw new Error("Paid amount cannot be negative");
 
   // Wholesale rate = 1000 / manual rate (exact float, zero rounding off)
   const wholesaleRate = 1000 / manualRate;
@@ -113,7 +112,7 @@ export function calculateTransaction(inputs: TransactionInputs): TransactionCalc
   const custRate = Number(inputs.customerRate);
   let baseRate = Number(inputs.baseRate);
 
-  if (isNaN(inr) || inr <= 0) throw new Error("INR amount must be greater than zero");
+  if (isNaN(inr) || inr === 0) throw new Error("INR amount must not be zero");
   if (isNaN(custRate) || custRate <= 0) throw new Error("Customer rate must be greater than zero");
   if (isNaN(baseRate) || baseRate <= 0) throw new Error("Base rate must be greater than zero");
 
