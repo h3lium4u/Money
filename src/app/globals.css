@@ -27,8 +27,9 @@
   --accent-border: #C7D2FE;
 
   /* Typography */
+  --font-inter:   "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-display: "Helvetica Neue", "Helvetica Now Display", Arial, sans-serif;
-  --font-body:    var(--font-inter, "Inter"), "Helvetica Neue", Arial, sans-serif;
+  --font-body:    var(--font-inter), "Helvetica Neue", Arial, sans-serif;
 
   /* Radii scale */
   --r-xs:   5px;
