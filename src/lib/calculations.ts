@@ -154,6 +154,9 @@ export function calculateTransaction(inputs: TransactionInputs): TransactionCalc
   // Otherwise if deliveryChargePct is provided, calculate as rawGrossProfit * deliveryPct.
   let deliveryChargeAed: number;
   let deliveryPct = inputs.deliveryChargePct !== undefined ? Number(inputs.deliveryChargePct) : 0;
+  if (deliveryPct > 1) {
+    deliveryPct = deliveryPct / 100;
+  }
 
   if (inputs.deliveryChargeAed !== undefined && !isNaN(Number(inputs.deliveryChargeAed))) {
     deliveryChargeAed = roundTo(Number(inputs.deliveryChargeAed), 3);
